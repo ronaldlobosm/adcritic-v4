@@ -2,8 +2,8 @@ services:
   - type: web
     name: adcritic
     runtime: python
-    buildCommand: pip install -r requirements.txt && python seed_news.py
-    startCommand: gunicorn run:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
     envVars:
       - key: FLASK_ENV
         value: production
