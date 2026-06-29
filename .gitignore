@@ -16,3 +16,4 @@ __pycache__/
 *.db
 .env
 app.db
+app/static/uploads/
