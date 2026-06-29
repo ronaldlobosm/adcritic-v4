@@ -34,9 +34,10 @@ class ProductionConfig(Config):
     DEBUG = False
     # Render sets DATABASE_URL with postgres:// — SQLAlchemy needs postgresql://
     _db_url = os.environ.get("DATABASE_URL", "")
-    SQLALCHEMY_DATABASE_URI = (
-        _db_url.replace("postgres://", "postgresql://", 1) if _db_url else None
-    )
+    # Normalize URL and use psycopg3 dialect (compatible with Python 3.14)
+    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+    _db_url = _db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    SQLALCHEMY_DATABASE_URI = _db_url if _db_url else None
 
 
 config = {
