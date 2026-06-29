@@ -17,6 +17,14 @@ with open(DATA_FILE) as f:
     data = json.load(f)
 
 with app.app_context():
+    # Reset sequence so new posts don't collide with existing IDs
+    from sqlalchemy import text
+    with db.engine.connect() as _conn:
+        _conn.execute(text(
+            "SELECT setval('posts_id_seq', COALESCE((SELECT MAX(id) FROM posts), 0) + 1, false)"
+        ))
+        _conn.commit()
+
     # Build category id map (local id → DB category by name)
     local_cats = {r["post_id"]: r["post_category_id"] for r in data["post_cats"]}
     db_cats = {c.id: c for c in PostCategory.query.all()}
