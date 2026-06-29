@@ -7,6 +7,13 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_BASE = os.path.join(BASE_DIR, "app", "static", "uploads")
 
 
+def _build_db_url():
+    url = os.environ.get("DATABASE_URL", "")
+    url = url.replace("postgres://", "postgresql://", 1)
+    url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url or None
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -24,20 +31,15 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL",
-        f"sqlite:///{os.path.join(BASE_DIR, 'adcritic.db')}",
+    SQLALCHEMY_DATABASE_URI = (
+        _build_db_url()
+        or f"sqlite:///{os.path.join(BASE_DIR, 'adcritic.db')}"
     )
 
 
 class ProductionConfig(Config):
     DEBUG = False
-    # Render sets DATABASE_URL with postgres:// — SQLAlchemy needs postgresql://
-    _db_url = os.environ.get("DATABASE_URL", "")
-    # Normalize URL and use psycopg3 dialect (compatible with Python 3.14)
-    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
-    _db_url = _db_url.replace("postgresql://", "postgresql+psycopg://", 1)
-    SQLALCHEMY_DATABASE_URI = _db_url if _db_url else None
+    SQLALCHEMY_DATABASE_URI = _build_db_url()
 
 
 config = {
