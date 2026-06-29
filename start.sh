@@ -1,3 +1,65 @@
 #!/bin/bash
+set -e
+
+echo ">>> FLASK_ENV=${FLASK_ENV}"
+echo ">>> DATABASE_URL prefix: ${DATABASE_URL:0:30}..."
+
+python - <<'PYEOF'
+import os, sys
+
+print(f"[init] FLASK_ENV      = {os.environ.get('FLASK_ENV', 'NOT SET')}")
+print(f"[init] DATABASE_URL   = {os.environ.get('DATABASE_URL', 'NOT SET')[:40]}...")
+
+from run import app
+from app import db
+
+# Explicit import of every model so SQLAlchemy knows all tables
+from app.models import (
+    User, Category, PostCategory, MediaFile,
+    Ad, AdTranslation, AdComment,
+    Post, PostTranslation, PostComment,
+    NewsletterSubscriber, SiteSettings, RoleContentAccess, BannedWord,
+    Advertiser, AdCampaign, AdZone, BannerAd,
+)
+
+with app.app_context():
+    uri = app.config.get("SQLALCHEMY_DATABASE_URI") or "NONE"
+    print(f"[init] DB URI         = {uri[:50]}...")
+
+    if "sqlite" in uri:
+        print("[init] ERROR: using SQLite — DATABASE_URL or FLASK_ENV not set correctly", file=sys.stderr)
+        sys.exit(1)
+
+    db.create_all()
+
+    from sqlalchemy import inspect as sqla_inspect
+    tables = sorted(sqla_inspect(db.engine).get_table_names())
+    print(f"[init] Tables in DB   = {tables}")
+
+    if "ads" not in tables:
+        print("[init] ERROR: 'ads' table missing after create_all!", file=sys.stderr)
+        sys.exit(1)
+
+    print("[init] DB OK — all tables present")
+
+    # ── Column migrations (idempotent) ──────────────────────────────────
+    from sqlalchemy import text
+    with db.engine.connect() as conn:
+        existing = [r[0] for r in conn.execute(
+            text("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
+        )]
+        for col, ddl in [
+            ("first_name", "ALTER TABLE users ADD COLUMN first_name VARCHAR(80)"),
+            ("last_name",  "ALTER TABLE users ADD COLUMN last_name  VARCHAR(80)"),
+        ]:
+            if col not in existing:
+                conn.execute(text(ddl))
+                conn.commit()
+                print(f"[init] Added column users.{col}")
+PYEOF
+
+echo ">>> Seeding news posts..."
 python seed_news.py
-gunicorn run:app
+
+echo ">>> Starting gunicorn..."
+exec gunicorn run:app
