@@ -1,0 +1,91 @@
+{# <tr> inside <table class="admin-table"> — needs: b, adv_id, camp_id, adv_ui, type_labels #}
+<tr data-hidden="0"
+    data-adv="{{ adv_id }}"
+    data-camp="{{ camp_id }}"
+    data-zone="{{ b.zone.zone_key }}"
+    data-type="{{ b.ad_type }}"
+    data-active="{{ '1' if b.is_active else '0' }}"
+    data-target="{{ b.target_countries or '' }}">
+
+  {# ID #}
+  <td style="width:2.5rem;color:#aaa;font-size:.72rem;font-variant-numeric:tabular-nums">
+    #{{ b.id }}
+  </td>
+
+  {# Estado + Nombre #}
+  <td>
+    <div style="display:flex;align-items:center;gap:.45rem">
+      <span class="adsm-status-dot adsm-status-dot--{{ 'on' if b.is_active else 'off' }}"></span>
+      <span style="font-weight:600;color:#1e1b18">{{ b.name or '—' }}</span>
+    </div>
+  </td>
+
+  {# Zona #}
+  <td style="color:#555">
+    {{ b.zone.display_name }}
+    <span style="display:block;font-size:.68rem;color:#aaa">{{ b.zone.zone_key }}</span>
+  </td>
+
+  {# Tipo #}
+  <td>
+    <span class="adsm-type-badge">{{ type_labels.get(b.ad_type, b.ad_type) }}</span>
+  </td>
+
+  {# Geo #}
+  <td>
+    {% if b.target_list %}
+      <span class="adsm-geo-chip adsm-geo-chip--target" title="Solo en: {{ b.target_countries }}">
+        ✓
+        {% for cc in b.target_list[:4] %}
+          <span class="fi fi-{{ cc|lower }}" style="width:13px;height:10px;border-radius:1px;background-size:cover;display:inline-block;margin-left:1px"></span>
+        {% endfor %}
+        {% if b.target_list|length > 4 %}&nbsp;+{{ b.target_list|length - 4 }}{% endif %}
+      </span>
+    {% elif b.blocked_list %}
+      <span class="adsm-geo-chip adsm-geo-chip--blocked" title="Bloqueado en: {{ b.blocked_countries }}">
+        ✕
+        {% for cc in b.blocked_list[:4] %}
+          <span class="fi fi-{{ cc|lower }}" style="width:13px;height:10px;border-radius:1px;background-size:cover;display:inline-block;margin-left:1px"></span>
+        {% endfor %}
+        {% if b.blocked_list|length > 4 %}&nbsp;+{{ b.blocked_list|length - 4 }}{% endif %}
+      </span>
+    {% else %}
+      <span class="adsm-geo-chip adsm-geo-chip--global">Global</span>
+    {% endif %}
+  </td>
+
+  {# Vigencia #}
+  <td style="font-size:.78rem;color:#888;white-space:nowrap">
+    {% if b.start_date or b.end_date %}
+      {{ b.start_date.strftime('%d/%m/%y') if b.start_date else '∞' }}
+      → {{ b.end_date.strftime('%d/%m/%y') if b.end_date else '∞' }}
+    {% else %}
+      <span style="color:#ccc;font-style:italic">Sin límite</span>
+    {% endif %}
+  </td>
+
+  {# Impresiones #}
+  <td style="text-align:right;font-size:.8rem;font-variant-numeric:tabular-nums;color:#555">
+    {{ '{:,}'.format(b.impressions_count) }}
+  </td>
+
+  {# Acciones #}
+  <td class="actions-cell">
+    <a href="{{ url_for('advertising.banner_edit', banner_id=b.id) }}"
+       class="btn-sm btn-edit">{{ adv_ui.btn_edit }}</a>
+    <form method="post"
+          action="{{ url_for('advertising.banner_toggle', banner_id=b.id) }}"
+          style="display:inline">
+      <button type="submit" class="btn-sm">
+        {{ adv_ui.btn_toggle_off if b.is_active else adv_ui.btn_toggle_on }}
+      </button>
+    </form>
+    <form method="post"
+          action="{{ url_for('advertising.banner_delete', banner_id=b.id) }}"
+          style="display:inline"
+          onsubmit="return confirm('{{ adv_ui.confirm_delete }}')">
+      <button type="submit" class="btn-sm btn-delete" title="{{ adv_ui.btn_delete }}">✕</button>
+    </form>
+  </td>
+
+</tr>

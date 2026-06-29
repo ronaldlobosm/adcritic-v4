@@ -1,0 +1,46 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_seo_settings }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_seo_settings }}{% endblock %}
+
+{% block content %}
+<form method="post" class="admin-form">
+
+  <div class="form-section">
+    <div class="form-grid-2">
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label" for="site_name">{{ ui.label_site_name }} <span class="req">*</span></label>
+        <input class="form-input" type="text" id="site_name" name="site_name"
+               value="{{ settings.site_name }}" required />
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label" for="site_url">
+          {{ ui.label_site_url }}
+          <span class="form-hint">— {{ ui.hint_site_url }}</span>
+        </label>
+        <input class="form-input" type="url" id="site_url" name="site_url"
+               value="{{ settings.site_url or '' }}" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description_es">{{ ui.label_description_es }}</label>
+        <textarea class="form-textarea" id="description_es" name="description_es"
+                  rows="3">{{ settings.description_es or '' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description_en">{{ ui.label_description_en }}</label>
+        <textarea class="form-textarea" id="description_en" name="description_en"
+                  rows="3">{{ settings.description_en or '' }}</textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn-primary">{{ ui.btn_save }}</button>
+  </div>
+
+</form>
+{% endblock %}

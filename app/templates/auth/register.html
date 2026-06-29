@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.register_title }} — AdCritic{% endblock %}
+
+{% block content %}
+<div class="container auth-container">
+  <div class="auth-card">
+    <h1 class="auth-title">{{ ui.register_title }}</h1>
+
+    <form method="post" class="auth-form">
+      <div class="form-group">
+        <label class="form-label" for="email">{{ ui.email_label }}</label>
+        <input
+          class="form-input"
+          type="email"
+          id="email"
+          name="email"
+          value="{{ request.form.email or '' }}"
+          required
+          autofocus
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">{{ ui.password_label }}</label>
+        <input
+          class="form-input"
+          type="password"
+          id="password"
+          name="password"
+          required
+          minlength="8"
+        />
+      </div>
+      <button type="submit" class="auth-btn">{{ ui.register_btn }}</button>
+    </form>
+
+    <p class="auth-switch">
+      {{ ui.have_account }}
+      <a href="{{ login_url }}">{{ ui.login_link }}</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,378 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_edit_entry if action == 'edit' else ui.page_new_entry }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_edit_entry if action == 'edit' else ui.page_new_entry }}{% endblock %}
+
+{% set t_es = ad.translation('es') if ad else None %}
+{% set t_en = ad.translation('en') if ad else None %}
+{% set selected_cat_ids = ad.categories | map(attribute='id') | list if ad else [] %}
+{% set cur_vtype = request.form.video_source_type if request.method == 'POST' else (ad.video_source_type if ad else '') %}
+{% set cur_vvalue = request.form.video_source_value if request.method == 'POST' else (ad.video_source_value if ad else '') %}
+
+{% block content %}
+<div class="form-with-sidebar">
+<div class="form-main-col">
+<form method="post" class="admin-form" id="catalogForm" enctype="multipart/form-data">
+{% if is_readonly %}<fieldset disabled style="border:none;padding:0;margin:0">{% endif %}
+
+  <div class="form-section">
+    <h2 class="form-section-title">{{ ui.section_general }}</h2>
+    <div class="form-grid-2">
+
+      <div class="form-group">
+        <label class="form-label" for="brand">{{ ui.label_brand }} <span class="req">*</span></label>
+        <input class="form-input" type="text" id="brand" name="brand"
+               value="{{ request.form.brand or (ad.brand if ad else '') }}" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="slug">
+          {{ ui.label_slug }} <span class="req">*</span>
+          {% if action == 'edit' %}<span class="form-hint">{{ ui.hint_slug_edit }}</span>{% endif %}
+        </label>
+        <input class="form-input" type="text" id="slug" name="slug"
+               value="{{ request.form.slug or (ad.slug if ad else '') }}" required
+               pattern="[a-z0-9\-]+" title="{{ ui.hint_slug_pattern }}" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="country">{{ ui.label_country }} <span class="req">*</span></label>
+        <select class="form-input" id="country" name="country" required>
+          <option value="">—</option>
+          {% for code, name in countries_list %}
+            <option value="{{ code }}"
+              {% if (request.form.country or (ad.country if ad else '')) == code %}selected{% endif %}>
+              {{ name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="year">{{ ui.label_year }} <span class="req">*</span></label>
+        <input class="form-input" type="number" id="year" name="year" min="1950" max="2099"
+               value="{{ request.form.year or (ad.year if ad else '') }}" required />
+      </div>
+
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="form-label">
+          {{ ui.label_categories }}
+          <span class="form-hint">— {{ ui.hint_categories }}</span>
+        </label>
+        <div class="category-checkboxes">
+          {% for cat in all_categories %}
+            {% set is_checked = (cat.id | string) in request.form.getlist('category_ids') or
+                                (request.method == 'GET' and cat.id in selected_cat_ids) %}
+            <label class="checkbox-label">
+              <input type="checkbox" name="category_ids" value="{{ cat.id }}"
+                     {% if is_checked %}checked{% endif %} />
+              <span>{{ cat.name_es }} / {{ cat.name_en }}</span>
+            </label>
+          {% else %}
+            <span class="text-muted">No hay categorías. <a href="{{ url_for('admin.category_create') }}">Crear una</a>.</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="checkbox-label">
+          {% set is_premium_checked = request.form.get('is_premium') == '1' if request.method == 'POST' else (ad.is_premium if ad else False) %}
+          <input type="checkbox" name="is_premium" value="1"
+                 {% if is_premium_checked %}checked{% endif %} />
+          <span>{{ ui.label_is_premium }}</span>
+        </label>
+      </div>
+
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="checkbox-label">
+          {% set is_featured_checked = request.form.get('is_featured') == '1' if request.method == 'POST' else (ad.is_featured if ad else False) %}
+          <input type="checkbox" name="is_featured" value="1"
+                 {% if is_featured_checked %}checked{% endif %} />
+          <span>{{ ui.label_is_featured }}</span>
+        </label>
+        <p class="form-hint">{{ ui.hint_featured }}</p>
+      </div>
+
+      <!-- Video source selector -->
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.label_video_source }} <span class="req">*</span></label>
+        <select class="form-input" id="video_source_type" name="video_source_type"
+                style="max-width:240px">
+          <option value="">{{ ui.video_source_none }}</option>
+          <option value="youtube" {% if cur_vtype == 'youtube' %}selected{% endif %}>{{ ui.video_source_youtube }}</option>
+          <option value="vimeo"   {% if cur_vtype == 'vimeo'   %}selected{% endif %}>{{ ui.video_source_vimeo }}</option>
+          <option value="upload"  {% if cur_vtype == 'upload'  %}selected{% endif %}>{{ ui.video_source_upload }}</option>
+        </select>
+      </div>
+
+      <div class="form-group js-video-field js-video-id" style="grid-column: 1 / -1">
+        <label class="form-label" for="video_source_value">{{ ui.label_video_id }}</label>
+        <input class="form-input" type="text" id="video_source_value" name="video_source_value"
+               value="{{ cur_vvalue }}" placeholder="e.g. dQw4w9WgXcQ" />
+      </div>
+
+      {# Upload section — file input has NO name; JS uploads async and stores URL in video_source_value #}
+      <div class="form-group js-video-field js-video-upload" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.video_source_upload }}</label>
+        {% if ad and ad.video_source_type == 'upload' and ad.video_source_value %}
+          <p class="form-hint" style="margin-bottom:.5rem">
+            {{ 'Archivo actual' if lang == 'es' else 'Current file' }}:
+            <a href="{{ ad.video_source_value }}" target="_blank">{{ ad.video_source_value.split('/')[-1] }}</a>
+          </p>
+        {% endif %}
+        <input class="form-input" type="file" id="videoFileInput" accept=".mp4,.mov,.webm,.avi,.mkv" />
+        <p class="form-hint-type">{{ 'Archivos permitidos: MP4, MOV, WEBM, AVI, MKV · Máx. 2 GB' if lang == 'es' else 'Allowed files: MP4, MOV, WEBM, AVI, MKV · Max. 2 GB' }}</p>
+        <div class="video-upload-status" id="videoUploadStatus" style="display:none">
+          <div class="video-upload-progress"><div class="video-upload-bar" id="videoUploadBar"></div></div>
+          <p class="video-upload-text" id="videoUploadText"></p>
+        </div>
+      </div>
+
+      <!-- Subtitles -->
+      <div class="form-group js-video-field js-video-subs" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.label_subtitle_es }}</label>
+        {% if ad and ad.subtitle_es %}
+          <p class="form-hint" style="margin-bottom:.5rem"><a href="{{ ad.subtitle_es }}" target="_blank">{{ ad.subtitle_es.split('/')[-1] }}</a></p>
+        {% endif %}
+        <input class="form-input" type="file" name="subtitle_es_file" accept=".vtt,.srt" />
+        <p class="form-hint-type">{{ 'Archivo permitido: VTT, SRT' if lang == 'es' else 'Allowed: VTT, SRT' }}</p>
+      </div>
+
+      <div class="form-group js-video-field js-video-subs" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.label_subtitle_en }}</label>
+        {% if ad and ad.subtitle_en %}
+          <p class="form-hint" style="margin-bottom:.5rem"><a href="{{ ad.subtitle_en }}" target="_blank">{{ ad.subtitle_en.split('/')[-1] }}</a></p>
+        {% endif %}
+        <input class="form-input" type="file" name="subtitle_en_file" accept=".vtt,.srt" />
+        <p class="form-hint-type">{{ 'Archivo permitido: VTT, SRT' if lang == 'es' else 'Allowed: VTT, SRT' }}</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ES content -->
+  <div class="form-section">
+    <h2 class="form-section-title">{{ ui.section_es }}</h2>
+    <div class="form-group">
+      <label class="form-label" for="title_es">{{ ui.label_title_es }} <span class="req">*</span></label>
+      <input class="form-input" type="text" id="title_es" name="title_es"
+             value="{{ request.form.title_es or (t_es.title if t_es else '') }}" required />
+    </div>
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label">
+        {{ ui.label_analysis_es }}
+        <span class="form-hint">— {{ ui.hint_html }}</span>
+      </label>
+      <div id="quill-analysis-es" class="quill-editor"></div>
+      <textarea id="analysis_text_es" name="analysis_text_es" hidden>{{ request.form.analysis_text_es or (t_es.analysis_text if t_es else '') }}</textarea>
+    </div>
+  </div>
+
+  <!-- EN content -->
+  <div class="form-section">
+    <h2 class="form-section-title">{{ ui.section_en }}</h2>
+    <div class="form-group">
+      <label class="form-label" for="title_en">{{ ui.label_title_en }} <span class="req">*</span></label>
+      <input class="form-input" type="text" id="title_en" name="title_en"
+             value="{{ request.form.title_en or (t_en.title if t_en else '') }}" required />
+    </div>
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label">
+        {{ ui.label_analysis_en }}
+        <span class="form-hint">— {{ ui.hint_html_en }}</span>
+      </label>
+      <div id="quill-analysis-en" class="quill-editor"></div>
+      <textarea id="analysis_text_en" name="analysis_text_en" hidden>{{ request.form.analysis_text_en or (t_en.analysis_text if t_en else '') }}</textarea>
+    </div>
+  </div>
+
+  <!-- SEO -->
+  <div class="form-section">
+    <details class="seo-details">
+      <summary class="seo-summary">{{ ui.section_seo }}</summary>
+      <div class="form-grid-2" style="margin-top:1rem">
+        <div class="form-group">
+          <label class="form-label" for="meta_title_es">
+            {{ ui.label_meta_title }} (ES)
+            <span class="form-hint">— {{ ui.hint_meta_title }}</span>
+          </label>
+          <input class="form-input" type="text" id="meta_title_es" name="meta_title_es"
+                 value="{{ request.form.meta_title_es or (t_es.meta_title if t_es else '') }}" maxlength="200" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="meta_title_en">
+            {{ ui.label_meta_title }} (EN)
+            <span class="form-hint">— {{ ui.hint_meta_title }}</span>
+          </label>
+          <input class="form-input" type="text" id="meta_title_en" name="meta_title_en"
+                 value="{{ request.form.meta_title_en or (t_en.meta_title if t_en else '') }}" maxlength="200" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="meta_description_es">
+            {{ ui.label_meta_desc }} (ES)
+            <span class="form-hint">— {{ ui.hint_meta_desc }}</span>
+          </label>
+          <textarea class="form-textarea" id="meta_description_es" name="meta_description_es"
+                    rows="2" maxlength="300">{{ request.form.meta_description_es or (t_es.meta_description if t_es else '') }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="meta_description_en">
+            {{ ui.label_meta_desc }} (EN)
+            <span class="form-hint">— {{ ui.hint_meta_desc }}</span>
+          </label>
+          <textarea class="form-textarea" id="meta_description_en" name="meta_description_en"
+                    rows="2" maxlength="300">{{ request.form.meta_description_en or (t_en.meta_description if t_en else '') }}</textarea>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  {% if is_readonly %}</fieldset>{% endif %}
+
+</form>
+</div>{# /form-main-col #}
+
+{# ── Publish sidebar ─────────────────────────────────────────────────── #}
+<aside class="form-publish-sidebar">
+  <div class="publish-panel">
+    <div class="publish-panel__head">
+      {{ 'Publicación' if lang == 'es' else 'Publishing' }}
+    </div>
+    <div class="publish-panel__body">
+
+      {# Status badge #}
+      <div class="publish-panel__status">
+        {% if ad %}
+          {% if ad.status == 'published' %}
+            <span class="badge badge--published">{{ ui.status_published }}</span>
+          {% elif ad.status == 'pending' %}
+            <span class="badge badge--pending">{{ ui.status_pending }}</span>
+          {% elif ad.status == 'rejected' %}
+            <span class="badge badge--rejected">{{ ui.status_rejected }}</span>
+          {% else %}
+            <span class="badge badge--draft">{{ ui.status_draft }}</span>
+          {% endif %}
+        {% else %}
+          <span class="badge badge--draft">{{ ui.status_draft }}</span>
+        {% endif %}
+      </div>
+
+      {# Publish date — admin/approver only #}
+      {% if current_user.role in ('admin', 'approver') %}
+      <div class="publish-panel__date">
+        <label for="published_at_sidebar">
+          {{ 'Fecha de publicación' if lang == 'es' else 'Publish date' }}
+        </label>
+        <input class="form-input" type="datetime-local" id="published_at_sidebar"
+               name="published_at" form="catalogForm"
+               value="{{ ad.published_at.strftime('%Y-%m-%dT%H:%M') if ad and ad.published_at else '' }}" />
+      </div>
+      {% endif %}
+
+      {# Action buttons by role #}
+      <div class="publish-panel__actions">
+        {% if current_user.role == 'admin' %}
+          <button type="submit" name="form_action" value="publish"
+                  form="catalogForm" class="btn-primary">
+            {{ '↑ Publicar' if lang == 'es' else '↑ Publish' }}
+          </button>
+          <button type="submit" name="form_action" value="draft"
+                  form="catalogForm" class="btn-secondary">
+            {{ 'Guardar borrador' if lang == 'es' else 'Save as draft' }}
+          </button>
+          {% if action == 'edit' %}
+          <form method="post" action="{{ url_for('admin.catalog_delete', ad_id=ad.id) }}"
+                onsubmit="return confirm('{{ ui.confirm_delete }}')">
+            <button type="submit" class="btn-delete" style="width:100%">
+              {{ '✕ Eliminar' if lang == 'es' else '✕ Delete' }}
+            </button>
+          </form>
+          {% endif %}
+
+        {% elif current_user.role == 'editor' %}
+          <button type="submit" name="form_action" value="review"
+                  form="catalogForm" class="btn-primary">
+            {{ '→ Enviar a revisión' if lang == 'es' else '→ Send for review' }}
+          </button>
+          <button type="submit" name="form_action" value="draft"
+                  form="catalogForm" class="btn-secondary">
+            {{ 'Guardar borrador' if lang == 'es' else 'Save draft' }}
+          </button>
+
+        {% elif current_user.role == 'approver' %}
+          <button type="submit" name="form_action" value="publish"
+                  form="catalogForm" class="btn-primary">
+            {{ '↑ Publicar' if lang == 'es' else '↑ Publish' }}
+          </button>
+          <button type="submit" name="form_action" value="draft"
+                  form="catalogForm" class="btn-secondary">
+            {{ 'Volver a borrador' if lang == 'es' else 'Back to draft' }}
+          </button>
+          {% if action == 'edit' %}
+          <form method="post" action="{{ url_for('admin.catalog_delete', ad_id=ad.id) }}"
+                onsubmit="return confirm('{{ ui.confirm_delete }}')">
+            <button type="submit" class="btn-delete" style="width:100%">
+              {{ '✕ Eliminar' if lang == 'es' else '✕ Delete' }}
+            </button>
+          </form>
+          {% endif %}
+        {% endif %}
+
+        <a href="{{ url_for('admin.catalog_list') }}" class="btn-secondary" style="text-align:center;text-decoration:none">
+          {{ '← Cancelar' if lang == 'es' else '← Cancel' }}
+        </a>
+      </div>
+
+    </div>
+  </div>
+</aside>
+
+</div>{# /form-with-sidebar #}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin-media.js') }}"></script>
+<script>
+(function () {
+  const TOOLBAR = [
+    [{ header: [2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    ['blockquote'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['link', 'image'],
+    ['clean']
+  ];
+
+  function makeQuill(editorId, hiddenId) {
+    const q = new Quill('#' + editorId, {
+      theme: 'snow',
+      modules: {
+        toolbar: {
+          container: TOOLBAR,
+          handlers: { image: () => AdminMedia.openPickerForQuill(q) }
+        }
+      }
+    });
+    const hidden = document.getElementById(hiddenId);
+    if (hidden.value.trim()) q.root.innerHTML = hidden.value;
+    return q;
+  }
+
+  const qEs = makeQuill('quill-analysis-es', 'analysis_text_es');
+  const qEn = makeQuill('quill-analysis-en', 'analysis_text_en');
+
+  document.getElementById('catalogForm').addEventListener('submit', function () {
+    document.getElementById('analysis_text_es').value = qEs.root.innerHTML;
+    document.getElementById('analysis_text_en').value = qEn.root.innerHTML;
+  });
+
+  AdminMedia.init('catalogForm');
+})();
+
+function toggleReviewReject(btn) {
+  var form = btn.nextElementSibling;
+  if (form && form.classList.contains('reject-inline')) {
+    form.style.display = form.style.display === 'none' ? '' : 'none';
+  }
+}
+</script>
+{% endblock %}

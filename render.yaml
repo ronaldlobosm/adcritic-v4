@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: adcritic
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python seed_news.py
+    startCommand: gunicorn run:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: adcritic-db
+          property: connectionString
+
+databases:
+  - name: adcritic-db
+    plan: free

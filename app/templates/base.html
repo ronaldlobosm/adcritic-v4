@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}AdCritic{% endblock %}</title>
+  {% block seo %}{% endblock %}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}?v={{ range(1,9999)|random }}" />
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.3.2/css/flag-icons.min.css" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <header class="site-header{% if current_user.is_authenticated and current_user.role == 'gold' %} site-header--gold{% endif %}">
+    <div class="container header-inner">
+
+      <a class="logo" href="{{ url_for('main.gallery_es') if lang == 'es' else url_for('main.gallery_en') }}">
+        AdCritic
+      </a>
+
+      <button class="nav-hamburger" id="navToggle" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div class="header-nav-wrap" id="headerNavWrap">
+        <nav class="main-nav">
+
+          <!-- Críticas / Critiques dropdown -->
+          <div class="nav-item nav-item--dropdown">
+            <a href="{{ url_for('main.catalog_es') if lang == 'es' else url_for('main.catalog_en') }}"
+               class="nav-link">
+              {{ 'Críticas' if lang == 'es' else 'Critiques' }}
+              <svg class="nav-chevron" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            </a>
+            {% if nav_ad_categories %}
+            <div class="nav-dropdown">
+              <a class="nav-dropdown-item"
+                 href="{{ url_for('main.catalog_es') if lang == 'es' else url_for('main.catalog_en') }}">
+                {{ 'Todas las categorías' if lang == 'es' else 'All categories' }}
+              </a>
+              {% for cat in nav_ad_categories %}
+                <a class="nav-dropdown-item"
+                   href="{{ url_for('main.catalog_es', category_id=cat.id) if lang == 'es' else url_for('main.catalog_en', category_id=cat.id) }}">
+                  {{ cat.name_es if lang == 'es' else cat.name_en }}
+                </a>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Noticias / News dropdown -->
+          <div class="nav-item nav-item--dropdown">
+            <a href="{{ url_for('posts.list_es') if lang == 'es' else url_for('posts.list_en') }}"
+               class="nav-link">
+              {{ 'Noticias' if lang == 'es' else 'News' }}
+              <svg class="nav-chevron" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            </a>
+            {% if nav_post_categories %}
+            <div class="nav-dropdown">
+              <a class="nav-dropdown-item"
+                 href="{{ url_for('posts.list_es') if lang == 'es' else url_for('posts.list_en') }}">
+                {{ 'Todas las noticias' if lang == 'es' else 'All news' }}
+              </a>
+              {% for cat in nav_post_categories %}
+                <a class="nav-dropdown-item"
+                   href="{{ url_for('posts.list_es', category_id=cat.id) if lang == 'es' else url_for('posts.list_en', category_id=cat.id) }}">
+                  {{ cat.name_es if lang == 'es' else cat.name_en }}
+                </a>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+        </nav>
+
+        <div class="header-actions">
+          {% if current_user.is_authenticated %}
+            <span class="header-user-email">{{ current_user.email }}</span>
+            {% if current_user.is_staff %}
+              <a href="{{ url_for('admin.dashboard') }}" class="header-nav-link">Panel</a>
+            {% else %}
+              <a href="{{ url_for('account.my_account_es') if lang == 'es' else url_for('account.my_account_en') }}"
+                 class="header-nav-link{% if current_user.role == 'gold' %} header-nav-link--gold-account{% endif %}">
+                {% if current_user.role == 'gold' %}
+                  {{ 'Mi cuenta Gold' if lang == 'es' else 'My Gold account' }}
+                {% else %}
+                  {{ 'Mi cuenta' if lang == 'es' else 'My account' }}
+                {% endif %}
+              </a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout', lang=lang) }}" class="header-nav-link">
+              {{ 'Salir' if lang == 'es' else 'Sign out' }}
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.login_es') if lang == 'es' else url_for('auth.login_en') }}"
+               class="header-nav-link">
+              {{ 'Iniciar sesión' if lang == 'es' else 'Sign in' }}
+            </a>
+            <a href="{{ url_for('auth.register_es') if lang == 'es' else url_for('auth.register_en') }}"
+               class="header-nav-link header-nav-link--cta">
+              {{ 'Registrarse' if lang == 'es' else 'Sign up' }}
+            </a>
+          {% endif %}
+          <div class="font-size-toggle">
+            <button type="button" class="font-size-btn" id="fzDown" aria-label="Texto más pequeño" title="A−">A−</button>
+            <button type="button" class="font-size-btn" id="fzUp"   aria-label="Texto más grande"  title="A+">A+</button>
+          </div>
+          <a href="{{ alt_lang_url }}" class="lang-toggle">
+            {% if lang == 'es' %}
+              <span class="lang-toggle__flag">
+                <span class="fi fi-us lang-toggle__flag-primary"></span>
+                <span class="fi fi-es lang-toggle__flag-peek"></span>
+              </span>
+              <span>EN</span>
+            {% else %}
+              <span class="lang-toggle__flag">
+                <span class="fi fi-es lang-toggle__flag-primary"></span>
+                <span class="fi fi-us lang-toggle__flag-peek"></span>
+              </span>
+              <span>ES</span>
+            {% endif %}
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="site-main">
+
+    {# ── Email-verification banner — shown to logged-in users who haven't confirmed yet ── #}
+    {% if current_user.is_authenticated and not current_user.email_verified %}
+    <div style="background:#fef9c3;border-bottom:1px solid #fde68a">
+      <div class="container" style="padding-top:.65rem;padding-bottom:.65rem;display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .75rem;font-size:.85rem;color:#78350f">
+        <span>📧
+          {% if lang == 'es' %}Confirma tu correo para activar tu cuenta.
+          {% else %}Please verify your email to activate your account.{% endif %}
+        </span>
+        <a href="{{ url_for('auth.verify_page_es') if lang == 'es' else url_for('auth.verify_page_en') }}"
+           style="font-weight:600;color:#92400e;text-decoration:underline">
+          {{ 'Verificar ahora' if lang == 'es' else 'Verify now' }}
+        </a>
+        <span style="color:#d97706">·</span>
+        <form method="post"
+              action="{{ url_for('auth.resend_verification_es') if lang == 'es' else url_for('auth.resend_verification_en') }}"
+              style="display:inline;margin:0">
+          <button type="submit"
+                  style="background:none;border:none;padding:0;cursor:pointer;font:inherit;font-size:.85rem;color:#92400e;text-decoration:underline">
+            {{ 'Reenviar correo' if lang == 'es' else 'Resend email' }}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container flash-messages">
+          {% for category, message in messages %}
+            <div class="flash flash--{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {%- from "partials/ad_zone.html" import render as ad_zone -%}
+    {{ ad_zone("header_banner") }}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span class="footer-brand">AdCritic</span>
+      <span class="footer-copy">
+        {% if lang == 'es' %}Análisis de publicidad, en serio.{% else %}Ad criticism, seriously.{% endif %}
+      </span>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+  {% block scripts %}{% endblock %}
+
+  <script>
+  (function () {
+    var MIN = 13, MAX = 22, STEP = 1, KEY = 'site-font-size';
+    var current = parseInt(localStorage.getItem(KEY)) || 16;
+    document.documentElement.style.fontSize = current + 'px';
+    function apply(dir) {
+      current = Math.min(MAX, Math.max(MIN, current + dir * STEP));
+      document.documentElement.style.fontSize = current + 'px';
+      localStorage.setItem(KEY, current);
+    }
+    document.getElementById('fzDown').addEventListener('click', function () { apply(-1); });
+    document.getElementById('fzUp').addEventListener('click',   function () { apply(+1); });
+  })();
+  </script>
+
+  {# ── Password-toggle eye — auto-attaches to every input[type=password] ── #}
+  <script>
+  (function () {
+    var EYE_OPEN = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="10" cy="10" r="2.5"/></svg>';
+    var EYE_SHUT = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="10" cy="10" r="2.5"/><line x1="2" y1="2" x2="18" y2="18"/></svg>';
+
+    function attachToggle(input) {
+      var wrap = document.createElement('span');
+      wrap.style.cssText = 'position:relative;display:block';
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Mostrar / ocultar contraseña');
+      btn.innerHTML = EYE_OPEN;
+      btn.style.cssText = [
+        'position:absolute;right:.6rem;top:50%;transform:translateY(-50%)',
+        'background:none;border:none;padding:.25rem;cursor:pointer',
+        'color:#9ca3af;line-height:0;transition:color .15s',
+        'display:flex;align-items:center'
+      ].join(';');
+      btn.addEventListener('mouseenter', function(){ this.style.color='#374151'; });
+      btn.addEventListener('mouseleave', function(){ this.style.color='#9ca3af'; });
+
+      btn.addEventListener('click', function () {
+        var show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.innerHTML = show ? EYE_SHUT : EYE_OPEN;
+        input.focus();
+      });
+
+      wrap.appendChild(btn);
+      // Make room for the button inside the input
+      input.style.paddingRight = '2.4rem';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('input[type="password"]').forEach(attachToggle);
+    });
+  })();
+  </script>
+</body>
+</html>

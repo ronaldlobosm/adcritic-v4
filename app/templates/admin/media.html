@@ -1,0 +1,186 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_media }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_media }}{% endblock %}
+
+{% block content %}
+<div class="admin-toolbar">
+  <label class="btn-primary" for="quickUpload" style="cursor:pointer">{{ ui.btn_upload_file }}</label>
+  <input type="file" id="quickUpload" multiple
+         accept=".jpg,.jpeg,.png,.mp4,.mov,.webm,.avi,.mkv,.vtt,.srt"
+         style="display:none" />
+  <span id="uploadStatus" class="upload-status"></span>
+</div>
+
+{% if files %}
+<div class="media-grid">
+  {% for f in files %}
+  <div class="media-card" data-id="{{ f.id }}">
+    <button type="button" class="media-card__thumb-wrap js-open-meta"
+            data-id="{{ f.id }}" style="all:unset;display:block;cursor:pointer;width:100%">
+      {% if f.file_type == 'image' %}
+        <div class="media-card__thumb">
+          <img src="{{ f.thumbnail_url }}" alt="{{ f.display_alt('es') }}" loading="lazy" />
+        </div>
+      {% elif f.file_type == 'video' %}
+        <div class="media-card__thumb media-card__thumb--video">
+          <svg viewBox="0 0 48 48" width="40" height="40"><path fill="rgba(255,255,255,.6)" d="M8 6l32 18L8 42z"/></svg>
+        </div>
+      {% else %}
+        <div class="media-card__thumb media-card__thumb--file">
+          <span>.vtt</span>
+        </div>
+      {% endif %}
+    </button>
+    <div class="media-card__body">
+      <p class="media-card__name" title="{{ f.original_filename }}">
+        {{ (f.title_es or f.original_filename) | truncate(28) }}
+      </p>
+      <p class="media-card__meta">{{ f.size_display }} · {{ f.uploader.email.split('@')[0] }}</p>
+      <div class="media-card__actions">
+        <button class="btn-sm copy-url-btn" data-url="{{ f.url }}" type="button">Copiar URL</button>
+        <form method="post" action="{{ url_for('media.delete', file_id=f.id) }}" style="display:inline"
+              onsubmit="return confirm('{{ ui.confirm_delete_file }}')">
+          <button class="btn-sm btn-delete" type="submit">{{ ui.btn_delete }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" style="padding:3rem 0">
+  <p>{{ ui.empty_media }}</p>
+</div>
+{% endif %}
+
+<!-- Metadata edit modal -->
+<div class="media-edit-overlay" id="mediaEditOverlay" style="display:none">
+  <div class="media-edit-modal">
+    <div class="media-edit-header">
+      <span id="mediaEditTitle">Editar archivo</span>
+      <button type="button" class="media-picker-close" id="mediaEditClose">✕</button>
+    </div>
+    <div class="media-edit-body">
+      <div class="media-edit-preview" id="mediaEditPreview"></div>
+      <form class="media-edit-form" id="mediaEditForm">
+        <input type="hidden" id="mediaEditId" name="file_id" />
+        <div class="form-group">
+          <label class="form-label">Título ES</label>
+          <input class="form-input" type="text" name="title_es" id="metaTitleEs" maxlength="300" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Título EN</label>
+          <input class="form-input" type="text" name="title_en" id="metaTitleEn" maxlength="300" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Alt text ES <span class="form-hint">— para SEO</span></label>
+          <input class="form-input" type="text" name="alt_text_es" id="metaAltEs" maxlength="300" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Alt text EN <span class="form-hint">— for SEO</span></label>
+          <input class="form-input" type="text" name="alt_text_en" id="metaAltEn" maxlength="300" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción / notas</label>
+          <textarea class="form-textarea" name="description" id="metaDesc" rows="3"></textarea>
+        </div>
+        <div class="media-edit-actions">
+          <button type="submit" class="btn-primary" id="mediaEditSave">Guardar</button>
+          <span class="media-edit-status" id="mediaEditStatus"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const uploadInput = document.getElementById('quickUpload');
+const uploadStatus = document.getElementById('uploadStatus');
+
+uploadInput.addEventListener('change', async function () {
+  const files = Array.from(this.files);
+  uploadStatus.textContent = `Subiendo ${files.length} archivo(s)…`;
+  let ok = 0;
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/admin/media/upload', { method: 'POST', body: fd });
+    if (res.ok) ok++;
+  }
+  uploadStatus.textContent = `${ok}/${files.length} subido(s). `;
+  const reload = document.createElement('a');
+  reload.href = '';
+  reload.textContent = 'Actualizar';
+  uploadStatus.appendChild(reload);
+  this.value = '';
+});
+
+// Copy URL
+document.querySelectorAll('.copy-url-btn').forEach(btn => {
+  btn.addEventListener('click', function () {
+    navigator.clipboard.writeText(this.dataset.url).then(() => {
+      const orig = this.textContent;
+      this.textContent = '¡Copiado!';
+      setTimeout(() => { this.textContent = orig; }, 1500);
+    });
+  });
+});
+
+// Metadata edit modal
+const editOverlay = document.getElementById('mediaEditOverlay');
+const editClose   = document.getElementById('mediaEditClose');
+const editForm    = document.getElementById('mediaEditForm');
+const editStatus  = document.getElementById('mediaEditStatus');
+
+editClose.addEventListener('click', () => { editOverlay.style.display = 'none'; });
+editOverlay.addEventListener('click', e => {
+  if (e.target === editOverlay) editOverlay.style.display = 'none';
+});
+
+document.querySelectorAll('.js-open-meta').forEach(btn => {
+  btn.addEventListener('click', async function () {
+    const id = this.dataset.id;
+    const data = await fetch(`/admin/media/api/file/${id}`).then(r => r.json());
+    document.getElementById('mediaEditId').value      = data.id;
+    document.getElementById('metaTitleEs').value      = data.title_es;
+    document.getElementById('metaTitleEn').value      = data.title_en;
+    document.getElementById('metaAltEs').value        = data.alt_text_es;
+    document.getElementById('metaAltEn').value        = data.alt_text_en;
+    document.getElementById('metaDesc').value         = data.description;
+    document.getElementById('mediaEditTitle').textContent = data.filename;
+
+    const preview = document.getElementById('mediaEditPreview');
+    preview.innerHTML = data.file_type === 'image'
+      ? `<img src="${data.thumbnail_url}" alt="" />`
+      : `<p style="color:var(--adm-ink-3);padding:1rem">${data.file_type}</p>`;
+
+    editStatus.textContent = '';
+    editOverlay.style.display = 'flex';
+  });
+});
+
+editForm.addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const id = document.getElementById('mediaEditId').value;
+  const fd = new FormData(this);
+  const res = await fetch(`/admin/media/${id}/update`, {
+    method: 'POST',
+    body: fd,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+  });
+  if (res.ok) {
+    editStatus.textContent = '✓ Guardado';
+    // Update card title in the grid
+    const card = document.querySelector(`.media-card[data-id="${id}"]`);
+    const titleEl = card && card.querySelector('.media-card__name');
+    const newTitle = document.getElementById('metaTitleEs').value || '';
+    if (titleEl && newTitle) titleEl.textContent = newTitle.slice(0, 28);
+    setTimeout(() => { editStatus.textContent = ''; }, 2000);
+  } else {
+    editStatus.textContent = 'Error al guardar';
+  }
+});
+</script>
+{% endblock %}

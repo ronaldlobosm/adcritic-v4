@@ -1,0 +1,49 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ adv_ui.page_advertisers }} — AdCritic{% endblock %}
+{% block page_title %}{{ adv_ui.page_advertisers }}{% endblock %}
+
+{% block content %}
+<div class="admin-toolbar">
+  <a href="{{ url_for('advertising.advertiser_create') }}" class="btn-primary">{{ adv_ui.btn_new_client }}</a>
+</div>
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>{{ adv_ui.th_company }}</th>
+        <th>{{ adv_ui.th_contact }}</th>
+        <th>{{ adv_ui.th_email }}</th>
+        <th>{{ adv_ui.th_active }}</th>
+        <th>{{ adv_ui.th_actions }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for adv in advertisers %}
+        <tr>
+          <td><strong>{{ adv.company_name }}</strong></td>
+          <td class="text-muted">{{ adv.contact_name or '—' }}</td>
+          <td class="text-muted">{{ adv.contact_email or '—' }}</td>
+          <td>
+            <span class="badge {% if adv.is_active %}badge--published{% else %}badge--draft{% endif %}">
+              {% if adv.is_active %}✓{% else %}—{% endif %}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <a href="{{ url_for('advertising.advertiser_edit', adv_id=adv.id) }}"
+               class="btn-sm btn-edit">{{ adv_ui.btn_edit }}</a>
+            <form method="post"
+                  action="{{ url_for('advertising.advertiser_delete', adv_id=adv.id) }}"
+                  style="display:inline"
+                  onsubmit="return confirm('{{ adv_ui.confirm_delete }}')">
+              <button type="submit" class="btn-sm btn-delete">{{ adv_ui.btn_delete }}</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty-row">{{ adv_ui.empty_advertisers }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

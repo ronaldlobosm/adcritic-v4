@@ -1,0 +1,58 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ adv_ui.page_edit_campaign if campaign else adv_ui.page_new_campaign }} — AdCritic{% endblock %}
+{% block page_title %}{{ adv_ui.page_edit_campaign if campaign else adv_ui.page_new_campaign }}{% endblock %}
+
+{% block content %}
+<form method="post" class="admin-form">
+
+  <div class="form-section">
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_campaign_name }} *</label>
+      <input class="form-input" type="text" name="name" required
+             value="{{ campaign.name if campaign else '' }}"
+             placeholder="Ej: Campaña verano 2025" />
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_client }}</label>
+      <select class="form-input" name="advertiser_id">
+        <option value="">{{ adv_ui.no_client }}</option>
+        {% for adv in advertisers %}
+          <option value="{{ adv.id }}"
+            {% if campaign and campaign.advertiser_id == adv.id %}selected
+            {% elif not campaign and request.args.get('adv')|string == adv.id|string %}selected{% endif %}>
+            {{ adv.company_name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_category }}</label>
+      <select class="form-input" name="category">
+        <option value="">{{ adv_ui.no_category }}</option>
+        {% for key, label in cat_labels.items() %}
+          <option value="{{ key }}"
+            {% if campaign and campaign.category == key %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-row form-row--checkbox">
+      <label class="form-label">{{ adv_ui.label_active }}</label>
+      <input type="checkbox" name="is_active" value="1"
+             {% if not campaign or campaign.is_active %}checked{% endif %} />
+    </div>
+
+  </div>
+
+  <div class="admin-form-actions">
+    <button type="submit" class="btn-primary">{{ adv_ui.btn_save }}</button>
+    <a href="{{ url_for('advertising.campaigns_list') }}" class="btn-ghost">{{ adv_ui.btn_cancel }}</a>
+  </div>
+
+</form>
+{% endblock %}

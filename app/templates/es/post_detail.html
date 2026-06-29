@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% from "partials/video_player.html" import render as video_player %}
+{% from "partials/avatar.html" import avatar %}
+{% block title %}{{ t.meta_title or t.title }} — AdCritic{% endblock %}
+
+{% block seo %}
+<meta name="description" content="{{ t.meta_description or t.excerpt }}" />
+<meta property="og:title" content="{{ t.meta_title or t.title }}" />
+<meta property="og:description" content="{{ t.meta_description or t.excerpt }}" />
+{% if post.cover_image_url %}<meta property="og:image" content="{{ post.cover_image_url }}" />{% endif %}
+<meta property="og:type" content="article" />
+{% endblock %}
+
+{% block content %}
+<div class="container post-detail-layout">
+
+  <nav class="breadcrumb">
+    <a href="{{ url_for('posts.list_es') }}">{{ ui.back_link }}</a>
+  </nav>
+
+  <article class="post-article">
+
+    <header class="post-header">
+      {% if post.categories %}
+        <div class="post-header__cats">
+          {% for cat in post.categories %}
+            <a href="{{ url_for('posts.list_es', category_id=cat.id) }}"
+               class="post-cat-tag">{{ cat.name_es }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <h1 class="post-title">{{ t.title }}</h1>
+
+      <div class="post-meta">
+        <span>{{ ui.by }} <strong>{{ post.author.public_name }}</strong></span>
+        <span class="post-meta-sep">·</span>
+        <span>{{ format_date(post.published_at, 'es') }}</span>
+        {% if post.is_premium %}
+          <span class="post-meta-sep">·</span>
+          <span class="post-premium-badge">{{ ui.gold_badge }}</span>
+        {% endif %}
+      </div>
+
+      {# Video takes priority over static cover #}
+      {% if post.video_type and post.video_value %}
+        {{ video_player(post.video_type, post.video_value, post.subtitle_es, post.subtitle_en, t.title) }}
+      {% elif post.cover_image_url %}
+        <img class="post-cover" src="{{ post.cover_image_url }}" alt="{{ media_alt(post.cover_image_url, 'es') or t.title }}" />
+      {% endif %}
+    </header>
+
+    {% if can_read %}
+      <div class="post-body">{{ t.body | safe }}</div>
+    {% else %}
+      <div class="post-excerpt"><p>{{ t.excerpt }}</p></div>
+      <div class="paywall-block">
+        <h2 class="paywall-title">{{ ui.paywall_title }}</h2>
+        <p class="paywall-body">{{ ui.paywall_body }}</p>
+        <a href="{{ ui.paywall_url_es }}" class="paywall-cta">{{ ui.paywall_cta }}</a>
+      </div>
+    {% endif %}
+
+  </article>
+
+  {% if can_read %}
+  <section class="comments-section" id="comentarios">
+    <h2 class="comments-title">{{ ui.comments_title }}</h2>
+
+    {% if comments %}
+      <div class="comments-list">
+        {% for comment in comments %}
+          <div class="comment-item">
+            <div class="comment-meta">
+              {{ avatar(comment.user) }}
+              <span class="comment-author">{{ comment.user.public_name }}</span>
+              <span class="comment-date">{{ relative_date(comment.created_at, 'es') }}</span>
+              {% if current_user.is_authenticated and (
+                  current_user.id == comment.user_id
+                  or current_user.role == 'admin'
+                  or (current_user.role == 'editor' and post.author_id == current_user.id)
+              ) %}
+                <form method="post"
+                      action="{{ url_for('posts.delete_comment', comment_id=comment.id) }}"
+                      style="display:inline;margin-left:auto"
+                      onsubmit="return confirm('{{ ui.comment_delete_confirm }}')">
+                  <input type="hidden" name="lang" value="{{ lang }}" />
+                  <button type="submit" class="comment-delete-btn" title="{{ ui.comment_delete_confirm }}">✕</button>
+                </form>
+              {% endif %}
+            </div>
+            <p class="comment-body">{{ comment.body }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="comments-empty">{{ ui.comment_empty }}</p>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+      <form class="comment-form" method="post">
+        <div class="post-comment-composer">
+          <aside class="post-comment-composer__avatar" aria-hidden="true">
+            {{ avatar(current_user, 'composer-avatar', 'composer-avatar-placeholder') }}
+          </aside>
+          <textarea class="comment-input" name="body" rows="4"
+                    placeholder="{{ ui.comment_placeholder }}" required></textarea>
+        </div>
+        <button type="submit" class="comment-submit">{{ ui.comment_btn }}</button>
+      </form>
+    {% else %}
+      <p class="comment-login-prompt">
+        {{ ui.comment_login }}
+        <a href="{{ url_for('auth.login_es') }}">{{ ui.comment_login_link }}</a>
+      </p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <div class="post-lang-link">
+    <a href="{{ alt_lang_url }}">Read this in English →</a>
+  </div>
+
+</div>
+
+{% include "partials/newsletter.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var el = document.querySelector('.js-plyr-player');
+    if (el) new Plyr(el, { captions: { active: true, update: true } });
+  })();
+</script>
+{% endblock %}

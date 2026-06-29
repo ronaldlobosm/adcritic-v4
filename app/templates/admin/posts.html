@@ -1,0 +1,167 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_posts }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_posts }}{% endblock %}
+
+{% block content %}
+<div class="admin-toolbar">
+  {% if current_user.role in ('admin', 'editor') %}
+    <a href="{{ url_for('admin.post_create') }}" class="btn-primary">{{ ui.btn_new_post }}</a>
+  {% endif %}
+</div>
+
+{% if current_user.role == 'admin' %}
+{# Standalone bulk form — inputs/buttons reference it via form="bulk-form" #}
+<form id="bulk-form" method="post" action="{{ url_for('admin.posts_bulk') }}"></form>
+
+<div class="bulk-bar" id="bulk-bar" style="display:none">
+  <span class="bulk-bar__count" id="bulk-count">0 {{ 'seleccionados' if lang == 'es' else 'selected' }}</span>
+  <select name="action" form="bulk-form" class="filter-select bulk-bar__select">
+    <option value="">{{ 'Acción…' if lang == 'es' else 'Action…' }}</option>
+    <option value="unpublish">{{ 'Despublicar' if lang == 'es' else 'Unpublish' }}</option>
+    <option value="gold">{{ 'Solo Gold' if lang == 'es' else 'Gold only' }}</option>
+    <option value="ungold">{{ 'Quitar Gold' if lang == 'es' else 'Remove Gold' }}</option>
+    <option value="delete">{{ 'Eliminar' if lang == 'es' else 'Delete' }}</option>
+  </select>
+  <button type="submit" form="bulk-form" class="btn-primary bulk-bar__apply"
+          onclick="return confirmBulk()">
+    {{ 'Aplicar' if lang == 'es' else 'Apply' }}
+  </button>
+  <button type="button" class="btn-secondary bulk-bar__cancel" onclick="clearSelection()">
+    {{ 'Cancelar' if lang == 'es' else 'Cancel' }}
+  </button>
+</div>
+{% endif %}
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        {% if current_user.role == 'admin' %}
+          <th style="width:2rem">
+            <input type="checkbox" id="select-all" title="{{ 'Seleccionar todos' if lang == 'es' else 'Select all' }}" />
+          </th>
+        {% endif %}
+        <th>{{ ui.th_post_title }}</th>
+        <th>{{ ui.th_author }}</th>
+        <th>{{ ui.th_premium }}</th>
+        <th>{{ ui.th_status }}</th>
+        <th>{{ ui.th_actions }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for post in posts %}
+        {% set t = post.translation(lang) or post.translation('es') %}
+        <tr>
+          {% if current_user.role == 'admin' %}
+            <td>
+              <input type="checkbox" name="post_ids" value="{{ post.id }}"
+                     class="row-check" form="bulk-form" />
+            </td>
+          {% endif %}
+          <td>
+            {{ t.title if t else post.slug }}
+            {% if post.rejection_note %}
+              <p class="rejection-note">{{ post.rejection_note }}</p>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ post.author.public_name }}</td>
+          <td>
+            {% if post.is_premium %}
+              <span class="badge badge--gold">Gold</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if post.status == 'published' and post.is_published %}
+              <span class="badge badge--published">{{ ui.status_published }}</span>
+            {% elif post.status == 'published' %}
+              <span class="badge badge--draft">{{ ui.status_draft }}</span>
+            {% elif post.status == 'pending' %}
+              <span class="badge badge--pending">{{ ui.status_pending }}</span>
+            {% elif post.status == 'rejected' %}
+              <span class="badge badge--rejected">{{ ui.status_rejected }}</span>
+            {% else %}
+              <span class="badge badge--draft">{{ ui.status_draft }}</span>
+            {% endif %}
+          </td>
+          <td class="actions-cell">
+            {% if current_user.role == 'admin' %}
+              <a href="{{ url_for('admin.post_edit', post_id=post.id) }}"
+                 class="btn-sm btn-edit">{{ ui.btn_edit }}</a>
+              {% if post.status != 'published' %}
+                <form method="post" action="{{ url_for('admin.post_publish', post_id=post.id) }}" style="display:inline">
+                  <button type="submit" class="btn-sm btn-publish">{{ ui.btn_publish }}</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ url_for('admin.post_unpublish', post_id=post.id) }}" style="display:inline">
+                  <button type="submit" class="btn-sm btn-unpublish">{{ ui.btn_unpublish }}</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('admin.post_delete', post_id=post.id) }}"
+                    style="display:inline"
+                    onsubmit="return confirm('{{ ui.confirm_delete_post }}')">
+                <button type="submit" class="btn-sm btn-delete">{{ ui.btn_delete }}</button>
+              </form>
+            {% elif current_user.role == 'editor' %}
+              <a href="{{ url_for('admin.post_edit', post_id=post.id) }}"
+                 class="btn-sm btn-edit">{{ ui.btn_edit }}</a>
+            {% elif current_user.role == 'approver' %}
+              <a href="{{ url_for('admin.post_edit', post_id=post.id) }}"
+                 class="btn-sm btn-review">{{ ui.btn_review }}</a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="{{ 6 if current_user.role == 'admin' else 5 }}" class="empty-row">{{ ui.empty_posts }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if current_user.role == 'admin' %}
+<script>
+(function () {
+  var checks = document.querySelectorAll('.row-check');
+  var selectAll = document.getElementById('select-all');
+  var bar = document.getElementById('bulk-bar');
+  var countEl = document.getElementById('bulk-count');
+
+  function updateBar() {
+    var n = document.querySelectorAll('.row-check:checked').length;
+    bar.style.display = n > 0 ? 'flex' : 'none';
+    countEl.textContent = n + ' {{ "seleccionados" if lang == "es" else "selected" }}';
+  }
+
+  selectAll.addEventListener('change', function () {
+    checks.forEach(function (c) { c.checked = selectAll.checked; });
+    updateBar();
+  });
+  checks.forEach(function (c) {
+    c.addEventListener('change', function () {
+      selectAll.checked = Array.from(checks).every(function (x) { return x.checked; });
+      updateBar();
+    });
+  });
+
+  window.clearSelection = function () {
+    checks.forEach(function (c) { c.checked = false; });
+    selectAll.checked = false;
+    updateBar();
+  };
+
+  window.confirmBulk = function () {
+    var action = document.querySelector('[name=action][form=bulk-form]').value;
+    if (!action) {
+      alert('{{ "Elige una acción" if lang == "es" else "Choose an action" }}');
+      return false;
+    }
+    if (action === 'delete') {
+      return confirm('{{ "¿Eliminar los seleccionados? No se puede deshacer." if lang == "es" else "Delete selected? This cannot be undone." }}');
+    }
+    return true;
+  };
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_approval }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_approval }}{% endblock %}
+
+{% block content %}
+
+{% if not pending_ads and not pending_posts %}
+  <p class="empty-row" style="padding:2rem 0">{{ ui.approval_empty }}</p>
+
+{% else %}
+
+  {# ── Pending ads ───────────────────────────────────────────────────── #}
+  {% if pending_ads %}
+  <h2 class="form-section-title" style="margin-bottom:1rem">{{ ui.approval_ads }}</h2>
+  <div class="admin-table-wrap" style="margin-bottom:2rem">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>{{ ui.th_title }}</th>
+          <th>{{ ui.th_brand }}</th>
+          <th>{{ ui.th_year }}</th>
+          <th>{{ ui.th_creator }}</th>
+          <th>{{ ui.th_actions }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ad in pending_ads %}
+          {% set t = ad.translation('es') %}
+          <tr>
+            <td>{{ t.title if t else ad.slug }}</td>
+            <td>{{ ad.brand }}</td>
+            <td>{{ ad.year }}</td>
+            <td class="text-muted">{{ ad.creator.public_name if ad.creator else '—' }}</td>
+            <td class="actions-cell">
+              <a href="{{ url_for('admin.catalog_edit', ad_id=ad.id) }}"
+                 class="btn-sm btn-review">{{ ui.btn_review }}</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {# ── Pending posts ─────────────────────────────────────────────────── #}
+  {% if pending_posts %}
+  <h2 class="form-section-title" style="margin-bottom:1rem">{{ ui.approval_posts }}</h2>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>{{ ui.th_post_title }}</th>
+          <th>{{ ui.th_author }}</th>
+          <th>{{ ui.th_creator }}</th>
+          <th>{{ ui.th_actions }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for post in pending_posts %}
+          {% set t = post.translation(lang) or post.translation('es') %}
+          <tr>
+            <td>{{ t.title if t else post.slug }}</td>
+            <td class="text-muted">{{ post.author.public_name }}</td>
+            <td class="text-muted">{{ post.published_at.strftime('%d/%m/%Y') if post.published_at else '—' }}</td>
+            <td class="actions-cell">
+              <a href="{{ url_for('admin.post_edit', post_id=post.id) }}"
+                 class="btn-sm btn-review">{{ ui.btn_review }}</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+{% set is_es = lang == 'es' %}
+<form class="filter-bar" method="get" action="">
+  <div class="filter-group">
+    <input
+      type="text"
+      name="brand"
+      value="{{ filters.brand }}"
+      placeholder="{{ 'Marca' if is_es else 'Brand' }}"
+      class="filter-input"
+    />
+  </div>
+
+  <div class="filter-group">
+    <select name="country" class="filter-select">
+      <option value="">{{ 'País' if is_es else 'Country' }}</option>
+      {% for code, name in options.country_opts %}
+        <option value="{{ code }}" {% if filters.country == code %}selected{% endif %}>
+          {{ name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <select name="year" class="filter-select">
+      <option value="">{{ 'Año' if is_es else 'Year' }}</option>
+      {% for y in options.years %}
+        <option value="{{ y }}" {% if filters.year == y|string %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <select name="category_id" class="filter-select">
+      <option value="">{{ 'Categoría' if is_es else 'Category' }}</option>
+      {% for cat in options.categories %}
+        <option value="{{ cat.id }}"
+          {% if filters.category_id == cat.id|string %}selected{% endif %}>
+          {{ cat.name_es if is_es else cat.name_en }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="filter-view-toggle" aria-label="{{ 'Columnas' if is_es else 'Columns' }}">
+    <label class="filter-view-option" title="{{ '2 columnas' if is_es else '2 columns' }}">
+      <input type="radio" name="columns" value="2" {% if filters.columns != '3' %}checked{% endif %} />
+      <span class="filter-view-icon filter-view-icon--2" aria-hidden="true"><i></i><i></i></span>
+    </label>
+    <label class="filter-view-option" title="{{ '3 columnas' if is_es else '3 columns' }}">
+      <input type="radio" name="columns" value="3" {% if filters.columns == '3' %}checked{% endif %} />
+      <span class="filter-view-icon filter-view-icon--3" aria-hidden="true"><i></i><i></i><i></i></span>
+    </label>
+  </div>
+
+  <button type="submit" class="filter-btn">
+    {{ 'Filtrar' if is_es else 'Filter' }}
+  </button>
+  {% if filters.brand or filters.country or filters.year or filters.category_id or filters.columns == '3' %}
+    <a href="?" class="filter-clear">{{ 'Limpiar' if is_es else 'Clear' }}</a>
+  {% endif %}
+</form>
+
+<script>
+(function () {
+  function attachColumnToggle() {
+    document.querySelectorAll('.filter-view-option input[name="columns"]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        window.location.href = '?columns=' + input.value;
+      });
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachColumnToggle);
+  } else {
+    attachColumnToggle();
+  }
+})();
+</script>

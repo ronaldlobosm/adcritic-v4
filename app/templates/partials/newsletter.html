@@ -1,0 +1,30 @@
+{% set is_es = lang == 'es' %}
+<section class="newsletter-section">
+  <div class="container newsletter-inner">
+    <div class="newsletter-text">
+      <h3 class="newsletter-title">
+        {% if is_es %}No te pierdas el próximo análisis{% else %}Don't miss the next breakdown{% endif %}
+      </h3>
+      <p class="newsletter-sub">
+        {% if is_es %}
+          Enviamos crítica publicitaria real, sin spam.
+        {% else %}
+          We send real ad criticism, no spam.
+        {% endif %}
+      </p>
+    </div>
+    <form class="newsletter-form" method="post" action="">
+      <input type="hidden" name="newsletter" value="1" />
+      <input
+        type="email"
+        name="email"
+        required
+        placeholder="{{ 'tu@email.com' if is_es else 'your@email.com' }}"
+        class="newsletter-input"
+      />
+      <button type="submit" class="newsletter-btn">
+        {{ 'Suscribirme' if is_es else 'Subscribe' }}
+      </button>
+    </form>
+  </div>
+</section>

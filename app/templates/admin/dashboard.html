@@ -1,0 +1,21 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_dashboard }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_dashboard }}{% endblock %}
+
+{% block content %}
+<div class="admin-stats">
+  <div class="stat-card">
+    <span class="stat-value">{{ ad_count }}</span>
+    <span class="stat-label">{{ ui.stat_entries }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value">{{ user_count }}</span>
+    <span class="stat-label">{{ ui.stat_users }}</span>
+  </div>
+</div>
+
+<div class="admin-quick-links">
+  <a href="{{ url_for('admin.catalog_create') }}" class="btn-primary">{{ ui.btn_new_entry }}</a>
+  <a href="{{ url_for('admin.users_list') }}" class="btn-secondary">{{ ui.btn_view_users }}</a>
+</div>
+{% endblock %}

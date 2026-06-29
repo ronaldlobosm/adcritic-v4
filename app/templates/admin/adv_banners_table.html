@@ -1,0 +1,70 @@
+{# Included by adv_banners.html — expects camp_banners, adv_ui, type_labels in context #}
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th style="width:2.5rem">ID</th>
+      <th>{{ adv_ui.label_ad_name }}</th>
+      <th>{{ adv_ui.th_zone }}</th>
+      <th>{{ adv_ui.th_type }}</th>
+      <th>{{ adv_ui.th_dates }}</th>
+      <th style="text-align:right">{{ adv_ui.th_impressions }}</th>
+      <th style="text-align:right">{{ adv_ui.th_clicks }}</th>
+      <th>{{ adv_ui.th_active }}</th>
+      <th>{{ adv_ui.th_actions }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in camp_banners %}
+    <tr {% if not b.is_active %}style="opacity:.55"{% endif %}>
+      <td class="text-muted" style="font-size:.78rem;font-variant-numeric:tabular-nums">#{{ b.id }}</td>
+      <td>
+        <strong>{{ b.name or '—' }}</strong>
+      </td>
+      <td>
+        <strong>{{ b.zone.display_name }}</strong>
+        <small class="text-muted" style="display:block">{{ b.zone.zone_key }}</small>
+      </td>
+      <td>
+        <span class="badge badge--draft">{{ type_labels.get(b.ad_type, b.ad_type) }}</span>
+      </td>
+      <td class="text-muted" style="font-size:.82rem">
+        {% if b.start_date or b.end_date %}
+          {{ b.start_date.strftime('%d/%m/%y') if b.start_date else '∞' }}
+          →
+          {{ b.end_date.strftime('%d/%m/%y') if b.end_date else '∞' }}
+        {% else %}
+          {{ adv_ui.no_dates }}
+        {% endif %}
+      </td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">
+        {{ '{:,}'.format(b.impressions_count) }}
+      </td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">
+        {{ '{:,}'.format(b.clicks_count) }}
+      </td>
+      <td>
+        <span class="badge {% if b.is_active %}badge--published{% else %}badge--draft{% endif %}">
+          {% if b.is_active %}ON{% else %}OFF{% endif %}
+        </span>
+      </td>
+      <td class="actions-cell">
+        <a href="{{ url_for('advertising.banner_edit', banner_id=b.id) }}"
+           class="btn-sm btn-edit">{{ adv_ui.btn_edit }}</a>
+        <form method="post"
+              action="{{ url_for('advertising.banner_toggle', banner_id=b.id) }}"
+              style="display:inline">
+          <button type="submit" class="btn-sm">
+            {{ adv_ui.btn_toggle_off if b.is_active else adv_ui.btn_toggle_on }}
+          </button>
+        </form>
+        <form method="post"
+              action="{{ url_for('advertising.banner_delete', banner_id=b.id) }}"
+              style="display:inline"
+              onsubmit="return confirm('{{ adv_ui.confirm_delete }}')">
+          <button type="submit" class="btn-sm btn-delete">{{ adv_ui.btn_delete }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

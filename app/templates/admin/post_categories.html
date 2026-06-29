@@ -1,0 +1,42 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_post_categories }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_post_categories }}{% endblock %}
+
+{% block content %}
+<div class="admin-toolbar">
+  <a href="{{ url_for('admin.post_category_create') }}" class="btn-primary">{{ ui.btn_new_post_category }}</a>
+</div>
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>{{ ui.th_name_es }}</th>
+        <th>{{ ui.th_name_en }}</th>
+        <th>{{ ui.th_entries }}</th>
+        <th>{{ ui.th_actions }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cat in categories %}
+        <tr>
+          <td>{{ cat.name_es }}</td>
+          <td>{{ cat.name_en }}</td>
+          <td class="text-muted">{{ cat.posts | length }}</td>
+          <td class="actions-cell">
+            <a href="{{ url_for('admin.post_category_edit', cat_id=cat.id) }}"
+               class="btn-sm btn-edit">{{ ui.btn_edit }}</a>
+            <form method="post" action="{{ url_for('admin.post_category_delete', cat_id=cat.id) }}"
+                  style="display:inline"
+                  onsubmit="return confirm('{{ ui.confirm_delete_post_cat }}')">
+              <button type="submit" class="btn-sm btn-delete">{{ ui.btn_delete }}</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="empty-row">{{ ui.empty_post_categories }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

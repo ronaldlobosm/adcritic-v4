@@ -1,0 +1,72 @@
+{#
+  News sidebar — rendered in es/posts_list.html and en/posts_list.html
+  Expects in context:
+    lang, most_read (list of Post), ad_zone macro already imported
+#}
+
+{%- set is_es = (lang == 'es') -%}
+{%- from "partials/ad_zone.html" import render as ad_zone -%}
+
+{# 1. Top banner (existing zone) #}
+{{ ad_zone("sidebar_news") }}
+
+{# 2. Most read ──────────────────────────────────────────────────── #}
+{% if most_read %}
+<div class="sidebar-widget">
+  <h3 class="sidebar-widget__title">
+    {{ 'Más leídas' if is_es else 'Most read' }}
+  </h3>
+  <ol class="sidebar-most-read">
+    {% for post in most_read %}
+      {%- set t = post.translation(lang) -%}
+      <li class="sidebar-most-read__item">
+        <span class="sidebar-most-read__rank">{{ loop.index }}</span>
+        <a class="sidebar-most-read__link"
+           href="{{ url_for('posts.detail_es' if is_es else 'posts.detail_en', slug=post.slug) }}">
+          {{ t.title if t else post.slug }}
+        </a>
+      </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
+{# 3. Newsletter inline ──────────────────────────────────────────── #}
+<div class="sidebar-widget sidebar-widget--newsletter">
+  <h3 class="sidebar-widget__title">
+    {{ 'No te pierdas el próximo análisis' if is_es else "Don't miss the next breakdown" }}
+  </h3>
+  <p class="sidebar-newsletter__sub">
+    {{ 'Una crítica nueva cada semana.' if is_es else 'One new critique every week.' }}
+  </p>
+  <form class="sidebar-newsletter__form" method="post" action="">
+    <input type="hidden" name="newsletter" value="1" />
+    <input type="email" name="email" required
+           class="sidebar-newsletter__input"
+           placeholder="{{ 'tu@email.com' if is_es else 'your@email.com' }}" />
+    <button type="submit" class="sidebar-newsletter__btn">
+      {{ 'Suscribirme' if is_es else 'Subscribe' }}
+    </button>
+  </form>
+</div>
+
+{# 4. Gold promo — hide for gold members and staff ───────────────── #}
+{% if not current_user.is_authenticated
+    or (current_user.membership_tier != 'gold' and not current_user.is_staff) %}
+<div class="sidebar-widget sidebar-widget--gold">
+  <p class="sidebar-gold__eyebrow">
+    {{ 'Membresía' if is_es else 'Membership' }}
+  </p>
+  <p class="sidebar-gold__headline">
+    {{ 'Lee la crítica completa.' if is_es else 'Read the full critique.' }}<br>
+    {{ 'Únete a Gold.' if is_es else 'Join Gold.' }}
+  </p>
+  <a class="sidebar-gold__btn"
+     href="{{ '/es/membresia/' if is_es else '/en/membership/' }}">
+    {{ 'Ver planes →' if is_es else 'See plans →' }}
+  </a>
+</div>
+{% endif %}
+
+{# 5. Second banner slot ─────────────────────────────────────────── #}
+{{ ad_zone("sidebar_news_lower") }}

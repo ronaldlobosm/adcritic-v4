@@ -1,0 +1,32 @@
+{#
+  ad_zone(zone_key)
+  Renders one active BannerAd for the given zone, or nothing if the zone
+  is empty.  get_ad_zone() is a Jinja2 global registered in create_app;
+  it handles DB lookup, date filtering, random selection, and impression
+  counting.
+
+  Usage:
+    {% from "partials/ad_zone.html" import render as ad_zone %}
+    {{ ad_zone("header_banner") }}
+#}
+{% macro render(zone_key) %}
+  {%- set ad = get_ad_zone(zone_key) -%}
+  {%- if ad -%}
+    <div class="ad-zone ad-zone--{{ zone_key }}" aria-label="Publicidad">
+      {%- if ad.ad_type == "embed_code" -%}
+        {{- ad.content | safe -}}
+      {%- elif ad.ad_type == "video" -%}
+        <a href="{{ url_for('advertising.ad_click', ad_id=ad.id) }}"
+           target="_blank" rel="noopener sponsored" class="ad-zone__link">
+          <video src="{{ ad.content }}" autoplay muted loop playsinline
+                 class="ad-zone__video"></video>
+        </a>
+      {%- else -%}
+        <a href="{{ url_for('advertising.ad_click', ad_id=ad.id) }}"
+           target="_blank" rel="noopener sponsored" class="ad-zone__link">
+          <img src="{{ ad.content }}" alt="Publicidad" class="ad-zone__img" loading="lazy" />
+        </a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+{% endmacro %}

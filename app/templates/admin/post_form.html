@@ -1,0 +1,342 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_edit_post if action == 'edit' else ui.page_new_post }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_edit_post if action == 'edit' else ui.page_new_post }}{% endblock %}
+
+{% set t_es = post.translation('es') if post else None %}
+{% set t_en = post.translation('en') if post else None %}
+{% set selected_cat_ids = post.categories | map(attribute='id') | list if post else [] %}
+{% set cur_vtype = request.form.video_source_type if request.method == 'POST' else (post.video_source_type if post else '') %}
+{% set cur_vvalue = request.form.video_source_value if request.method == 'POST' else (post.video_source_value if post else '') %}
+
+{% block content %}
+<form method="post" class="admin-form" id="postForm" enctype="multipart/form-data">
+{% if is_readonly %}<fieldset disabled style="border:none;padding:0;margin:0">{% endif %}
+
+  <div class="form-section">
+    <h2 class="form-section-title">{{ ui.section_general }}</h2>
+    <div class="form-grid-2">
+
+      <div class="form-group">
+        <label class="form-label" for="slug">
+          {{ ui.label_slug }} <span class="req">*</span>
+          {% if action == 'edit' %}<span class="form-hint">{{ ui.hint_slug_edit }}</span>{% endif %}
+        </label>
+        <input class="form-input" type="text" id="slug" name="slug"
+               value="{{ request.form.slug or (post.slug if post else '') }}" required
+               pattern="[a-z0-9\-]+" title="{{ ui.hint_slug_pattern }}" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="published_at">
+          {{ ui.label_published_at }}
+          <span class="form-hint">— {{ ui.hint_published_at }}</span>
+        </label>
+        {% set pub_val = request.form.published_at or (post.published_at.strftime('%Y-%m-%dT%H:%M') if post and post.published_at else '') %}
+        <input class="form-input" type="datetime-local" id="published_at" name="published_at"
+               value="{{ pub_val }}" />
+      </div>
+
+      <!-- Cover image picker -->
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="form-label">
+          {{ ui.label_cover_url }}
+          <span class="form-hint">— {{ ui.hint_cover_url }}</span>
+        </label>
+        <div class="image-picker-wrap">
+          <input class="form-input image-picker-url" type="text" id="cover_image_url" name="cover_image_url"
+                 value="{{ request.form.cover_image_url or (post.cover_image_url if post else '') }}"
+                 placeholder="https://…" readonly />
+          <div class="image-picker-actions">
+            <button type="button" class="btn-sm js-open-picker" data-target="cover_image_url"
+                    data-preview="cover-preview">{{ ui.btn_select_library }}</button>
+            <label class="btn-sm" style="cursor:pointer">
+              {{ ui.btn_upload_new }}
+              <input type="file" class="js-quick-image-upload" data-target="cover_image_url"
+                     data-preview="cover-preview" accept=".jpg,.jpeg,.png" style="display:none" />
+            </label>
+            <button type="button" class="btn-sm btn-delete js-clear-image"
+                    data-target="cover_image_url" data-preview="cover-preview"
+                    style="display:none">✕</button>
+          </div>
+          <div class="image-picker-preview" id="cover-preview">
+            {% if post and post.cover_image_url %}
+              <img src="{{ post.cover_image_url }}" alt="" />
+            {% endif %}
+          </div>
+        </div>
+        <p class="form-hint-type">{{ 'Archivos permitidos: JPG, PNG' if lang == 'es' else 'Allowed files: JPG, PNG' }}</p>
+      </div>
+
+      <!-- Video source selector -->
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.label_video_source }}</label>
+        <select class="form-input" id="video_source_type" name="video_source_type"
+                style="max-width:240px">
+          <option value="">{{ ui.video_source_none }}</option>
+          <option value="youtube" {% if cur_vtype == 'youtube' %}selected{% endif %}>{{ ui.video_source_youtube }}</option>
+          <option value="vimeo"   {% if cur_vtype == 'vimeo'   %}selected{% endif %}>{{ ui.video_source_vimeo }}</option>
+          <option value="upload"  {% if cur_vtype == 'upload'  %}selected{% endif %}>{{ ui.video_source_upload }}</option>
+        </select>
+      </div>
+
+      <div class="form-group js-video-field js-video-id" style="grid-column: 1 / -1">
+        <label class="form-label" for="video_source_value">{{ ui.label_video_id }}</label>
+        <input class="form-input" type="text" id="video_source_value" name="video_source_value"
+               value="{{ cur_vvalue }}" placeholder="e.g. dQw4w9WgXcQ" />
+      </div>
+
+      {# Upload section — file input has NO name; JS uploads async and stores URL in video_source_value #}
+      <div class="form-group js-video-field js-video-upload" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.video_source_upload }}</label>
+        {% if post and post.video_source_type == 'upload' and post.video_source_value %}
+          <p class="form-hint" style="margin-bottom:.5rem">
+            {{ 'Archivo actual' if lang == 'es' else 'Current file' }}:
+            <a href="{{ post.video_source_value }}" target="_blank">{{ post.video_source_value.split('/')[-1] }}</a>
+          </p>
+        {% endif %}
+        <input class="form-input" type="file" id="videoFileInput" accept=".mp4,.mov,.webm,.avi,.mkv" />
+        <p class="form-hint-type">{{ 'Archivos permitidos: MP4, MOV, WEBM, AVI, MKV · Máx. 2 GB' if lang == 'es' else 'Allowed files: MP4, MOV, WEBM, AVI, MKV · Max. 2 GB' }}</p>
+        <div class="video-upload-status" id="videoUploadStatus" style="display:none">
+          <div class="video-upload-progress"><div class="video-upload-bar" id="videoUploadBar"></div></div>
+          <p class="video-upload-text" id="videoUploadText"></p>
+        </div>
+      </div>
+
+      <!-- Subtitles -->
+      <div class="form-group js-video-field js-video-subs" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.label_subtitle_es }}</label>
+        {% if post and post.subtitle_es %}
+          <p class="form-hint" style="margin-bottom:.5rem"><a href="{{ post.subtitle_es }}" target="_blank">{{ post.subtitle_es.split('/')[-1] }}</a></p>
+        {% endif %}
+        <input class="form-input" type="file" name="subtitle_es_file" accept=".vtt,.srt" />
+        <p class="form-hint-type">{{ 'Archivo permitido: VTT, SRT' if lang == 'es' else 'Allowed: VTT, SRT' }}</p>
+      </div>
+
+      <div class="form-group js-video-field js-video-subs" style="grid-column: 1 / -1">
+        <label class="form-label">{{ ui.label_subtitle_en }}</label>
+        {% if post and post.subtitle_en %}
+          <p class="form-hint" style="margin-bottom:.5rem"><a href="{{ post.subtitle_en }}" target="_blank">{{ post.subtitle_en.split('/')[-1] }}</a></p>
+        {% endif %}
+        <input class="form-input" type="file" name="subtitle_en_file" accept=".vtt,.srt" />
+        <p class="form-hint-type">{{ 'Archivo permitido: VTT, SRT' if lang == 'es' else 'Allowed: VTT, SRT' }}</p>
+      </div>
+
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="checkbox-label">
+          {% set is_premium_checked = request.form.get('is_premium') == '1' if request.method == 'POST' else (post.is_premium if post else False) %}
+          <input type="checkbox" name="is_premium" value="1"
+                 {% if is_premium_checked %}checked{% endif %} />
+          <span>{{ ui.label_is_premium }}</span>
+        </label>
+      </div>
+
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="form-label">
+          {{ ui.label_post_categories }}
+          <span class="form-hint">— {{ ui.hint_categories }}</span>
+        </label>
+        <div class="category-checkboxes">
+          {% for cat in all_post_categories %}
+            {% set is_checked = (cat.id | string) in request.form.getlist('post_category_ids') or
+                                (request.method == 'GET' and cat.id in selected_cat_ids) %}
+            <label class="checkbox-label">
+              <input type="checkbox" name="post_category_ids" value="{{ cat.id }}"
+                     {% if is_checked %}checked{% endif %} />
+              <span>{{ cat.name_es }} / {{ cat.name_en }}</span>
+            </label>
+          {% else %}
+            <span class="text-muted">
+              No hay categorías. <a href="{{ url_for('admin.post_category_create') }}">Crear una</a>.
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ES content -->
+  <div class="form-section">
+    <h2 class="form-section-title">{{ ui.section_es }}</h2>
+    <div class="form-group">
+      <label class="form-label" for="title_es">{{ ui.label_title_es }} <span class="req">*</span></label>
+      <input class="form-input" type="text" id="title_es" name="title_es"
+             value="{{ request.form.title_es or (t_es.title if t_es else '') }}" required />
+    </div>
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label" for="excerpt_es">
+        {{ ui.label_excerpt_es }} <span class="req">*</span>
+        <span class="form-hint">— {{ ui.hint_excerpt }}</span>
+      </label>
+      <textarea class="form-textarea" id="excerpt_es" name="excerpt_es"
+                rows="3">{{ request.form.excerpt_es or (t_es.excerpt if t_es else '') }}</textarea>
+    </div>
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label">{{ ui.label_body_es }} <span class="req">*</span></label>
+      <div id="quill-body-es" class="quill-editor"></div>
+      <textarea id="body_es" name="body_es" hidden>{{ request.form.body_es or (t_es.body if t_es else '') }}</textarea>
+    </div>
+  </div>
+
+  <!-- EN content -->
+  <div class="form-section">
+    <h2 class="form-section-title">{{ ui.section_en }}</h2>
+    <div class="form-group">
+      <label class="form-label" for="title_en">{{ ui.label_title_en }} <span class="req">*</span></label>
+      <input class="form-input" type="text" id="title_en" name="title_en"
+             value="{{ request.form.title_en or (t_en.title if t_en else '') }}" required />
+    </div>
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label" for="excerpt_en">
+        {{ ui.label_excerpt_en }} <span class="req">*</span>
+        <span class="form-hint">— {{ ui.hint_excerpt }}</span>
+      </label>
+      <textarea class="form-textarea" id="excerpt_en" name="excerpt_en"
+                rows="3">{{ request.form.excerpt_en or (t_en.excerpt if t_en else '') }}</textarea>
+    </div>
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label">{{ ui.label_body_en }} <span class="req">*</span></label>
+      <div id="quill-body-en" class="quill-editor"></div>
+      <textarea id="body_en" name="body_en" hidden>{{ request.form.body_en or (t_en.body if t_en else '') }}</textarea>
+    </div>
+  </div>
+
+  <!-- SEO -->
+  <div class="form-section">
+    <details class="seo-details">
+      <summary class="seo-summary">{{ ui.section_seo }}</summary>
+      <div class="form-grid-2" style="margin-top:1rem">
+        <div class="form-group">
+          <label class="form-label" for="meta_title_es">
+            {{ ui.label_meta_title }} (ES)
+            <span class="form-hint">— {{ ui.hint_meta_title }}</span>
+          </label>
+          <input class="form-input" type="text" id="meta_title_es" name="meta_title_es"
+                 value="{{ request.form.meta_title_es or (t_es.meta_title if t_es else '') }}" maxlength="250" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="meta_title_en">
+            {{ ui.label_meta_title }} (EN)
+            <span class="form-hint">— {{ ui.hint_meta_title }}</span>
+          </label>
+          <input class="form-input" type="text" id="meta_title_en" name="meta_title_en"
+                 value="{{ request.form.meta_title_en or (t_en.meta_title if t_en else '') }}" maxlength="250" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="meta_description_es">
+            {{ ui.label_meta_desc }} (ES)
+            <span class="form-hint">— {{ ui.hint_meta_desc }}</span>
+          </label>
+          <textarea class="form-textarea" id="meta_description_es" name="meta_description_es"
+                    rows="2" maxlength="300">{{ request.form.meta_description_es or (t_es.meta_description if t_es else '') }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="meta_description_en">
+            {{ ui.label_meta_desc }} (EN)
+            <span class="form-hint">— {{ ui.hint_meta_desc }}</span>
+          </label>
+          <textarea class="form-textarea" id="meta_description_en" name="meta_description_en"
+                    rows="2" maxlength="300">{{ request.form.meta_description_en or (t_en.meta_description if t_en else '') }}</textarea>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  {% if is_readonly %}</fieldset>{% endif %}
+
+  {% if not is_readonly %}
+  <div class="form-actions">
+    <button type="submit" class="btn-primary" id="formSubmitBtn">
+      {{ ui.btn_save if action == 'edit' else ui.btn_create_post }}
+    </button>
+    <a href="{{ url_for('admin.posts_list') }}" class="btn-secondary">{{ ui.btn_cancel }}</a>
+  </div>
+  {% else %}
+  <div class="form-actions">
+    <a href="{{ url_for('admin.posts_list') }}" class="btn-secondary">{{ ui.btn_cancel }}</a>
+  </div>
+  {% endif %}
+
+</form>
+
+{# ── Review actions panel (admin + approver, edit mode only) ─────────── #}
+{% if action == 'edit' and can_approve %}
+<div class="review-actions-panel">
+  <h3 class="form-section-title" style="margin-bottom:1rem">{{ ui.label_review_actions }}</h3>
+  <div class="review-buttons">
+
+    {# Aprobar y publicar #}
+    <form method="post" action="{{ url_for('admin.approve_post', post_id=post.id) }}" style="display:inline">
+      <button type="submit" class="btn-approve review-btn">{{ ui.btn_approve_publish }}</button>
+    </form>
+
+    {# Rechazar (expandable) #}
+    <button type="button" class="btn-sm btn-delete review-btn"
+            onclick="toggleReviewReject(this)">{{ ui.btn_reject }}</button>
+    <form method="post" action="{{ url_for('admin.reject_post', post_id=post.id) }}"
+          class="reject-inline" style="display:none">
+      <textarea class="form-input reject-note" name="rejection_note" rows="2"
+                placeholder="{{ ui.hint_rejection_note }}" required></textarea>
+      <button type="submit" class="btn-sm btn-delete" style="margin-top:.4rem">
+        {{ ui.btn_reject }} ✓
+      </button>
+    </form>
+
+    {# Regresar a borrador #}
+    <form method="post" action="{{ url_for('admin.post_to_draft', post_id=post.id) }}" style="display:inline">
+      <button type="submit" class="btn-sm btn-secondary review-btn">{{ ui.btn_draft }}</button>
+    </form>
+
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin-media.js') }}"></script>
+<script>
+(function () {
+  const TOOLBAR = [
+    [{ header: [2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    ['blockquote'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['link', 'image'],
+    ['clean']
+  ];
+
+  function makeQuill(editorId, hiddenId) {
+    const q = new Quill('#' + editorId, {
+      theme: 'snow',
+      modules: {
+        toolbar: {
+          container: TOOLBAR,
+          handlers: { image: () => AdminMedia.openPickerForQuill(q) }
+        }
+      }
+    });
+    const hidden = document.getElementById(hiddenId);
+    if (hidden.value.trim()) q.root.innerHTML = hidden.value;
+    return q;
+  }
+
+  const qEs = makeQuill('quill-body-es', 'body_es');
+  const qEn = makeQuill('quill-body-en', 'body_en');
+
+  document.getElementById('postForm').addEventListener('submit', function () {
+    document.getElementById('body_es').value = qEs.root.innerHTML;
+    document.getElementById('body_en').value = qEn.root.innerHTML;
+  });
+
+  AdminMedia.init('postForm');
+})();
+
+function toggleReviewReject(btn) {
+  var form = btn.nextElementSibling;
+  if (form && form.classList.contains('reject-inline')) {
+    form.style.display = form.style.display === 'none' ? '' : 'none';
+  }
+}
+</script>
+{% endblock %}

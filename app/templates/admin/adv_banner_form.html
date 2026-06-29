@@ -1,0 +1,285 @@
+{% extends "admin/layout.html" %}
+{% set is_edit = banner is not none %}
+{% block title %}{{ adv_ui.page_edit_banner if is_edit else adv_ui.page_new_banner }} — AdCritic{% endblock %}
+{% block page_title %}{{ adv_ui.page_edit_banner if is_edit else adv_ui.page_new_banner }}{% endblock %}
+
+{% block content %}
+<form method="post" class="admin-form" id="bannerForm">
+
+  {# ── SECCIÓN 1: Identificación ── #}
+  <div class="form-section">
+    <div class="form-section__title">Identificación</div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_ad_name }}</label>
+      <small class="form-hint">Nombre interno para identificar este anuncio en el panel. No se muestra al público.</small>
+      <input class="form-input" type="text" name="name"
+             value="{{ banner.name or '' if is_edit else '' }}"
+             placeholder="Ej: Header Coca-Cola Verano 2025" />
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_client }}</label>
+      <small class="form-hint">Empresa o marca a la que pertenece este anuncio.</small>
+      <select class="form-input" name="advertiser_id" id="sel-advertiser">
+        <option value="">— {{ adv_ui.no_client }} —</option>
+        {% for adv in advertisers %}
+          <option value="{{ adv.id }}"
+            {% if is_edit and banner.advertiser_id == adv.id %}selected{% endif %}>
+            {{ adv.company_name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_campaign }}</label>
+      <small class="form-hint">Agrupa el anuncio dentro de una campaña. Filtra por cliente para ver sólo las suyas.</small>
+      <select class="form-input" name="campaign_id" id="sel-campaign">
+        <option value="">— {{ adv_ui.no_campaign }} —</option>
+        {% for c in campaigns %}
+          <option value="{{ c.id }}"
+                  data-adv="{{ c.advertiser_id or '' }}"
+            {% if is_edit and banner.campaign_id == c.id %}selected{% endif %}>
+            {{ c.name }}{% if c.advertiser %} — {{ c.advertiser.company_name }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  {# ── SECCIÓN 2: Ubicación ── #}
+  <div class="form-section">
+    <div class="form-section__title">Ubicación en el sitio</div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_zone }} *</label>
+      <small class="form-hint">Posición del sitio donde se mostrará este anuncio. Cada zona tiene dimensiones recomendadas.</small>
+      <select class="form-input" name="zone_id" required>
+        {% for z in zones %}
+          <option value="{{ z.id }}"
+            {% if is_edit and banner.zone_id == z.id %}selected{% endif %}>
+            {{ z.display_name }}
+            {% if z.width and z.height %} — {{ z.width }}×{{ z.height }} px{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  {# ── SECCIÓN 3: Contenido ── #}
+  <div class="form-section">
+    <div class="form-section__title">Contenido del anuncio</div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_type }} *</label>
+      <small class="form-hint">Tipo de contenido: imagen estática, video autoplay, o código embed de terceros (solo admin).</small>
+      <div style="display:flex;gap:2rem;padding-top:.4rem">
+        {% for val, label in [('image', adv_ui.type_image), ('video', adv_ui.type_video), ('embed_code', adv_ui.type_embed)] %}
+          <label class="form-radio-label">
+            <input type="radio" name="ad_type" value="{{ val }}"
+                   {% if is_edit and banner.ad_type == val %}checked
+                   {% elif not is_edit and val == 'image' %}checked{% endif %}
+                   onchange="switchType(this.value)" />
+            <span>{{ label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Image #}
+    <div class="form-row" id="row-image">
+      <label class="form-label">{{ adv_ui.label_content_image }} *</label>
+      <small class="form-hint">URL directa de la imagen. Recomendado: JPEG o PNG optimizado. Usa las dimensiones de la zona elegida.</small>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input class="form-input" type="text" name="content" id="contentField"
+               value="{{ banner.content if is_edit and banner.ad_type == 'image' else '' }}"
+               placeholder="https://cdn.tuempresa.com/banner-verano.jpg" style="flex:1" />
+        <button type="button" class="btn-sm js-open-picker"
+                data-target="contentField"
+                data-picker-url="{{ url_for('media.index') }}">
+          Elegir imagen…
+        </button>
+      </div>
+      <div id="img-preview" style="margin-top:.5rem;display:none">
+        <img id="img-preview-el" src="" alt="preview"
+             style="max-height:80px;max-width:100%;border-radius:4px;border:1px solid var(--c-border)" />
+      </div>
+    </div>
+
+    {# Video #}
+    <div class="form-row" id="row-video" style="display:none">
+      <label class="form-label">{{ adv_ui.label_content_video }} *</label>
+      <small class="form-hint">URL directa al archivo de video (MP4 recomendado). Se reproduce sin sonido en bucle.</small>
+      <input class="form-input" type="text" name="content_video"
+             value="{{ banner.content if is_edit and banner.ad_type == 'video' else '' }}"
+             placeholder="https://cdn.tuempresa.com/spot.mp4" />
+    </div>
+
+    {# Embed #}
+    <div class="form-row" id="row-embed" style="display:none">
+      <label class="form-label">{{ adv_ui.label_content_embed }} *</label>
+      <small class="form-hint" style="color:#b45309;font-weight:600">{{ adv_ui.hint_embed }}</small>
+      <textarea class="form-input" name="content_embed" rows="8"
+                style="font-family:monospace;font-size:.82rem">{{ banner.content if is_edit and banner.ad_type == 'embed_code' else '' }}</textarea>
+    </div>
+
+    <div class="form-row" id="row-click-url">
+      <label class="form-label">{{ adv_ui.label_click_url }}</label>
+      <small class="form-hint">{{ adv_ui.hint_click_url }}</small>
+      <input class="form-input" type="url" name="click_url"
+             value="{{ banner.click_url or '' if is_edit else '' }}"
+             placeholder="https://www.tuempresa.com/landing" />
+    </div>
+  </div>
+
+  {# ── SECCIÓN 4: Vigencia ── #}
+  <div class="form-section">
+    <div class="form-section__title">Período de vigencia</div>
+
+    <div class="form-row">
+      <label class="form-label">Fecha de inicio → Fecha de fin</label>
+      <small class="form-hint">{{ adv_ui.hint_dates }} El anuncio se mostrará solo durante este rango de fechas.</small>
+      <div style="display:flex;gap:.75rem;align-items:center;margin-top:.25rem">
+        <input class="form-input" type="date" name="start_date" style="width:auto"
+               value="{{ banner.start_date.isoformat() if is_edit and banner.start_date else '' }}" />
+        <span style="color:var(--c-muted)">→</span>
+        <input class="form-input" type="date" name="end_date" style="width:auto"
+               value="{{ banner.end_date.isoformat() if is_edit and banner.end_date else '' }}" />
+      </div>
+    </div>
+  </div>
+
+  {# ── SECCIÓN 5: Visibilidad geográfica ── #}
+  <div class="form-section">
+    <div class="form-section__title">Visibilidad geográfica</div>
+    <p class="form-section__desc">
+      Define en qué países se muestra este anuncio. Usa solo uno de los dos campos:<br>
+      <strong>Países objetivo</strong> = whitelist (solo se muestra en esos países) ·
+      <strong>Países bloqueados</strong> = blacklist (se muestra en todos excepto esos).
+    </p>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_target_countries }} <span class="badge badge--draft" style="font-size:.65rem;vertical-align:middle">Whitelist</span></label>
+      <small class="form-hint">{{ adv_ui.hint_countries }} Ej: <code>PE,CL,CO</code> → solo Perú, Chile y Colombia.</small>
+      <input class="form-input" type="text" name="target_countries"
+             id="inp-target"
+             value="{{ banner.target_countries or '' if is_edit else '' }}"
+             placeholder="PE,CL,CO"
+             style="text-transform:uppercase;letter-spacing:.05em" />
+      <div id="flags-target" class="form-flag-preview"></div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_blocked_countries }} <span class="badge badge--draft" style="font-size:.65rem;vertical-align:middle;background:#fee2e2;color:#991b1b">Blacklist</span></label>
+      <small class="form-hint">{{ adv_ui.hint_countries }} Ej: <code>AR,MX</code> → se bloquea en Argentina y México.</small>
+      <input class="form-input" type="text" name="blocked_countries"
+             id="inp-blocked"
+             value="{{ banner.blocked_countries or '' if is_edit else '' }}"
+             placeholder="AR,MX"
+             style="text-transform:uppercase;letter-spacing:.05em" />
+      <div id="flags-blocked" class="form-flag-preview"></div>
+    </div>
+  </div>
+
+  {# ── SECCIÓN 6: Estado ── #}
+  <div class="form-section">
+    <div class="form-section__title">Estado</div>
+
+    <div class="form-row form-row--checkbox">
+      <label class="form-label">{{ adv_ui.label_active }}</label>
+      <small class="form-hint">Si está desactivado, el anuncio no se mostrará en el sitio aunque tenga fecha vigente.</small>
+      <input type="checkbox" name="is_active" value="1"
+             {% if not is_edit or banner.is_active %}checked{% endif %} />
+    </div>
+  </div>
+
+  <div class="admin-form-actions">
+    <button type="submit" class="btn-primary">{{ adv_ui.btn_save }}</button>
+    <a href="{{ url_for('advertising.banners_list') }}" class="btn-ghost">{{ adv_ui.btn_cancel }}</a>
+  </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var currentType = '{{ banner.ad_type if is_edit else "image" }}';
+
+  /* ── Type switcher ── */
+  function switchType(type) {
+    currentType = type;
+    document.getElementById('row-image').style.display  = type === 'image'      ? '' : 'none';
+    document.getElementById('row-video').style.display  = type === 'video'      ? '' : 'none';
+    document.getElementById('row-embed').style.display  = type === 'embed_code' ? '' : 'none';
+    document.getElementById('row-click-url').style.display = type === 'embed_code' ? 'none' : '';
+    updateImgPreview();
+  }
+  switchType(currentType);
+  window.switchType = switchType;
+
+  /* ── Image preview ── */
+  function updateImgPreview() {
+    var url = document.getElementById('contentField').value.trim();
+    var preview = document.getElementById('img-preview');
+    var el = document.getElementById('img-preview-el');
+    if (currentType === 'image' && url) {
+      el.src = url;
+      preview.style.display = '';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+  document.getElementById('contentField').addEventListener('input', updateImgPreview);
+  updateImgPreview();
+
+  /* ── Campaign filter by advertiser ── */
+  var selAdv  = document.getElementById('sel-advertiser');
+  var selCamp = document.getElementById('sel-campaign');
+  var allOpts = Array.from(selCamp.querySelectorAll('option'));
+  function filterCampaigns() {
+    var advId = selAdv.value;
+    allOpts.forEach(function(opt) {
+      if (!opt.value) return;
+      opt.hidden = !!(advId && opt.dataset.adv !== advId);
+    });
+    if (selCamp.selectedOptions[0] && selCamp.selectedOptions[0].hidden) {
+      selCamp.value = '';
+    }
+  }
+  selAdv.addEventListener('change', filterCampaigns);
+  filterCampaigns();
+
+  /* ── Flag preview for geo fields ── */
+  function renderFlags(inputId, previewId) {
+    var val = document.getElementById(inputId).value;
+    var codes = val.toUpperCase().split(',').map(function(c){ return c.trim(); }).filter(Boolean);
+    var div = document.getElementById(previewId);
+    div.innerHTML = codes.length
+      ? codes.map(function(cc){
+          return '<span class="fi fi-' + cc.toLowerCase() + '" title="' + cc + '" '
+               + 'style="width:18px;height:13px;border-radius:2px;border:1px solid rgba(0,0,0,.15);'
+               + 'background-size:cover;display:inline-block;margin-right:3px"></span> '
+               + '<code style="font-size:.72rem">' + cc + '</code>';
+        }).join(' ')
+      : '';
+  }
+  document.getElementById('inp-target').addEventListener('input', function(){ renderFlags('inp-target','flags-target'); });
+  document.getElementById('inp-blocked').addEventListener('input', function(){ renderFlags('inp-blocked','flags-blocked'); });
+  renderFlags('inp-target','flags-target');
+  renderFlags('inp-blocked','flags-blocked');
+
+  /* ── Merge content fields on submit ── */
+  document.getElementById('bannerForm').addEventListener('submit', function () {
+    var val = '';
+    if (currentType === 'image')      val = document.getElementById('contentField').value;
+    else if (currentType === 'video') val = document.querySelector('[name=content_video]').value;
+    else                              val = document.querySelector('[name=content_embed]').value;
+    document.getElementById('contentField').value = val;
+    document.querySelector('[name=content_video]').disabled = true;
+    document.querySelector('[name=content_embed]').disabled = true;
+  });
+})();
+</script>
+{% endblock %}

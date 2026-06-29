@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.page_title }} — AdCritic{% endblock %}
+
+{% block seo %}
+<meta name="description" content="{{ ui.subtitle }}" />
+{% endblock %}
+
+{% block content %}
+<section class="posts-hero">
+  <div class="container">
+    <h1 class="posts-hero-title">{{ ui.page_title }}</h1>
+    <p class="posts-hero-subtitle">{{ ui.subtitle }}</p>
+  </div>
+</section>
+
+<div class="container posts-layout">
+  {%- from "partials/ad_zone.html" import render as ad_zone -%}
+
+  {% if categories %}
+  <div class="posts-filter-bar">
+    <a href="{{ url_for('posts.list_es') }}"
+       class="posts-filter-btn {% if not active_cat_id %}is-active{% endif %}">
+      {{ ui.filter_all }}
+    </a>
+    {% for cat in categories %}
+      <a href="{{ url_for('posts.list_es', category_id=cat.id) }}"
+         class="posts-filter-btn {% if active_cat_id == cat.id|string %}is-active{% endif %}">
+        {{ cat.name_es }}
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if posts %}
+    {% set featured = posts[0] %}
+    {% set ft = featured.translation('es') %}
+
+    {# ── Destacado — ancho completo ── #}
+    <div class="posts-featured">
+      {% if featured.cover_image_url %}
+        <a href="{{ url_for('posts.detail_es', slug=featured.slug) }}" class="posts-featured__cover-link">
+          <img class="posts-featured__cover" src="{{ featured.cover_image_url }}" alt="{{ ft.title }}" />
+        </a>
+      {% elif featured.youtube_id %}
+        <a href="{{ url_for('posts.detail_es', slug=featured.slug) }}" class="posts-featured__cover-link">
+          <img class="posts-featured__cover"
+               src="https://img.youtube.com/vi/{{ featured.youtube_id }}/mqdefault.jpg"
+               alt="{{ ft.title }}" />
+        </a>
+      {% else %}
+        <div class="posts-featured__cover-placeholder">
+          <span>AdCritic</span>
+        </div>
+      {% endif %}
+      <div class="posts-featured__body">
+        {% if featured.categories %}
+          <div class="posts-featured__cats">
+            {% for cat in featured.categories %}
+              <a href="{{ url_for('posts.list_es', category_id=cat.id) }}"
+                 class="post-cat-tag">{{ cat.name_es }}</a>
+            {% endfor %}
+            {% if featured.is_premium %}
+              <span class="post-card__premium">{{ ui.gold_badge }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+        <h2 class="posts-featured__title">
+          <a href="{{ url_for('posts.detail_es', slug=featured.slug) }}">{{ ft.title }}</a>
+        </h2>
+        <p class="posts-featured__excerpt">{{ ft.excerpt }}</p>
+        <p class="posts-featured__meta">
+          {{ ui.by }} {{ featured.author.email.split('@')[0] }}
+          · {{ format_date(featured.published_at, 'es') }}
+        </p>
+        <a href="{{ url_for('posts.detail_es', slug=featured.slug) }}" class="posts-featured__read-more">
+          {{ ui.read_more }}
+        </a>
+      </div>
+    </div>
+
+    {# ── Grilla + sidebar ── #}
+    {% if posts|length > 1 %}
+    <div class="posts-with-sidebar">
+      <div class="posts-main">
+        <p class="posts-section-title">Más noticias</p>
+        <div class="posts-grid posts-grid--2col">
+          {% for post in posts[1:] %}
+            {% set t = post.translation('es') %}
+            <article class="post-grid-card">
+              {% if post.cover_image_url %}
+                <a href="{{ url_for('posts.detail_es', slug=post.slug) }}" class="post-grid-card__cover-link">
+                  <img class="post-grid-card__cover" src="{{ post.cover_image_url }}" alt="{{ t.title }}" loading="lazy" />
+                </a>
+              {% elif post.youtube_id %}
+                <a href="{{ url_for('posts.detail_es', slug=post.slug) }}" class="post-grid-card__cover-link">
+                  <img class="post-grid-card__cover"
+                       src="https://img.youtube.com/vi/{{ post.youtube_id }}/mqdefault.jpg"
+                       alt="{{ t.title }}" loading="lazy" />
+                </a>
+              {% else %}
+                <div class="post-grid-card__cover-placeholder">
+                  <span>AdCritic</span>
+                </div>
+              {% endif %}
+              <div class="post-grid-card__body">
+                {% if post.categories %}
+                  <div class="post-grid-card__cats">
+                    {% for cat in post.categories %}
+                      <span class="post-grid-card__cat">{{ cat.name_es }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                <h3 class="post-grid-card__title">
+                  <a href="{{ url_for('posts.detail_es', slug=post.slug) }}">{{ t.title }}</a>
+                </h3>
+                <p class="post-grid-card__excerpt">{{ t.excerpt }}</p>
+                <div class="post-grid-card__footer">
+                  <span>{{ format_date(post.published_at, 'es', compact=True) }}</span>
+                  {% if post.is_premium %}
+                    <span class="post-grid-card__premium">{{ ui.gold_badge }}</span>
+                  {% endif %}
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+
+      <aside class="posts-sidebar">
+        {% include "partials/news_sidebar.html" %}
+      </aside>
+    </div>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <p>No hay publicaciones todavía.</p>
+    </div>
+  {% endif %}
+
+</div>
+
+{% include "partials/newsletter.html" %}
+{% endblock %}

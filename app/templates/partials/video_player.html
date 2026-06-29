@@ -1,0 +1,25 @@
+{% macro render(video_type, video_value, subtitle_es=None, subtitle_en=None, title='') %}
+{% if video_type and video_value %}
+<div class="detail-video-wrap">
+  {% if video_type == 'youtube' %}
+    <div class="js-plyr-player"
+         data-plyr-provider="youtube"
+         data-plyr-embed-id="{{ video_value }}"></div>
+  {% elif video_type == 'vimeo' %}
+    <div class="js-plyr-player"
+         data-plyr-provider="vimeo"
+         data-plyr-embed-id="{{ video_value }}"></div>
+  {% elif video_type == 'upload' %}
+    <video class="js-plyr-player" playsinline controls crossorigin>
+      <source src="{{ video_value }}" type="video/mp4" />
+      {% if subtitle_es %}
+        <track kind="captions" label="Español" srclang="es" src="{{ subtitle_es }}" />
+      {% endif %}
+      {% if subtitle_en %}
+        <track kind="captions" label="English" srclang="en" src="{{ subtitle_en }}" />
+      {% endif %}
+    </video>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}

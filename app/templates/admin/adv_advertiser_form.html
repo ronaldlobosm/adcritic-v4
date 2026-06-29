@@ -1,0 +1,40 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ adv_ui.page_edit_advertiser if advertiser else ui.page_new_advertiser }} — AdCritic{% endblock %}
+{% block page_title %}{{ adv_ui.page_edit_advertiser if advertiser else ui.page_new_advertiser }}{% endblock %}
+
+{% block content %}
+<form method="post" class="admin-form">
+
+  <div class="form-section">
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_company }} *</label>
+      <input class="form-input" type="text" name="company_name" required
+             value="{{ advertiser.company_name if advertiser else '' }}" />
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_contact_name }}</label>
+      <input class="form-input" type="text" name="contact_name"
+             value="{{ advertiser.contact_name or '' if advertiser else '' }}" />
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">{{ adv_ui.label_contact_email }}</label>
+      <input class="form-input" type="email" name="contact_email"
+             value="{{ advertiser.contact_email or '' if advertiser else '' }}" />
+    </div>
+
+    <div class="form-row form-row--checkbox">
+      <label class="form-label">{{ adv_ui.label_active }}</label>
+      <input type="checkbox" name="is_active" value="1"
+             {% if not advertiser or advertiser.is_active %}checked{% endif %} />
+    </div>
+  </div>
+
+  <div class="admin-form-actions">
+    <button type="submit" class="btn-primary">{{ adv_ui.btn_save }}</button>
+    <a href="{{ url_for('advertising.advertisers_list') }}" class="btn-ghost">{{ adv_ui.btn_cancel }}</a>
+  </div>
+
+</form>
+{% endblock %}

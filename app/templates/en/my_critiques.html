@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.my_critiques_title }} — AdCritic{% endblock %}
+
+{% block content %}
+<div class="container account-layout">
+  <h1 class="account-title">{{ ui.my_critiques_title }}</h1>
+
+  {% if current_user.role == 'gold' %}
+    <div class="critique-locked critique-locked--intro" style="margin-bottom:1.25rem">
+      <strong>Gold access</strong>
+      <p>
+        {% if current_user.gold_intro_critique_used %}
+          {{ ui.my_critiques_intro_used }}
+        {% else %}
+          {{ ui.my_critiques_intro_available }}
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% if comments %}
+    <div class="my-critiques-list">
+      {% for comment in comments %}
+        {% set ad = comment.ad %}
+        {% set t = ad.translation('en') if ad else None %}
+        <article class="my-critique-card">
+          <span class="my-critique-card__number">No. {{ "%02d"|format(loop.index) }}</span>
+          <div>
+            <h2>{{ t.title if t else 'Deleted ad' }}</h2>
+            {% if ad %}
+              <p>{{ ad.brand }} · {{ format_date(comment.created_at, 'en') }}</p>
+            {% endif %}
+          </div>
+          <div class="my-critique-card__ratings">
+            {% for value in [comment.rating_music, comment.rating_art_direction, comment.rating_copywriting, comment.rating_strategy] %}
+              {% if value %}<span>{{ value }}</span>{% endif %}
+            {% endfor %}
+          </div>
+          {% if ad %}
+            <a href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}#comentarios" class="btn-secondary">
+              {{ ui.view_critique }}
+            </a>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="comments-empty">{{ ui.my_critiques_empty }}</p>
+  {% endif %}
+</div>
+{% endblock %}

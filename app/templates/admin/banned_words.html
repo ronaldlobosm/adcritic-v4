@@ -1,0 +1,62 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_banned_words }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_banned_words }}{% endblock %}
+
+{% block content %}
+
+{# Add word form #}
+<div class="admin-table-wrap" style="margin-bottom:1.5rem;padding:1.25rem">
+  <form method="post" action="{{ url_for('admin.banned_word_create') }}" class="inline-add-form">
+    <div style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="margin:0">
+        <label class="form-label" for="new_word">{{ ui.label_word }}</label>
+        <input class="form-input" type="text" id="new_word" name="word"
+               placeholder="ej. palabrota" required style="width:200px" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label" for="new_lang">{{ ui.label_word_lang }}</label>
+        <select class="form-input" id="new_lang" name="language" style="width:140px">
+          <option value="all">{{ ui.lang_all }}</option>
+          <option value="es">{{ ui.lang_es }}</option>
+          <option value="en">{{ ui.lang_en }}</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-primary">{{ ui.btn_add_word }}</button>
+    </div>
+  </form>
+</div>
+
+{# Word list table #}
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>{{ ui.th_word }}</th>
+        <th>{{ ui.th_language }}</th>
+        <th>{{ ui.th_actions }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for word in words %}
+        <tr>
+          <td><code>{{ word.word }}</code></td>
+          <td>
+            {% if word.language == 'es' %}{{ ui.lang_es }}
+            {% elif word.language == 'en' %}{{ ui.lang_en }}
+            {% else %}{{ ui.lang_all }}{% endif %}
+          </td>
+          <td class="actions-cell">
+            <form method="post" action="{{ url_for('admin.banned_word_delete', word_id=word.id) }}"
+                  style="display:inline"
+                  onsubmit="return confirm('{{ ui.confirm_delete_word }}')">
+              <button type="submit" class="btn-sm btn-delete">{{ ui.btn_delete }}</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" class="empty-row">{{ ui.empty_banned_words }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

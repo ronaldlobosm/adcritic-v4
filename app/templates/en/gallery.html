@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}AdCritic — Advertising criticism, news and culture{% endblock %}
+
+{% block content %}
+{% set featured_ad = home.featured_ad %}
+{% set featured_post = home.featured_post %}
+
+<section class="front-hero">
+  <div class="container front-hero__grid">
+    {% if featured_ad %}
+      {% set t = featured_ad.translation('en') %}
+      <article class="front-lead js-front-critique-link" data-href="{{ url_for('main.ad_detail_en', slug=featured_ad.slug) }}">
+        <a href="{{ url_for('main.ad_detail_en', slug=featured_ad.slug) }}" class="front-lead__media">
+          {% if featured_ad.youtube_id == 'dQw4w9WgXcQ' %}
+            <div class="ad-card__placeholder">
+              <span>{{ featured_ad.brand }}</span>
+              <strong>{{ featured_ad.year }}</strong>
+            </div>
+          {% else %}
+            <img src="https://img.youtube.com/vi/{{ featured_ad.youtube_id }}/hqdefault.jpg" alt="{{ t.title }}" />
+          {% endif %}
+          <span class="front-label">Featured critique</span>
+          {% if is_new_ad(featured_ad) %}<span class="front-label front-label--new">New</span>{% endif %}
+          {% if featured_ad.is_premium %}<span class="ad-card__gold-badge">Gold</span>{% endif %}
+        </a>
+        <div class="front-lead__body">
+          <p class="front-kicker">
+            {{ featured_ad.brand }} ·
+            <span class="fi fi-{{ featured_ad.country|lower }}"></span>
+            {{ country_name(featured_ad.country, 'en') }} · {{ featured_ad.year }}
+          </p>
+          <h1><a href="{{ url_for('main.ad_detail_en', slug=featured_ad.slug) }}">{{ t.title }}</a></h1>
+          <p>{{ t.analysis_text|striptags|truncate(180) }}</p>
+          <a href="{{ url_for('main.ad_detail_en', slug=featured_ad.slug) }}" class="front-read">Read the critique</a>
+        </div>
+      </article>
+    {% endif %}
+
+    <aside class="front-news-rail">
+      <div class="front-section-head">
+        <span>News desk</span>
+        <a href="{{ url_for('posts.list_en') }}">All news</a>
+      </div>
+      <div class="news-slot">
+        {% set rail_posts = ([featured_post] if featured_post else []) + home.featured_posts %}
+        {% for post in rail_posts %}
+          {% set pt = post.translation('en') %}
+          <article class="news-slot-item{% if loop.first %} is-main{% endif %}">
+            <div class="news-slot-media">
+              <a href="{{ url_for('posts.detail_en', slug=post.slug) }}">
+                {% if post.cover_image_url %}
+                  <img src="{{ post.cover_image_url }}" alt="{{ pt.title }}" />
+                {% elif post.youtube_id %}
+                  <img src="https://img.youtube.com/vi/{{ post.youtube_id }}/mqdefault.jpg" alt="{{ pt.title }}" />
+                {% endif %}
+              </a>
+            </div>
+            <p class="front-kicker">{{ format_date(post.published_at, 'en', compact=True) }}</p>
+            <h2><a href="{{ url_for('posts.detail_en', slug=post.slug) }}">{{ pt.title }}</a></h2>
+            <p class="news-slot-excerpt">{{ pt.excerpt }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="front-band">
+  <div class="container">
+    <div class="front-section-head front-section-head--wide">
+      <span>Latest critiques</span>
+      <a href="{{ url_for('main.catalog_en') }}">Browse the archive</a>
+    </div>
+    <div class="front-card-grid">
+      {% for ad in home.latest_ads %}
+        {% set t = ad.translation('en') %}
+        <article class="front-critique-card js-front-critique-link" data-href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}">
+          <a href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}" class="front-critique-card__media">
+            {% if ad.youtube_id == 'dQw4w9WgXcQ' %}
+              <div class="ad-card__placeholder">
+                <span>{{ ad.brand }}</span>
+                <strong>{{ ad.year }}</strong>
+              </div>
+            {% else %}
+              <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/mqdefault.jpg" alt="{{ t.title }}" loading="lazy" />
+            {% endif %}
+            {% if ad.is_featured %}<span class="front-label">Featured</span>{% endif %}
+            {% if is_new_ad(ad) %}<span class="front-label front-label--new">New</span>{% endif %}
+          </a>
+          <p class="front-kicker">
+            {{ ad.brand }} ·
+            <span class="fi fi-{{ ad.country|lower }}"></span>
+            {{ country_name(ad.country, 'en') }}
+          </p>
+          <h2><a href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}">{{ t.title }}</a></h2>
+          {% if t.analysis_text %}
+            <p class="front-critique-snippet">{{ t.analysis_text|striptags|truncate(110) }}</p>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="front-band front-band--news">
+  <div class="container">
+    <div class="front-section-head front-section-head--wide">
+      <span>Latest news</span>
+      <a href="{{ url_for('posts.list_en') }}">News archive</a>
+    </div>
+    <div class="front-news-grid">
+      {% for post in home.latest_posts %}
+        {% set pt = post.translation('en') %}
+        <article class="front-news-card">
+          {% if post.cover_image_url %}
+            <a href="{{ url_for('posts.detail_en', slug=post.slug) }}"><img src="{{ post.cover_image_url }}" alt="{{ pt.title }}" loading="lazy" /></a>
+          {% elif post.youtube_id %}
+            <a href="{{ url_for('posts.detail_en', slug=post.slug) }}"><img src="https://img.youtube.com/vi/{{ post.youtube_id }}/mqdefault.jpg" alt="{{ pt.title }}" loading="lazy" /></a>
+          {% endif %}
+          <div>
+            <p class="front-kicker">{{ format_date(post.published_at, 'en', compact=True) }}</p>
+            <h2><a href="{{ url_for('posts.detail_en', slug=post.slug) }}">{{ pt.title }}</a></h2>
+            <p>{{ pt.excerpt|truncate(120) }}</p>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% include "partials/newsletter.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.js-front-critique-link').forEach(function (card) {
+    card.addEventListener('click', function (event) {
+      var href = card.getAttribute('data-href');
+      if (!href) return;
+      event.preventDefault();
+      window.location.assign(href);
+    });
+  });
+
+  var slotItems = Array.prototype.slice.call(document.querySelectorAll('.news-slot-item'));
+  if (slotItems.length > 1) {
+    var current = 0;
+    function advanceSlot() {
+      slotItems[current].classList.remove('is-main');
+      current = (current + 1) % slotItems.length;
+      slotItems[current].classList.add('is-main');
+    }
+    setInterval(advanceSlot, 8000);
+  }
+});
+</script>
+{% endblock %}

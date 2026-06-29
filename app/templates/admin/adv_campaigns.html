@@ -1,0 +1,53 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ adv_ui.page_campaigns }} — AdCritic{% endblock %}
+{% block page_title %}{{ adv_ui.page_campaigns }}{% endblock %}
+
+{% block content %}
+<div class="admin-toolbar">
+  <a href="{{ url_for('advertising.campaign_create') }}" class="btn-primary">{{ adv_ui.btn_new_campaign }}</a>
+  <a href="{{ url_for('advertising.banners_list') }}" class="btn-ghost">← {{ adv_ui.page_banners }}</a>
+</div>
+
+{% if campaigns %}
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th style="width:2.5rem">ID</th>
+        <th>{{ adv_ui.label_campaign_name }}</th>
+        <th>{{ adv_ui.th_company }}</th>
+        <th style="text-align:right">Anuncios</th>
+        <th>{{ adv_ui.th_active }}</th>
+        <th>{{ adv_ui.th_actions }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in campaigns %}
+      <tr {% if not c.is_active %}style="opacity:.55"{% endif %}>
+        <td class="text-muted" style="font-size:.78rem">#{{ c.id }}</td>
+        <td><strong>{{ c.name }}</strong></td>
+        <td>{{ c.advertiser.company_name if c.advertiser else '—' }}</td>
+        <td style="text-align:right">{{ c.banners.count() }}</td>
+        <td>
+          <span class="badge {% if c.is_active %}badge--published{% else %}badge--draft{% endif %}">
+            {% if c.is_active %}ON{% else %}OFF{% endif %}
+          </span>
+        </td>
+        <td class="actions-cell">
+          <a href="{{ url_for('advertising.campaign_edit', cid=c.id) }}" class="btn-sm btn-edit">{{ adv_ui.btn_edit }}</a>
+          <form method="post"
+                action="{{ url_for('advertising.campaign_delete', cid=c.id) }}"
+                style="display:inline"
+                onsubmit="return confirm('{{ adv_ui.confirm_delete }}')">
+            <button type="submit" class="btn-sm btn-delete">{{ adv_ui.btn_delete }}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p style="padding:2rem 0;color:#888">{{ adv_ui.empty_campaigns }}</p>
+{% endif %}
+{% endblock %}

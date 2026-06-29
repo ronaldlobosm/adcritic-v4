@@ -1,0 +1,252 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ adv_ui.page_banners }} — AdCritic{% endblock %}
+{% block page_title %}{{ adv_ui.page_banners }}{% endblock %}
+
+{# ── Macro: tabla de anuncios dentro de un bloque campaña ─── #}
+{% macro ads_table(banners, adv_id, camp_id) %}
+  {% if banners %}
+  <div class="admin-table-wrap" style="border:none;border-radius:0;border-top:1px solid #e8e3dc">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th style="width:2.5rem">#</th>
+          <th style="min-width:180px">Nombre</th>
+          <th style="width:170px">Zona</th>
+          <th style="width:70px">Tipo</th>
+          <th style="width:120px">Geo</th>
+          <th style="width:130px">Vigencia</th>
+          <th style="width:80px;text-align:right">Impr.</th>
+          <th style="width:160px;text-align:right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in banners %}
+          {% with adv_id=adv_id, camp_id=camp_id %}
+            {% include "admin/adv_banner_row.html" %}
+          {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="adsm-empty-camp">{{ adv_ui.empty_banners }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="admin-toolbar" style="gap:.75rem;margin-bottom:1rem">
+  <a href="{{ url_for('advertising.banner_create') }}" class="btn-primary">{{ adv_ui.btn_new_banner }}</a>
+  <a href="{{ url_for('advertising.campaign_create') }}" class="btn-ghost">{{ adv_ui.btn_new_campaign }}</a>
+  <a href="{{ url_for('advertising.campaigns_list') }}" class="btn-ghost">{{ adv_ui.page_campaigns }}</a>
+</div>
+
+{# ── Barra de filtros ──────────────────────────────────────────────── #}
+<div class="adsm-filter-bar">
+  <select id="f-client" onchange="applyFilters()">
+    <option value="">{{ adv_ui.filter_all_clients }}</option>
+    {% for adv in advertisers %}
+      <option value="{{ adv.id }}">{{ adv.company_name }}</option>
+    {% endfor %}
+  </select>
+
+  <select id="f-campaign" onchange="applyFilters()">
+    <option value="">{{ adv_ui.filter_all_campaigns }}</option>
+    {% for adv in advertisers %}
+      {% for camp in adv.campaigns %}
+        <option value="{{ camp.id }}" data-adv="{{ adv.id }}">{{ camp.name }}</option>
+      {% endfor %}
+    {% endfor %}
+  </select>
+
+  <select id="f-zone" onchange="applyFilters()">
+    <option value="">{{ adv_ui.filter_all_zones }}</option>
+    {% for z in zones %}
+      <option value="{{ z.zone_key }}">{{ z.display_name }}</option>
+    {% endfor %}
+  </select>
+
+  <select id="f-type" onchange="applyFilters()">
+    <option value="">{{ adv_ui.filter_all_types }}</option>
+    <option value="image">{{ adv_ui.type_image }}</option>
+    <option value="video">{{ adv_ui.type_video }}</option>
+    <option value="embed_code">{{ adv_ui.type_embed }}</option>
+  </select>
+
+  <select id="f-status" onchange="applyFilters()">
+    <option value="">{{ adv_ui.filter_all_status }}</option>
+    <option value="1">{{ adv_ui.filter_active }}</option>
+    <option value="0">{{ adv_ui.filter_paused }}</option>
+  </select>
+
+  <select id="f-geo" onchange="applyFilters()">
+    <option value="">{{ adv_ui.filter_all_geo }}</option>
+    <option value="global">{{ adv_ui.geo_global }}</option>
+    {% set seen = namespace(codes=[]) %}
+    {% for adv in advertisers %}{% for b in adv.banners %}{% for cc in b.target_list %}
+      {% if cc not in seen.codes %}<option value="{{ cc }}">{{ cc }}</option>{% set _ = seen.codes.append(cc) %}{% endif %}
+    {% endfor %}{% endfor %}{% endfor %}
+  </select>
+
+  <span class="adsm-clear" onclick="clearFilters()">✕ Limpiar</span>
+  <span class="adsm-count" id="adsm-count"></span>
+</div>
+
+{# ── Jerarquía: Advertiser ▶ Campaign ▶ Ads ──────────────────────── #}
+{% for adv in advertisers %}
+  {%- set adv_banners = adv.banners.all() -%}
+  {% if adv_banners %}
+  <div class="adsm-advertiser" data-adv-id="{{ adv.id }}">
+
+    {# Nivel 1: Cliente ─────────────────────────────────────────── #}
+    <div class="adsm-adv-header" onclick="toggleAdv(this)">
+      <span class="adsm-adv-toggle open">▶</span>
+      <span class="adsm-adv-name">{{ adv.company_name }}</span>
+      <span class="adsm-adv-meta">
+        {{ adv_banners|length }} anunci{{ 'o' if adv_banners|length == 1 else 'os' }}
+        &nbsp;·&nbsp;
+        {{ adv.campaigns.count() }} campaña{{ 's' if adv.campaigns.count() != 1 else '' }}
+      </span>
+      <a href="{{ url_for('advertising.advertiser_edit', adv_id=adv.id) }}"
+         class="btn-sm" onclick="event.stopPropagation()">{{ adv_ui.btn_edit }}</a>
+      <a href="{{ url_for('advertising.campaign_create') }}?adv={{ adv.id }}"
+         class="btn-sm" onclick="event.stopPropagation()">+ Campaña</a>
+    </div>
+
+    <div class="adsm-adv-body">
+
+      {# Nivel 2: Campaña (con ads) ─────────────────────────────── #}
+      {% for campaign in adv.campaigns %}
+        {%- set camp_banners = campaign.banners.all() -%}
+        <div class="adsm-campaign" data-camp-id="{{ campaign.id }}" data-adv-id="{{ adv.id }}">
+          <div class="adsm-camp-header">
+            <span class="adsm-camp-name">{{ campaign.name }}</span>
+            {% if campaign.category %}
+              <span class="adsm-cat-badge adsm-cat--{{ campaign.category }}">
+                {{ cat_labels.get(campaign.category, campaign.category) }}
+              </span>
+            {% endif %}
+            <span style="font-size:.72rem;color:#999">
+              {{ camp_banners|length }} anunci{{ 'o' if camp_banners|length == 1 else 'os' }}
+            </span>
+            <a href="{{ url_for('advertising.campaign_edit', cid=campaign.id) }}"
+               class="btn-sm">{{ adv_ui.btn_edit }}</a>
+            <a href="{{ url_for('advertising.banner_create') }}?camp={{ campaign.id }}&adv={{ adv.id }}"
+               class="btn-sm">+ Anuncio</a>
+          </div>
+          {{ ads_table(camp_banners, adv.id, campaign.id) }}
+        </div>
+      {% endfor %}
+
+      {# Nivel 2: Sin campaña ────────────────────────────────────── #}
+      {%- set no_camp = adv.banners.filter_by(campaign_id=None).all() -%}
+      {% if no_camp %}
+        <div class="adsm-campaign" data-camp-id="none" data-adv-id="{{ adv.id }}">
+          <div class="adsm-camp-header">
+            <span class="adsm-camp-name adsm-camp-name--muted">{{ adv_ui.no_campaign }}</span>
+          </div>
+          {{ ads_table(no_camp, adv.id, '') }}
+        </div>
+      {% endif %}
+
+    </div>{# /adv-body #}
+  </div>
+  {% endif %}
+{% endfor %}
+
+{% if ungrouped %}
+<div class="adsm-advertiser" data-adv-id="none">
+  <div class="adsm-adv-header" onclick="toggleAdv(this)">
+    <span class="adsm-adv-toggle open">▶</span>
+    <span class="adsm-adv-name" style="opacity:.6;font-style:italic">{{ adv_ui.no_client }}</span>
+    <span class="adsm-adv-meta">{{ ungrouped|length }}</span>
+  </div>
+  <div class="adsm-adv-body">
+    <div class="adsm-campaign" data-camp-id="none" data-adv-id="none">
+      {{ ads_table(ungrouped, '', '') }}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if not advertisers and not ungrouped %}
+  <p style="padding:3rem;text-align:center;color:#aaa">{{ adv_ui.empty_banners }}</p>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ── Ads Manager: collapse & filter ─────────────────────── */
+function toggleAdv(header) {
+  var body = header.nextElementSibling;
+  var arrow = header.querySelector('.adsm-adv-toggle');
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  arrow.classList.toggle('open', !open);
+}
+
+function applyFilters() {
+  var fClient   = document.getElementById('f-client').value;
+  var fCampaign = document.getElementById('f-campaign').value;
+  var fZone     = document.getElementById('f-zone').value;
+  var fType     = document.getElementById('f-type').value;
+  var fStatus   = document.getElementById('f-status').value;
+  var fGeo      = document.getElementById('f-geo').value;
+
+  /* Filter campaign dropdown by selected client */
+  var campOpts = document.getElementById('f-campaign').querySelectorAll('option');
+  campOpts.forEach(function(o) {
+    if (!o.value) return;
+    o.hidden = !!(fClient && o.dataset.adv !== fClient);
+  });
+  if (fCampaign) {
+    var sel = document.querySelector('#f-campaign option[value="'+fCampaign+'"]');
+    if (sel && sel.hidden) { document.getElementById('f-campaign').value = ''; fCampaign = ''; }
+  }
+
+  var visAds = 0;
+
+  /* Filter ad rows (now <tr> elements with data-* attrs) */
+  document.querySelectorAll('tr[data-adv]').forEach(function(row) {
+    var tgt = row.dataset.target || '';
+    var match =
+      (!fClient   || row.dataset.adv    === fClient) &&
+      (!fCampaign || row.dataset.camp   === fCampaign) &&
+      (!fZone     || row.dataset.zone   === fZone) &&
+      (!fType     || row.dataset.type   === fType) &&
+      (!fStatus   || row.dataset.active === fStatus) &&
+      (!fGeo      ||
+        (fGeo === 'global' && !tgt) ||
+        (fGeo !== 'global' && tgt && tgt.split(',').indexOf(fGeo) >= 0)
+      );
+    row.style.display = match ? '' : 'none';
+    row.dataset.hidden = match ? '0' : '1';
+    if (match) visAds++;
+  });
+
+  /* Hide campaign blocks with no visible rows */
+  document.querySelectorAll('.adsm-campaign').forEach(function(camp) {
+    var vis = camp.querySelectorAll('tr[data-hidden="0"]').length > 0;
+    camp.dataset.hidden = vis ? '0' : '1';
+  });
+
+  /* Hide advertiser blocks with no visible campaigns */
+  document.querySelectorAll('.adsm-advertiser').forEach(function(adv) {
+    var vis = adv.querySelectorAll('.adsm-campaign[data-hidden="0"]').length > 0;
+    adv.dataset.hidden = vis ? '0' : '1';
+  });
+
+  document.getElementById('adsm-count').textContent =
+    visAds + ' anunci' + (visAds === 1 ? 'o' : 'os');
+}
+
+function clearFilters() {
+  ['f-client','f-campaign','f-zone','f-type','f-status','f-geo'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  applyFilters();
+}
+
+applyFilters();
+</script>
+{% endblock %}

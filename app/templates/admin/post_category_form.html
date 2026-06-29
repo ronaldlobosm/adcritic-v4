@@ -1,0 +1,31 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_edit_post_category if action == 'edit' else ui.page_new_post_category }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_edit_post_category if action == 'edit' else ui.page_new_post_category }}{% endblock %}
+
+{% block content %}
+<form method="post" class="admin-form">
+
+  <div class="form-section">
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label" for="name_es">{{ ui.label_name_es }} <span class="req">*</span></label>
+        <input class="form-input" type="text" id="name_es" name="name_es"
+               value="{{ request.form.name_es or (category.name_es if category else '') }}" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="name_en">{{ ui.label_name_en }} <span class="req">*</span></label>
+        <input class="form-input" type="text" id="name_en" name="name_en"
+               value="{{ request.form.name_en or (category.name_en if category else '') }}" required />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn-primary">
+      {{ ui.btn_save if action == 'edit' else ui.btn_create_post_category }}
+    </button>
+    <a href="{{ url_for('admin.post_categories_list') }}" class="btn-secondary">{{ ui.btn_cancel }}</a>
+  </div>
+
+</form>
+{% endblock %}

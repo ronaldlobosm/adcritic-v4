@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}AdCritic — Críticas{% endblock %}
+
+{% block content %}
+<section class="catalog-hero">
+  <div class="container">
+    <span class="gallery-kicker">Archivo editorial</span>
+    <h1 class="catalog-title">Críticas publicitarias.</h1>
+    <p class="catalog-subtitle">Un archivo curado para mirar campañas con criterio, memoria y un poco de veneno elegante.</p>
+  </div>
+</section>
+
+<div class="container gallery-shell">
+  <div class="front-section-head front-section-head--wide">
+    <span>Archivo de críticas</span>
+    <small>{{ ads|length }} anuncio{% if ads|length != 1 %}s{% endif %}</small>
+  </div>
+  {% include "partials/filters.html" %}
+
+  {%- from "partials/ad_zone.html" import render as ad_zone -%}
+  {% if ads %}
+    <div class="ad-grid ad-grid--{{ filters.columns }}">
+      {% for ad in ads %}
+        {%- if loop.index == 7 -%}
+          </div>{{ ad_zone("catalog_inline") }}<div class="ad-grid ad-grid--{{ filters.columns }}">
+        {%- endif -%}
+        {% set t = ad.translation('es') %}
+        <article class="ad-card">
+          <a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}" class="ad-card__thumb-link">
+            <div class="ad-card__thumb">
+              {% if ad.youtube_id == 'dQw4w9WgXcQ' %}
+                <div class="ad-card__placeholder">
+                  <span>{{ ad.brand }}</span>
+                  <strong>{{ ad.year }}</strong>
+                  {% if ad.categories %}<small>{{ ad.categories[0].name_es }}</small>{% endif %}
+                </div>
+              {% else %}
+                <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/mqdefault.jpg" alt="{{ t.title }}" loading="lazy" />
+              {% endif %}
+              <div class="ad-card__play">▶</div>
+              {% if ad.is_featured %}
+                <div class="ad-card__badges">
+                  <span class="ad-card__editorial-badge">Destacada</span>
+                  {% if is_new_ad(ad) %}<span class="ad-card__new-badge">Nuevo</span>{% endif %}
+                </div>
+              {% endif %}
+              <div class="ad-card__badges-right">
+                {% if is_new_ad(ad) and not ad.is_featured %}<span class="ad-card__new-badge">Nuevo</span>{% endif %}
+                {% if ad.country %}<span class="fi fi-{{ ad.country|lower }}" title="{{ country_name(ad.country, 'es') }}" style="width:14px;height:11px;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,.5);background-size:cover;display:block;flex-shrink:0"></span>{% endif %}
+              </div>
+              {% if ad.is_premium %}<span class="ad-card__gold-badge">Gold</span>{% endif %}
+            </div>
+          </a>
+          <div class="ad-card__body">
+            <span class="ad-card__number">No. {{ "%02d"|format(loop.index) }}</span>
+            <span class="ad-card__meta">
+              {{ ad.brand }} · {{ country_name(ad.country, 'es') }} · {{ ad.year }}
+            </span>
+            <h2 class="ad-card__title"><a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}">{{ t.title }}</a></h2>
+            <div class="ad-card__categories">
+              {% for cat in ad.categories %}<span class="ad-card__category">{{ cat.name_es }}</span>{% endfor %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>No se encontraron anuncios con esos filtros.</p>
+      <a href="?" class="filter-clear">Ver todos</a>
+    </div>
+  {% endif %}
+</div>
+
+{% include "partials/newsletter.html" %}
+{% endblock %}

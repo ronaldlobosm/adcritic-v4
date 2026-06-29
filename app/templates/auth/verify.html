@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.verify_title }} — AdCritic{% endblock %}
+
+{% block content %}
+<div class="container auth-container" style="max-width:480px">
+  <div class="auth-card">
+
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <span style="font-size:2.5rem">📧</span>
+    </div>
+
+    <h1 class="auth-title" style="margin-bottom:.5rem">{{ ui.verify_title }}</h1>
+    <p style="text-align:center;font-size:.9rem;color:var(--color-muted,#6b7280);margin-bottom:1.75rem;line-height:1.6">
+      {{ ui.verify_instruction }}
+    </p>
+
+    {# Code entry form #}
+    <form method="post" class="auth-form">
+      <div class="form-group">
+        <label class="form-label" for="code">{{ ui.verify_code_label }}</label>
+        <input
+          id="code"
+          name="code"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          autocomplete="one-time-code"
+          placeholder="000000"
+          required
+          style="text-align:center;font-size:1.6rem;font-family:monospace;letter-spacing:.25em;padding:.6rem .5rem"
+          class="form-input"
+        />
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--full" style="margin-top:.5rem">
+        {{ ui.verify_btn }}
+      </button>
+    </form>
+
+    <hr style="margin:1.75rem 0;border:none;border-top:1px solid var(--color-border,#e5e7eb)" />
+
+    <p style="text-align:center;font-size:.85rem;color:var(--color-muted,#9ca3af);margin-bottom:.75rem">
+      {{ ui.resend_hint }}
+    </p>
+
+    <form method="post" action="{{ resend_url }}">
+      <button type="submit" class="btn btn--secondary btn--full">
+        {{ ui.resend_btn }}
+      </button>
+    </form>
+
+    {% if days_left is defined %}
+    <p style="text-align:center;font-size:.78rem;color:var(--color-muted,#9ca3af);margin-top:1rem">
+      {{ ui.days_left_note.format(n=days_left) }}
+    </p>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

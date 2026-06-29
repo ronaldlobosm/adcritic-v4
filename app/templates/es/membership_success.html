@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.success_title }} — AdCritic{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:540px;padding-top:5rem;padding-bottom:5rem;text-align:center">
+
+  <div style="font-size:3.5rem;margin-bottom:1rem">🌟</div>
+
+  <h1 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;margin-bottom:.75rem">
+    {{ ui.success_title }}
+  </h1>
+
+  <p style="font-size:1.05rem;color:var(--color-muted,#555);margin-bottom:2.5rem;line-height:1.6">
+    {{ ui.success_body }}
+  </p>
+
+  <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+    <a href="{{ url_for('main.catalog_es') }}" class="btn-primary" style="font-size:1rem;padding:.85rem 1.5rem">
+      {{ ui.success_cta_catalog }}
+    </a>
+    <a href="{{ url_for('account.my_account_es') }}" class="btn-secondary" style="font-size:1rem;padding:.85rem 1.5rem">
+      {{ ui.success_cta_account }}
+    </a>
+  </div>
+
+  <p style="margin-top:2rem;font-size:.85rem;color:var(--color-muted,#999)">
+    Recibirás un correo de confirmación de Stripe con los detalles de tu suscripción.
+  </p>
+
+</div>
+{% endblock %}

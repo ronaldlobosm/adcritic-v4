@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.step2_title }} — AdCritic{% endblock %}
+
+{% block content %}
+<div class="container auth-container" style="max-width:520px">
+  <div class="auth-card">
+
+    {# Step indicator #}
+    <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:1.75rem;font-size:.82rem;color:var(--color-muted,#999)">
+      <a href="{{ back_url }}" style="display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;border:2px solid var(--color-border,#ddd);color:var(--color-muted,#999);font-weight:700;text-decoration:none">1</a>
+      <span style="width:2.5rem;height:1px;background:var(--color-border,#ddd)"></span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--color-accent,#111);color:#fff;font-weight:700">2</span>
+      <span style="font-weight:600;color:var(--color-text,#111)">{{ 'Tu cuenta' if lang == 'es' else 'Your account' }}</span>
+    </div>
+
+    <h1 class="auth-title" style="margin-bottom:.25rem">{{ ui.step2_title }}</h1>
+    <p style="text-align:center;font-size:.88rem;margin-bottom:1.75rem">
+      <span style="display:inline-block;padding:.2rem .6rem;border-radius:.35rem;font-weight:700;font-size:.78rem;
+        {% if intent == 'gold' %}background:#fef3c7;color:#92400e{% else %}background:#f3f4f6;color:#374151{% endif %}">
+        {% if intent == 'gold' %}⭐ {{ ui.step2_subtitle_gold }}{% else %}{{ ui.step2_subtitle_free }}{% endif %}
+      </span>
+      &nbsp;·&nbsp;
+      <a href="{{ back_url }}" style="font-size:.82rem;color:var(--color-muted,#666)">
+        {{ 'Cambiar' if lang == 'es' else 'Change' }}
+      </a>
+    </p>
+
+    <form method="post" enctype="multipart/form-data" class="auth-form">
+
+      {# Required fields #}
+      <div class="form-group">
+        <label class="form-label" for="display_name">
+          {{ ui.label_display_name }}
+          <span class="req" style="color:#dc2626">*</span>
+        </label>
+        <input class="form-input" type="text" id="display_name" name="display_name"
+               value="{{ request.form.display_name or '' }}"
+               maxlength="100" required autofocus />
+        <p class="form-hint" style="margin-top:.3rem;font-size:.8rem;color:var(--color-muted,#777)">
+          {{ ui.hint_display_name }}
+        </p>
+      </div>
+
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label" for="email">
+          {{ ui.label_email }} <span class="req" style="color:#dc2626">*</span>
+        </label>
+        <input class="form-input" type="email" id="email" name="email"
+               value="{{ request.form.email or '' }}" required />
+      </div>
+
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label" for="password">
+          {{ ui.label_password }} <span class="req" style="color:#dc2626">*</span>
+        </label>
+        <input class="form-input" type="password" id="password" name="password"
+               required minlength="8" />
+        <p class="form-hint" style="margin-top:.3rem;font-size:.8rem;color:var(--color-muted,#777)">
+          {{ ui.hint_password }}
+        </p>
+      </div>
+
+      {# Optional fields #}
+      <div style="margin-top:1.75rem;border-top:1px solid var(--color-border,#eee);padding-top:1.25rem">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1rem">
+          <span style="font-size:.82rem;font-weight:600;color:var(--color-muted,#888);text-transform:uppercase;letter-spacing:.05em">
+            {{ ui.hint_optional }}
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="avatar_file">{{ ui.label_avatar }}</label>
+          <div style="display:flex;align-items:center;gap:1rem;margin-top:.35rem">
+            <div id="avatarPreview" style="width:3rem;height:3rem;border-radius:50%;background:var(--color-border,#eee);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#aaa;overflow:hidden;flex-shrink:0">
+              👤
+            </div>
+            <label class="btn-sm btn-secondary" style="cursor:pointer;margin:0">
+              {{ 'Elegir foto' if lang == 'es' else 'Choose photo' }}
+              <input type="file" name="avatar_file" id="avatar_file"
+                     accept=".jpg,.jpeg,.png,.webp" style="display:none"
+                     onchange="previewAvatar(this)" />
+            </label>
+          </div>
+          <p class="form-hint-type" style="margin-top:.4rem;font-size:.78rem">JPG, PNG · {{ 'máx. 5 MB' if lang == 'es' else 'max. 5 MB' }}</p>
+        </div>
+
+        <div class="form-group" style="margin-top:1rem">
+          <label class="form-label" for="bio">{{ ui.label_bio }}</label>
+          <textarea class="form-textarea" id="bio" name="bio" rows="3"
+                    style="resize:vertical">{{ request.form.bio or '' }}</textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="auth-btn" style="margin-top:1.5rem">
+        {{ ui.register_btn }}
+      </button>
+
+    </form>
+
+    <p class="auth-switch">
+      {{ ui.have_account }}
+      <a href="{{ login_url }}">{{ ui.login_link }}</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var prev = document.getElementById('avatarPreview');
+    prev.innerHTML = '';
+    var img = document.createElement('img');
+    img.src = e.target.result;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    prev.appendChild(img);
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+</script>
+{% endblock %}

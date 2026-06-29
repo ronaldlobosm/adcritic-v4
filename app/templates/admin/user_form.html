@@ -1,0 +1,89 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_edit_user if action == 'edit' else ui.page_new_user }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_edit_user if action == 'edit' else ui.page_new_user }}{% endblock %}
+
+{% set cur_role = request.form.get('role') or (user.role if user else 'free') %}
+
+{% block content %}
+<form method="post" class="admin-form" id="userForm">
+
+  <div class="form-section">
+    <div class="form-group">
+      <label class="form-label" for="email">{{ ui.label_email }} <span class="req">*</span></label>
+      <input class="form-input" type="email" id="email" name="email"
+             value="{{ request.form.email or (user.email if user else '') }}"
+             required autofocus />
+    </div>
+
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label" for="password">
+        {{ ui.label_new_password if action == 'edit' else ui.label_password }}
+        {% if action == 'edit' %}<span class="form-hint">— {{ ui.hint_password_edit }}</span>{% else %}<span class="req">*</span>{% endif %}
+      </label>
+      <input class="form-input" type="password" id="password" name="password"
+             {% if action == 'create' %}required minlength="8"{% endif %} />
+    </div>
+
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label" for="role">{{ ui.label_role }}</label>
+      <select class="form-input" id="role" name="role" style="max-width:220px"
+              onchange="toggleContentAccess(this.value)">
+        {% for r in ['admin', 'approver', 'editor', 'advertiser', 'gold', 'free'] %}
+          <option value="{{ r }}" {% if cur_role == r %}selected{% endif %}>
+            {{ ui['role_' + r] if ('role_' + r) in ui else r }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {# Content access — shown only for editor / approver #}
+    <div class="form-group" id="contentAccessGroup"
+         style="margin-top:1rem; {% if cur_role not in ('editor','approver') %}display:none{% endif %}">
+      <label class="form-label">
+        {{ ui.label_content_access }}
+        <span class="form-hint">— {{ ui.hint_content_access }}</span>
+      </label>
+      <div class="category-checkboxes">
+        {% for ct, label in [('catalog', ui.access_catalog), ('posts', ui.access_posts)] %}
+          {# Determine checked state: POST trumps DB state #}
+          {% if request.method == 'POST' %}
+            {% set is_checked = request.form.get('access_' + ct) == '1' %}
+          {% else %}
+            {% set is_checked = ct in user_access %}
+          {% endif %}
+          <label class="checkbox-label">
+            <input type="checkbox" name="access_{{ ct }}" value="1"
+                   {% if is_checked %}checked{% endif %} />
+            <span>{{ label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:1rem">
+      <label class="form-label checkbox-label">
+        <input type="checkbox" name="is_active" value="1"
+               {% if user is none or user.is_active %}checked{% endif %} />
+        {{ ui.label_active }}
+      </label>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn-primary">
+      {{ ui.btn_save if action == 'edit' else ui.btn_create_user }}
+    </button>
+    <a href="{{ url_for('admin.users_list') }}" class="btn-secondary">{{ ui.btn_cancel }}</a>
+  </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleContentAccess(role) {
+  var group = document.getElementById('contentAccessGroup');
+  if (group) group.style.display = (role === 'editor' || role === 'approver') ? '' : 'none';
+}
+</script>
+{% endblock %}

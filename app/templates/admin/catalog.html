@@ -1,0 +1,178 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_catalog }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_catalog }}{% endblock %}
+
+{% block content %}
+<div class="admin-toolbar">
+  {% if current_user.role in ('admin', 'editor') %}
+    <a href="{{ url_for('admin.catalog_create') }}" class="btn-primary">{{ ui.btn_new_entry }}</a>
+  {% endif %}
+</div>
+
+{% if current_user.role == 'admin' %}
+<form id="bulk-form" method="post" action="{{ url_for('admin.catalog_bulk') }}"></form>
+
+<div class="bulk-bar" id="bulk-bar" style="display:none">
+  <span class="bulk-bar__count" id="bulk-count">0 seleccionadas</span>
+  <select name="action" form="bulk-form" class="filter-select bulk-bar__select">
+    <option value="">Acción…</option>
+    <option value="feature">★ Destacar</option>
+    <option value="unfeature">☆ Quitar destacado</option>
+    <option value="unpublish">Despublicar</option>
+    <option value="delete">Eliminar</option>
+  </select>
+  <button type="submit" form="bulk-form" class="btn-primary bulk-bar__apply"
+          onclick="return confirmBulkCatalog()">Aplicar</button>
+  <button type="button" class="btn-secondary bulk-bar__cancel" onclick="clearSelectionCatalog()">Cancelar</button>
+</div>
+{% endif %}
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        {% if current_user.role == 'admin' %}
+          <th style="width:2rem">
+            <input type="checkbox" id="select-all" />
+          </th>
+        {% endif %}
+        <th>{{ ui.th_title }}</th>
+        <th>{{ ui.th_brand }}</th>
+        <th>{{ ui.th_country }}</th>
+        <th>{{ ui.th_year }}</th>
+        <th>{{ ui.th_category }}</th>
+        <th>{{ ui.th_status }}</th>
+        <th>Featured</th>
+        <th>{{ ui.th_actions }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ad in ads %}
+        {% set t = ad.translation('es') %}
+        <tr>
+          {% if current_user.role == 'admin' %}
+            <td>
+              <input type="checkbox" name="ad_ids" value="{{ ad.id }}"
+                     class="row-check" form="bulk-form" />
+            </td>
+          {% endif %}
+          <td>
+            {% if ad.status == 'published' %}
+              <a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}" target="_blank"
+                 class="table-title-link">{{ t.title if t else '—' }}</a>
+            {% else %}
+              <span>{{ t.title if t else '—' }}</span>
+            {% endif %}
+            {% if ad.rejection_note %}
+              <p class="rejection-note">{{ ad.rejection_note }}</p>
+            {% endif %}
+          </td>
+          <td>{{ ad.brand }}</td>
+          <td>{{ countries.get(ad.country, {}).get('es', ad.country) }}</td>
+          <td>{{ ad.year }}</td>
+          <td>
+            {% for cat in ad.categories %}
+              <span class="category-chip">{{ cat.name_es }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% if ad.status == 'published' %}
+              <span class="badge badge--published">{{ ui.status_published }}</span>
+            {% elif ad.status == 'pending' %}
+              <span class="badge badge--pending">{{ ui.status_pending }}</span>
+            {% elif ad.status == 'rejected' %}
+              <span class="badge badge--rejected">{{ ui.status_rejected }}</span>
+            {% else %}
+              <span class="badge badge--draft">{{ ui.status_draft }}</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center">
+            {% if current_user.role == 'admin' %}
+              <form method="post"
+                    action="{{ url_for('admin.catalog_toggle_featured', ad_id=ad.id) }}"
+                    style="display:inline">
+                <button type="submit" class="btn-featured {% if ad.is_featured %}is-featured{% endif %}"
+                        title="{{ 'Quitar destacado' if ad.is_featured else 'Destacar' }}">
+                  {{ '★' if ad.is_featured else '☆' }}
+                </button>
+              </form>
+            {% else %}
+              {{ '★' if ad.is_featured else '—' }}
+            {% endif %}
+          </td>
+          <td class="actions-cell">
+            {% if current_user.role == 'admin' %}
+              <a href="{{ url_for('admin.catalog_edit', ad_id=ad.id) }}" class="btn-sm btn-edit">{{ ui.btn_edit }}</a>
+              {% if ad.status != 'published' %}
+                <form method="post" action="{{ url_for('admin.catalog_publish', ad_id=ad.id) }}" style="display:inline">
+                  <button type="submit" class="btn-sm btn-publish">{{ ui.btn_publish }}</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ url_for('admin.catalog_unpublish', ad_id=ad.id) }}" style="display:inline">
+                  <button type="submit" class="btn-sm btn-unpublish">{{ ui.btn_unpublish }}</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('admin.catalog_delete', ad_id=ad.id) }}"
+                    style="display:inline"
+                    onsubmit="return confirm('{{ ui.confirm_delete }}')">
+                <button type="submit" class="btn-sm btn-delete">{{ ui.btn_delete }}</button>
+              </form>
+            {% elif current_user.role == 'editor' %}
+              <a href="{{ url_for('admin.catalog_edit', ad_id=ad.id) }}" class="btn-sm btn-edit">{{ ui.btn_edit }}</a>
+            {% elif current_user.role == 'approver' %}
+              <a href="{{ url_for('admin.catalog_edit', ad_id=ad.id) }}" class="btn-sm btn-review">{{ ui.btn_review }}</a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="{{ 9 if current_user.role == 'admin' else 7 }}" class="empty-row">{{ ui.empty_catalog }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if current_user.role == 'admin' %}
+<script>
+(function () {
+  var checks = document.querySelectorAll('.row-check');
+  var selectAll = document.getElementById('select-all');
+  var bar = document.getElementById('bulk-bar');
+  var countEl = document.getElementById('bulk-count');
+
+  function updateBar() {
+    var n = document.querySelectorAll('.row-check:checked').length;
+    bar.style.display = n > 0 ? 'flex' : 'none';
+    countEl.textContent = n + ' seleccionadas';
+  }
+
+  selectAll.addEventListener('change', function () {
+    checks.forEach(function (c) { c.checked = selectAll.checked; });
+    updateBar();
+  });
+  checks.forEach(function (c) {
+    c.addEventListener('change', function () {
+      selectAll.checked = Array.from(checks).every(function (x) { return x.checked; });
+      updateBar();
+    });
+  });
+
+  window.clearSelectionCatalog = function () {
+    checks.forEach(function (c) { c.checked = false; });
+    selectAll.checked = false;
+    updateBar();
+  };
+
+  window.confirmBulkCatalog = function () {
+    var action = document.querySelector('[name=action][form=bulk-form]').value;
+    if (!action) { alert('Elige una acción'); return false; }
+    if (action === 'delete') return confirm('¿Eliminar las seleccionadas? No se puede deshacer.');
+    return true;
+  };
+})();
+</script>
+{% endif %}
+{% endblock %}

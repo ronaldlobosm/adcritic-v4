@@ -1,0 +1,74 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_users }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_users }}{% endblock %}
+
+{% block content %}
+<div class="admin-toolbar">
+  {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('admin.user_create') }}" class="btn-primary">{{ ui.btn_new_user }}</a>
+  {% endif %}
+</div>
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>{{ ui.th_email }}</th>
+        <th>{{ ui.th_role }}</th>
+        <th>{{ ui.label_content_access }}</th>
+        <th>{{ ui.th_active }}</th>
+        <th>{{ ui.th_registered }}</th>
+        <th>{{ ui.th_actions }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>
+          {{ user.email }}
+          {% if user.id == current_user.id %}
+            <span class="badge-you">{{ ui.label_you }}</span>
+          {% endif %}
+        </td>
+        <td><span class="role-badge role-badge--{{ user.role }}">{{ ui['role_' + user.role] if ('role_' + user.role) in ui else user.role }}</span></td>
+        <td class="text-muted" style="font-size:.85rem">
+          {% if user.role in ('editor', 'approver') %}
+            {% set access_list = user.content_access.all() %}
+            {% if access_list %}
+              {% for a in access_list %}
+                <span class="category-chip">{{ ui['access_' + a.content_type] if ('access_' + a.content_type) in ui else a.content_type }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          <span class="active-badge {% if user.is_active %}active-badge--yes{% else %}active-badge--no{% endif %}">
+            {{ ui.active_yes if user.is_active else ui.active_no }}
+          </span>
+        </td>
+        <td class="text-muted">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+        <td class="actions-cell">
+          {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin.user_edit', user_id=user.id) }}"
+               class="btn-sm btn-edit">{{ ui.btn_edit }}</a>
+            {% if user.id != current_user.id %}
+              <form method="post" action="{{ url_for('admin.user_delete', user_id=user.id) }}"
+                    style="display:inline"
+                    onsubmit="return confirm('{{ ui.confirm_delete_user }}')">
+                <button type="submit" class="btn-sm btn-delete">{{ ui.btn_delete }}</button>
+              </form>
+            {% endif %}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

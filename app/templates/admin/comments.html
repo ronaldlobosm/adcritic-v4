@@ -1,0 +1,153 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ ui.page_comments }} — AdCritic{% endblock %}
+{% block page_title %}{{ ui.page_comments }}{% endblock %}
+
+{% block content %}
+
+{# ── Tab bar (status) ─────────────────────────────────────────────────── #}
+<div class="comment-tabs">
+  {% for key, label in [('all', ui.tab_all), ('approved', ui.tab_approved), ('pending', ui.tab_pending), ('spam', ui.tab_spam)] %}
+    <a href="{{ url_for('admin.comments_list', status=key, source=source_filter) }}"
+       class="comment-tab {% if status_filter == key %}is-active{% endif %}">
+      {{ label }} <span class="tab-count">({{ counts[key] }})</span>
+    </a>
+  {% endfor %}
+</div>
+
+{# ── Source filter ────────────────────────────────────────────────────── #}
+<div style="margin-top:.75rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+  {% set src_options = [
+    ('all',  'Todos los orígenes' if lang == 'es' else 'All sources'),
+    ('post', 'Solo noticias'      if lang == 'es' else 'News only'),
+    ('ad',   'Solo catálogo'      if lang == 'es' else 'Catalog only'),
+  ] %}
+  {% for key, label in src_options %}
+    <a href="{{ url_for('admin.comments_list', status=status_filter, source=key) }}"
+       class="btn-secondary btn-sm {% if source_filter == key %}is-active{% endif %}"
+       style="{% if source_filter == key %}font-weight:600;box-shadow:inset 0 0 0 2px currentColor{% endif %}">
+      {{ label }}
+    </a>
+  {% endfor %}
+</div>
+
+{# ── Bulk action form wraps the whole table ───────────────────────────── #}
+<form method="post" action="{{ url_for('admin.comments_bulk_action') }}" id="bulkForm">
+  <input type="hidden" name="back_status" value="{{ status_filter }}" />
+
+  <div class="bulk-action-bar" style="margin-top:1rem">
+    <label class="checkbox-label" style="margin-right:.5rem">
+      <input type="checkbox" id="selectAll" onchange="document.querySelectorAll('.cb-comment').forEach(cb=>cb.checked=this.checked)" />
+      <span>{{ ui.tab_all }}</span>
+    </label>
+    <select name="action" class="form-input" style="max-width:220px">
+      <option value="">{{ ui.bulk_action_label }}</option>
+      <option value="approve">{{ ui.bulk_approve }}</option>
+      <option value="pending">{{ ui.bulk_pend }}</option>
+      <option value="spam">{{ ui.bulk_spam }}</option>
+      <option value="delete">{{ ui.bulk_delete }}</option>
+    </select>
+    <button type="submit" class="btn-secondary">{{ ui.bulk_apply }}</button>
+  </div>
+
+  <div class="admin-table-wrap" style="margin-top:.75rem">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th style="width:32px"></th>
+          <th style="width:90px">{{ 'Origen' if lang == 'es' else 'Source' }}</th>
+          <th>{{ ui.th_author }}</th>
+          <th>{{ ui.th_comment }}</th>
+          <th>{{ ui.th_post_link }}</th>
+          <th>{{ ui.th_date }}</th>
+          <th>{{ ui.th_status }}</th>
+          <th>{{ ui.th_actions }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for comment in comments %}
+          {% if comment._ctype == 'post' %}
+            {% set cb_value      = 'p_' ~ comment.id %}
+            {% set content_title = (comment.post.translation('es').title if comment.post.translation('es') else comment.post.slug)[:40] %}
+            {% set content_url   = url_for('posts.detail_es', slug=comment.post.slug) %}
+            {% set type_label    = 'Noticia'  if lang == 'es' else 'News' %}
+            {% set type_style    = 'background:#2563eb;color:#fff' %}
+            {% set approve_url   = url_for('admin.comment_approve',         comment_id=comment.id) %}
+            {% set pend_url      = url_for('admin.comment_pend',            comment_id=comment.id) %}
+            {% set spam_url      = url_for('admin.comment_spam',            comment_id=comment.id) %}
+            {% set delete_url    = url_for('admin.comment_delete_admin',    comment_id=comment.id) %}
+          {% else %}
+            {% set cb_value      = 'a_' ~ comment.id %}
+            {% set content_title = (comment.ad.translation('es').title if comment.ad.translation('es') else comment.ad.slug)[:40] %}
+            {% set content_url   = url_for('main.ad_detail_es', slug=comment.ad.slug) %}
+            {% set type_label    = 'Catálogo' if lang == 'es' else 'Catalog' %}
+            {% set type_style    = 'background:#dc2626;color:#fff' %}
+            {% set approve_url   = url_for('admin.comment_approve_ad',      comment_id=comment.id) %}
+            {% set pend_url      = url_for('admin.comment_pend_ad',         comment_id=comment.id) %}
+            {% set spam_url      = url_for('admin.comment_spam_ad',         comment_id=comment.id) %}
+            {% set delete_url    = url_for('admin.comment_delete_admin_ad', comment_id=comment.id) %}
+          {% endif %}
+          <tr>
+            <td>
+              <input type="checkbox" class="cb-comment" name="comment_ids" value="{{ cb_value }}" />
+            </td>
+            <td>
+              <span style="display:inline-block;padding:.15rem .45rem;border-radius:.25rem;font-size:.7rem;font-weight:600;white-space:nowrap;{{ type_style }}">
+                {{ type_label }}
+              </span>
+            </td>
+            <td>{{ comment.user.public_name }}</td>
+            <td class="comment-body-cell">
+              {{ comment.body[:120] }}{% if comment.body|length > 120 %}…{% endif %}
+            </td>
+            <td>
+              <a href="{{ content_url }}" target="_blank" class="table-title-link">
+                {{ content_title }}
+              </a>
+            </td>
+            <td class="text-muted" style="white-space:nowrap">
+              {{ comment.created_at.strftime('%d/%m/%y %H:%M') }}
+            </td>
+            <td>
+              {% if comment.status == 'approved' %}
+                <span class="badge badge--published">{{ ui.status_approved }}</span>
+              {% elif comment.status == 'pending' %}
+                <span class="badge badge--pending">{{ ui.status_pending }}</span>
+              {% else %}
+                <span class="badge badge--rejected">{{ ui.status_spam }}</span>
+              {% endif %}
+            </td>
+            <td class="actions-cell" style="white-space:nowrap">
+              {% if comment.status != 'approved' %}
+                <form method="post" action="{{ approve_url }}" style="display:inline">
+                  <input type="hidden" name="back_status" value="{{ status_filter }}" />
+                  <button type="submit" class="btn-sm btn-approve">{{ ui.btn_approve_comment }}</button>
+                </form>
+              {% endif %}
+              {% if comment.status != 'pending' %}
+                <form method="post" action="{{ pend_url }}" style="display:inline">
+                  <input type="hidden" name="back_status" value="{{ status_filter }}" />
+                  <button type="submit" class="btn-sm btn-edit">{{ ui.btn_pend_comment }}</button>
+                </form>
+              {% endif %}
+              {% if comment.status != 'spam' %}
+                <form method="post" action="{{ spam_url }}" style="display:inline">
+                  <input type="hidden" name="back_status" value="{{ status_filter }}" />
+                  <button type="submit" class="btn-sm btn-unpublish">{{ ui.btn_spam_comment }}</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ delete_url }}"
+                    style="display:inline"
+                    onsubmit="return confirm('{{ ui.confirm_delete_comment }}')">
+                <input type="hidden" name="back_status" value="{{ status_filter }}" />
+                <button type="submit" class="btn-sm btn-delete">{{ ui.btn_delete }}</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="empty-row">{{ ui.empty_comments }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+{% endblock %}

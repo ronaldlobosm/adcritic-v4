@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.step1_title }} — AdCritic{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:780px;padding-top:3rem;padding-bottom:4rem">
+
+  <div style="text-align:center;margin-bottom:2.25rem">
+    <h1 style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;margin-bottom:.4rem">
+      {{ ui.step1_title }}
+    </h1>
+    <p style="color:var(--color-muted,#666);font-size:1rem">{{ ui.step1_subtitle }}</p>
+  </div>
+
+  {# Step indicator #}
+  <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:2.5rem;font-size:.82rem;color:var(--color-muted,#999)">
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--color-accent,#111);color:#fff;font-weight:700">1</span>
+    <span style="font-weight:600;color:var(--color-text,#111)">{{ 'Elige tu plan' if lang == 'es' else 'Choose your plan' }}</span>
+    <span style="width:2.5rem;height:1px;background:var(--color-border,#ddd)"></span>
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;border:2px solid var(--color-border,#ddd);color:var(--color-muted,#999);font-weight:700">2</span>
+    <span>{{ 'Tu cuenta' if lang == 'es' else 'Your account' }}</span>
+  </div>
+
+  {# Plan cards #}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+    {# Free #}
+    <form method="post">
+      <input type="hidden" name="intent" value="free" />
+      <button type="submit" style="all:unset;display:block;width:100%;cursor:pointer" class="plan-choice-card">
+        <div style="border:2px solid var(--color-border,#e5e5e0);border-radius:1rem;padding:2rem;height:100%;box-sizing:border-box;transition:border-color .15s,box-shadow .15s"
+             onmouseover="this.style.borderColor='#111';this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)'"
+             onmouseout="this.style.borderColor='var(--color-border,#e5e5e0)';this.style.boxShadow='none'">
+          <div style="font-size:1.35rem;font-weight:800;margin-bottom:.3rem">{{ ui.free_name }}</div>
+          <p style="font-size:.9rem;color:var(--color-muted,#666);margin-bottom:1.25rem;line-height:1.5">{{ ui.free_desc }}</p>
+          <ul style="list-style:none;padding:0;margin:0 0 1.75rem;display:flex;flex-direction:column;gap:.5rem">
+            {% for f in ui.free_features %}
+            <li style="display:flex;align-items:flex-start;gap:.45rem;font-size:.88rem">
+              <span style="color:#6b7280;flex-shrink:0">✓</span> {{ f }}
+            </li>
+            {% endfor %}
+          </ul>
+          <div style="display:block;width:100%;text-align:center;padding:.75rem;border:2px solid var(--color-border,#ddd);border-radius:.5rem;font-weight:600;font-size:.95rem;background:#fff">
+            {{ ui.free_cta }}
+          </div>
+        </div>
+      </button>
+    </form>
+
+    {# Gold #}
+    <form method="post">
+      <input type="hidden" name="intent" value="gold" />
+      <button type="submit" style="all:unset;display:block;width:100%;cursor:pointer" class="plan-choice-card">
+        <div style="border:2px solid #f59e0b;border-radius:1rem;padding:2rem;height:100%;box-sizing:border-box;background:#fffbeb;transition:box-shadow .15s;position:relative"
+             onmouseover="this.style.boxShadow='0 4px 20px rgba(245,158,11,.25)'"
+             onmouseout="this.style.boxShadow='none'">
+          <div style="position:absolute;top:-12px;right:1.25rem;background:#f59e0b;color:#fff;font-size:.72rem;font-weight:700;border-radius:99px;padding:.2rem .75rem;white-space:nowrap">
+            ⭐ {{ 'Recomendado' if lang == 'es' else 'Recommended' }}
+          </div>
+          <div style="font-size:1.35rem;font-weight:800;margin-bottom:.3rem;color:#92400e">{{ ui.gold_name }}</div>
+          <p style="font-size:.9rem;color:#78350f;margin-bottom:1.25rem;line-height:1.5">{{ ui.gold_desc }}</p>
+          <ul style="list-style:none;padding:0;margin:0 0 1.75rem;display:flex;flex-direction:column;gap:.5rem">
+            {% for f in ui.gold_features %}
+            <li style="display:flex;align-items:flex-start;gap:.45rem;font-size:.88rem">
+              <span style="color:#f59e0b;font-weight:700;flex-shrink:0">✓</span> {{ f }}
+            </li>
+            {% endfor %}
+          </ul>
+          <div style="display:block;width:100%;text-align:center;padding:.75rem;border-radius:.5rem;font-weight:700;font-size:.95rem;background:#f59e0b;color:#fff">
+            {{ ui.gold_cta }}
+          </div>
+          <p style="text-align:center;font-size:.78rem;color:#92400e;margin-top:.6rem;margin-bottom:0">{{ ui.gold_price_hint }}</p>
+          {% if founder_active %}
+          {% set founder_total_display = founder_total|default(1000) %}
+          {% set founder_claimed_display = founder_claimed|default(0) %}
+          {% set founder_left_display = founder_total_display - founder_claimed_display %}
+          <p style="text-align:center;font-size:.78rem;color:#6f4b05;margin-top:.45rem;margin-bottom:0;font-weight:700">
+            {{ ui.founder_counter.replace('{left}', founder_left_display|string).replace('{total}', founder_total_display|string) }}
+          </p>
+          {% endif %}
+        </div>
+      </button>
+    </form>
+
+  </div>
+
+  <p style="text-align:center;margin-top:2rem;font-size:.88rem;color:var(--color-muted,#666)">
+    {{ ui.step1_login_prompt }}
+    <a href="{{ login_url }}" style="font-weight:600">{{ ui.login_link }}</a>
+  </p>
+
+</div>
+{% endblock %}
