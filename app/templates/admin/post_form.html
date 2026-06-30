@@ -173,8 +173,7 @@
     </div>
     <div class="form-group" style="margin-top:1rem">
       <label class="form-label">{{ ui.label_body_es }} <span class="req">*</span></label>
-      <div id="quill-body-es" class="quill-editor"></div>
-      <textarea id="body_es" name="body_es" hidden>{{ request.form.body_es or (t_es.body if t_es else '') }}</textarea>
+      <textarea id="body_es" name="body_es" class="tinymce-editor">{{ request.form.body_es or (t_es.body if t_es else '') }}</textarea>
     </div>
   </div>
 
@@ -196,8 +195,7 @@
     </div>
     <div class="form-group" style="margin-top:1rem">
       <label class="form-label">{{ ui.label_body_en }} <span class="req">*</span></label>
-      <div id="quill-body-en" class="quill-editor"></div>
-      <textarea id="body_en" name="body_en" hidden>{{ request.form.body_en or (t_en.body if t_en else '') }}</textarea>
+      <textarea id="body_en" name="body_en" class="tinymce-editor">{{ request.form.body_en or (t_en.body if t_en else '') }}</textarea>
     </div>
   </div>
 
@@ -295,38 +293,66 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/admin-media.js') }}"></script>
+<script src="{{ url_for('static', filename='js/tinymce/tinymce.min.js') }}"></script>
 <script>
 (function () {
-  const TOOLBAR = [
-    [{ header: [2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    ['blockquote'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['link', 'image'],
-    ['clean']
-  ];
+  const UPLOAD_URL = "{{ url_for('media.upload') }}";
 
-  function makeQuill(editorId, hiddenId) {
-    const q = new Quill('#' + editorId, {
-      theme: 'snow',
-      modules: {
-        toolbar: {
-          container: TOOLBAR,
-          handlers: { image: () => AdminMedia.openPickerForQuill(q) }
-        }
-      }
-    });
-    const hidden = document.getElementById(hiddenId);
-    if (hidden.value.trim()) q.root.innerHTML = hidden.value;
-    return q;
-  }
-
-  const qEs = makeQuill('quill-body-es', 'body_es');
-  const qEn = makeQuill('quill-body-en', 'body_en');
+  tinymce.init({
+    selector: 'textarea.tinymce-editor',
+    base_url: "{{ url_for('static', filename='js/tinymce') }}",
+    suffix: '.min',
+    height: 500,
+    menubar: 'file edit view insert format tools table',
+    plugins: [
+      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+      'searchreplace', 'visualblocks', 'code', 'fullscreen',
+      'insertdatetime', 'media', 'table', 'wordcount', 'anchor',
+      'emoticons', 'preview'
+    ],
+    toolbar:
+      'undo redo | styles | bold italic underline strikethrough | ' +
+      'alignleft aligncenter alignright alignjustify | ' +
+      'bullist numlist outdent indent | link image media table | ' +
+      'blockquote code | forecolor backcolor | fullscreen preview | removeformat',
+    image_advtab: true,
+    image_uploadtab: true,
+    automatic_uploads: true,
+    images_upload_url: UPLOAD_URL,
+    images_upload_handler: function (blobInfo, progress) {
+      return new Promise(function (resolve, reject) {
+        var fd = new FormData();
+        fd.append('file', blobInfo.blob(), blobInfo.filename());
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', UPLOAD_URL);
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable) progress(e.loaded / e.total * 100);
+        };
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            try {
+              var json = JSON.parse(xhr.responseText);
+              resolve(json.url);
+            } catch (e) {
+              reject('Upload failed: invalid response');
+            }
+          } else {
+            reject('Upload failed: ' + xhr.status);
+          }
+        };
+        xhr.onerror = function () { reject('Upload failed: network error'); };
+        xhr.send(fd);
+      });
+    },
+    content_style: 'body { font-family: IBM Plex Sans, sans-serif; font-size: 16px; line-height: 1.6; max-width: 800px; margin: 1rem auto; }',
+    skin: 'oxide',
+    toolbar_mode: 'wrap',
+    promotion: false,
+    branding: false,
+  });
 
   document.getElementById('postForm').addEventListener('submit', function () {
-    document.getElementById('body_es').value = qEs.root.innerHTML;
-    document.getElementById('body_en').value = qEn.root.innerHTML;
+    tinymce.triggerSave();
   });
 
   AdminMedia.init('postForm');
