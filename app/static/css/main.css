@@ -2492,6 +2492,16 @@ a:hover { text-decoration: underline; }
   padding: .55rem 1rem;
   text-align: center;
 }
+.account-location-map--dark {
+  border-color: rgba(181,138,59,.32);
+}
+.account-location-map--dark #locationMap {
+  background: #212121;
+}
+.account-location-map--dark .gold-profile-location__text {
+  background: #14110d;
+  color: #d4af57;
+}
 .gold-profile-about dt,
 .gold-membership-card dt {
   color: var(--color-ink-3);
