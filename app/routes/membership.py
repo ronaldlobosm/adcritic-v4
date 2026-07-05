@@ -29,8 +29,8 @@ DEFAULT_MEMBERSHIP_HERO_IMAGE_URL = (
     "adcritic/images/ibfubiameveuxywqkcxa.jpg"
 )
 DEFAULT_FOUNDER_SHIELD_IMAGE_URL = (
-    "https://res.cloudinary.com/dslebikvo/image/upload/v1783213240/"
-    "adcritic/images/zxhegdagsgxjq4htat9o.png"
+    "https://res.cloudinary.com/dslebikvo/image/upload/v1783215415/"
+    "adcritic/images/wmh7gbugyszgpzx9mfub.png"
 )
 
 
