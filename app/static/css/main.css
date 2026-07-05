@@ -2518,7 +2518,10 @@ a:hover { text-decoration: underline; }
   color: #fffaf2;
 }
 .gold-profile-membership--dark .gold-membership-card__benefits {
-  background: #0d0d0c;
+  background:
+    radial-gradient(ellipse at 90% -15%, rgba(212,175,87,.4), transparent 62%),
+    #0d0d0c;
+  position: relative;
 }
 .gold-profile-membership--dark .gold-membership-card__benefits h3 {
   color: #d4af57;
@@ -2613,7 +2616,6 @@ a:hover { text-decoration: underline; }
 .gold-membership-card__summary {
   align-content: start;
   background:
-    radial-gradient(ellipse at 20% -15%, rgba(212,175,87,.4), transparent 62%),
     radial-gradient(ellipse at 105% 115%, rgba(212,175,87,.24), transparent 58%),
     linear-gradient(165deg, #241d10 0%, #0c0a06 45%, #000 100%);
   box-shadow: inset 0 1px 0 rgba(255,244,214,.08), inset 0 -70px 90px rgba(0,0,0,.65);
