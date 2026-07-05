@@ -2460,6 +2460,17 @@ a:hover { text-decoration: underline; }
   font-size: .8rem;
   font-weight: 700;
 }
+.gold-profile-location--dark {
+  background: #080808;
+  border-color: rgba(181,138,59,.32);
+  color: #fffaf2;
+}
+.gold-profile-location--dark .gold-profile-section-head {
+  border-bottom-color: rgba(181,138,59,.4);
+}
+.gold-profile-location--dark .gold-profile-section-head h2 {
+  color: #fffaf2;
+}
 .gold-profile-about p {
   color: var(--color-ink-2);
   line-height: 1.7;
