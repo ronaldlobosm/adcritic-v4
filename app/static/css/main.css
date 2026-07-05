@@ -2513,6 +2513,10 @@ a:hover { text-decoration: underline; }
   background: #14110d;
   color: #d4af57;
 }
+.account-location-map--dark .gm-fullscreen-control {
+  transform: scale(.72);
+  transform-origin: top right;
+}
 .gold-profile-about dt,
 .gold-membership-card dt {
   color: var(--color-ink-3);
@@ -2533,12 +2537,20 @@ a:hover { text-decoration: underline; }
 }
 .gold-membership-card__summary {
   align-content: start;
-  background: #080808;
+  background:
+    radial-gradient(circle at 25% 0%, rgba(181,138,59,.22), transparent 55%),
+    radial-gradient(circle at 90% 100%, rgba(181,138,59,.1), transparent 50%),
+    linear-gradient(165deg, #100e0a 0%, #060504 55%, #000 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), inset 0 -50px 70px rgba(0,0,0,.55);
   color: #fffaf2;
   display: grid;
   gap: 1.4rem;
   justify-items: start;
   padding: 1.5rem;
+}
+.gold-profile-page--free .gold-membership-card__summary {
+  background: #080808;
+  box-shadow: none;
 }
 .gold-membership-card__summary .gold-profile-button {
   justify-self: start;
