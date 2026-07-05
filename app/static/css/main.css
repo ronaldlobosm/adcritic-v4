@@ -1931,6 +1931,14 @@ a:hover { text-decoration: underline; }
   font-weight: 900;
   margin-bottom: 1.75rem;
 }
+.edit-profile-back {
+  color: var(--color-ink-2);
+  display: inline-block;
+  font-size: .85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.edit-profile-back:hover { color: var(--color-accent); }
 .account-card {
   background: #fff;
   border: 1px solid var(--color-border);
@@ -2186,8 +2194,12 @@ a:hover { text-decoration: underline; }
 .gold-profile-page--free .gold-profile-badge {
   color: #d9dcdf;
 }
-.gold-profile-page--free .gold-profile-badge,
-.gold-profile-page--free .gold-profile-edit summary {
+/* The label is reused inside .gold-profile-section-head on a light (cream)
+   background, where the near-white gray above is unreadable. */
+.gold-profile-page--free .gold-profile-section-head .gold-profile-label {
+  color: var(--color-ink-3);
+}
+.gold-profile-page--free .gold-profile-badge {
   border-color: rgba(200,204,209,.62);
 }
 .gold-profile-page--free {
@@ -2315,15 +2327,10 @@ a:hover { text-decoration: underline; }
   transform: rotate(45deg);
   width: 4px;
 }
-.gold-profile-edit {
-  margin-top: 1rem;
-  position: relative;
-}
-.gold-profile-edit summary,
 .gold-profile-button {
-  background: transparent;
-  border: 1px solid rgba(181,138,59,.55);
-  color: inherit;
+  background: #b63a2f;
+  border: 1px solid #b63a2f;
+  color: #fffaf2;
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -2335,44 +2342,9 @@ a:hover { text-decoration: underline; }
   padding: .75rem 1rem;
   text-decoration: none;
 }
-.gold-profile-edit summary {
-  color: #fffaf2;
-  list-style: none;
-}
-.gold-profile-edit summary::-webkit-details-marker { display: none; }
-.gold-profile-button {
-  background: #b63a2f;
-  border-color: #b63a2f;
-  color: #fffaf2;
-}
-.gold-profile-button:hover,
-.gold-profile-edit summary:hover {
+.gold-profile-button:hover {
   opacity: .86;
   text-decoration: none;
-}
-.gold-profile-edit__panel {
-  background: #fffaf2;
-  border: 1px solid var(--color-border);
-  color: var(--color-ink);
-  display: grid;
-  gap: .85rem;
-  min-width: 320px;
-  padding: 1rem;
-  position: absolute;
-  right: 0;
-  top: calc(100% + .75rem);
-  z-index: 8;
-}
-.gold-profile-edit__panel label {
-  display: grid;
-  gap: .3rem;
-}
-.gold-profile-edit__panel label span {
-  color: var(--color-ink-2);
-  font-size: .72rem;
-  font-weight: 800;
-  letter-spacing: .1em;
-  text-transform: uppercase;
 }
 .gold-profile-tabs {
   background: #080808;
@@ -2481,6 +2453,9 @@ a:hover { text-decoration: underline; }
   gap: 1.4rem;
   padding: 1.5rem;
 }
+.gold-membership-card__summary .gold-profile-button {
+  justify-self: start;
+}
 .gold-membership-card__summary dt { color: rgba(255,250,242,.55); }
 .gold-membership-card__summary dd {
   color: #fffaf2;
@@ -2535,25 +2510,16 @@ a:hover { text-decoration: underline; }
   padding-left: 2rem;
 }
 .gold-profile-page--free .gold-membership-card__benefits li::before {
-  border: 1px solid #d4af57;
-  border-radius: 2px;
-  color: #d4af57;
-  content: "";
-  height: 18px;
-  left: 0;
-  top: .1rem;
-  width: 18px;
+  content: none;
 }
-.gold-profile-page--free .gold-membership-card__benefits li::after {
-  border: 1px solid #d4af57;
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  content: "";
-  height: 8px;
-  left: 4px;
+.gold-membership-card__benefits li .benefit-icon {
+  display: inline-block;
+  font-size: 1.05rem;
+  left: 0;
+  line-height: 1;
+  margin-top: 0;
   position: absolute;
-  top: -.28rem;
-  width: 10px;
+  top: .05rem;
 }
 .gold-empty-state {
   align-items: center;
@@ -2722,11 +2688,6 @@ a:hover { text-decoration: underline; }
   color: var(--color-ink-2);
   margin: .6rem 0 0;
 }
-.gold-overview-bottom {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .85fr);
-}
 .gold-recognition-grid--overview {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -2789,30 +2750,6 @@ a:hover { text-decoration: underline; }
 .gold-settings-list .is-danger {
   color: #b63a2f;
 }
-.gold-overview-settings .gold-profile-section-head {
-  margin-bottom: .25rem;
-}
-.gold-settings-list--overview {
-  border: none;
-}
-.gold-settings-list--overview a {
-  align-items: center;
-  display: grid;
-  gap: .2rem;
-  grid-template-columns: minmax(0, 1fr) auto;
-  padding: .95rem 0;
-}
-.gold-settings-list--overview a::after {
-  color: var(--color-ink-2);
-  content: "›";
-  font-size: 1.4rem;
-  grid-column: 2;
-  grid-row: 1 / span 2;
-}
-.gold-settings-list--overview strong,
-.gold-settings-list--overview span {
-  grid-column: 1;
-}
 .gold-connected-accounts {
   border: 1px solid var(--color-border);
   margin-top: 1.5rem;
@@ -2846,12 +2783,8 @@ a:hover { text-decoration: underline; }
 @media (max-width: 900px) {
   .gold-profile-hero,
   .gold-profile-grid,
-  .gold-membership-card,
-  .gold-overview-bottom {
+  .gold-membership-card {
     grid-template-columns: 1fr;
-  }
-  .gold-profile-edit {
-    justify-self: start;
   }
   .gold-profile-actions {
     grid-template-columns: auto minmax(0, 1fr);

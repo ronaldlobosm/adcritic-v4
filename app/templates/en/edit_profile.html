@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Edit profile - AdCritic{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:640px;padding-top:2.5rem;padding-bottom:4rem">
+
+  <a href="{{ url_for('account.my_account_en') }}" class="edit-profile-back">&larr; Back to my account</a>
+  <h1 class="account-title">Edit profile</h1>
+
+  <form method="post" enctype="multipart/form-data" class="account-form">
+    <div class="form-group">
+      <label class="form-label">Profile picture</label>
+      <div class="account-avatar-wrap account-avatar-wrap--{{ 'gold' if current_user.role == 'gold' else 'silver' }}">
+        {% if current_user.avatar_url %}
+          <img src="{{ current_user.avatar_url }}" alt="" id="avatarPreview" class="account-avatar-img" />
+        {% else %}
+          <span id="avatarPreview" class="account-avatar-placeholder">{{ current_user.public_name[0].upper() }}</span>
+        {% endif %}
+        <input type="file" name="avatar_file" id="avatarFileInput" accept=".jpg,.jpeg,.png"
+               style="margin-left:1rem" onchange="previewAvatar(this)" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="display_name">Name</label>
+      <input class="form-input" type="text" id="display_name" name="display_name"
+             value="{{ current_user.display_name or '' }}" maxlength="100" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="professional_title">Professional title</label>
+      <input class="form-input" type="text" id="professional_title" name="professional_title"
+             value="{{ current_user.professional_title or '' }}" maxlength="140" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="linkedin_url">LinkedIn</label>
+      <input class="form-input" type="url" id="linkedin_url" name="linkedin_url"
+             value="{{ current_user.linkedin_url or '' }}" placeholder="https://www.linkedin.com/in/..." maxlength="300" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="location">Location</label>
+      <input class="form-input" type="text" id="location" name="location"
+             value="{{ current_user.location or '' }}" placeholder="Lima, Peru" maxlength="120" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="bio_es">Bio (ES)</label>
+      <textarea class="form-textarea" id="bio_es" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="bio_en">Bio (EN)</label>
+      <textarea class="form-textarea" id="bio_en" name="bio_en" rows="3">{{ current_user.bio_en or '' }}</textarea>
+    </div>
+
+    <div class="form-actions" style="margin-top:.5rem">
+      <button type="submit" class="auth-btn">Save profile</button>
+      <a href="{{ url_for('account.my_account_en') }}" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var prev = document.getElementById('avatarPreview');
+    if (!prev) return;
+    if (prev.tagName === 'IMG') {
+      prev.src = e.target.result;
+    } else {
+      var img = document.createElement('img');
+      img.src = e.target.result;
+      img.id = 'avatarPreview';
+      img.className = 'account-avatar-img';
+      prev.parentNode.replaceChild(img, prev);
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+</script>
+{% endblock %}

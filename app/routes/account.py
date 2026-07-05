@@ -127,36 +127,8 @@ def _handle_account(lang):
     if request.method == "POST":
         action = request.form.get("_action", "")
 
-        # ── Profile update ───────────────────────────────────────────────
-        if action == "profile":
-            display_name = request.form.get("display_name", "").strip() or None
-            professional_title = request.form.get("professional_title", "").strip() or None
-            bio_es       = request.form.get("bio_es", "").strip() or None
-            bio_en       = request.form.get("bio_en", "").strip() or None
-            linkedin_url = request.form.get("linkedin_url", "").strip() or None
-            location     = request.form.get("location", "").strip() or None
-
-            current_user.display_name       = display_name
-            current_user.professional_title = professional_title
-            current_user.bio_es             = bio_es
-            current_user.bio_en             = bio_en
-            current_user.linkedin_url       = linkedin_url
-            current_user.location           = location
-
-            avatar_file = request.files.get("avatar_file")
-            if avatar_file and avatar_file.filename:
-                mf, err = save_upload_file(avatar_file, allowed_types={"image"})
-                if mf:
-                    current_user.avatar_media_id = mf.id
-                else:
-                    flash(f"{ui['err_avatar']} {err or ''}", "error")
-
-            db.session.commit()
-            flash(ui["ok_profile_saved"], "success")
-            return redirect(url_for(f"account.my_account_{lang}"))
-
         # ── Password change ──────────────────────────────────────────────
-        elif action == "password":
+        if action == "password":
             current_pw = request.form.get("current_password", "")
             new_pw     = request.form.get("new_password", "")
             confirm_pw = request.form.get("confirm_password", "")
@@ -289,6 +261,55 @@ def my_account_es():
 @login_required
 def my_account_en():
     return _handle_account("en")
+
+
+def _handle_edit_profile(lang):
+    ui = UI[lang]
+
+    if request.method == "POST":
+        display_name = request.form.get("display_name", "").strip() or None
+        professional_title = request.form.get("professional_title", "").strip() or None
+        bio_es       = request.form.get("bio_es", "").strip() or None
+        bio_en       = request.form.get("bio_en", "").strip() or None
+        linkedin_url = request.form.get("linkedin_url", "").strip() or None
+        location     = request.form.get("location", "").strip() or None
+
+        current_user.display_name       = display_name
+        current_user.professional_title = professional_title
+        current_user.bio_es             = bio_es
+        current_user.bio_en             = bio_en
+        current_user.linkedin_url       = linkedin_url
+        current_user.location           = location
+
+        avatar_file = request.files.get("avatar_file")
+        if avatar_file and avatar_file.filename:
+            mf, err = save_upload_file(avatar_file, allowed_types={"image"})
+            if mf:
+                current_user.avatar_media_id = mf.id
+            else:
+                flash(f"{ui['err_avatar']} {err or ''}", "error")
+
+        db.session.commit()
+        flash(ui["ok_profile_saved"], "success")
+        return redirect(url_for(f"account.my_account_{lang}"))
+
+    return render_template(
+        f"{lang}/edit_profile.html",
+        lang=lang,
+        ui=ui,
+    )
+
+
+@account.route("/es/mi-cuenta/editar", methods=["GET", "POST"])
+@login_required
+def edit_profile_es():
+    return _handle_edit_profile("es")
+
+
+@account.route("/en/my-account/edit", methods=["GET", "POST"])
+@login_required
+def edit_profile_en():
+    return _handle_edit_profile("en")
 
 
 def _handle_my_critiques(lang):
