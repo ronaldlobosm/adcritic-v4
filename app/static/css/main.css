@@ -1957,6 +1957,31 @@ a:hover { text-decoration: underline; }
   margin-bottom: 1rem;
 }
 .edit-profile-back:hover { color: var(--color-accent); }
+.combobox { position: relative; }
+.combobox-list {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius) var(--radius);
+  display: none;
+  left: 0;
+  list-style: none;
+  margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  box-shadow: 0 10px 24px rgba(18,16,13,.12);
+}
+.combobox-list.is-open { display: block; }
+.combobox-list li {
+  cursor: pointer;
+  font-size: .92rem;
+  padding: .55rem .75rem;
+}
+.combobox-list li:hover { background: var(--color-accent-lt); }
 .account-card {
   background: #fff;
   border: 1px solid var(--color-border);
@@ -2446,10 +2471,11 @@ a:hover { text-decoration: underline; }
   gap: 1rem;
   margin: 0;
 }
-.gold-profile-location__text {
+.gold-profile-location__text--standalone {
   color: var(--color-ink);
-  font-size: 1.05rem;
-  margin: 0 0 1rem;
+  font-size: .95rem;
+  text-align: center;
+  margin: 0;
 }
 .account-location-map {
   border: 1px solid var(--color-border);
@@ -2457,6 +2483,15 @@ a:hover { text-decoration: underline; }
   overflow: hidden;
 }
 .account-location-map iframe { display: block; }
+.account-location-map .gold-profile-location__text {
+  background: rgba(18,16,13,.05);
+  color: var(--color-ink-2);
+  font-size: .8rem;
+  letter-spacing: .02em;
+  margin: 0;
+  padding: .55rem 1rem;
+  text-align: center;
+}
 .gold-profile-about dt,
 .gold-membership-card dt {
   color: var(--color-ink-3);

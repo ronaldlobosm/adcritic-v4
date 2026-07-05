@@ -8,7 +8,7 @@ from app.routes.membership import (
     _get_subscription_info, _plan_label, UI as MEMBERSHIP_UI,
     _founder_active, _founder_claimed_count, FOUNDER_CUTOFF_COUNT,
 )
-from app.countries import countries_sorted, COUNTRIES
+from app.countries import countries_sorted, country_name, COUNTRIES
 from app.cities import cities_for_country
 from app.translate import translate_text
 
@@ -371,6 +371,7 @@ def _handle_edit_profile(lang):
         alt_lang_url=alt_lang_url,
         countries=countries_sorted(lang),
         selected_country=selected_country,
+        selected_country_name=country_name(selected_country, lang) if selected_country else "",
         selected_city=selected_city,
         selected_cities=cities_for_country(selected_country) if selected_country else [],
     )

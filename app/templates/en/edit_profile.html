@@ -40,32 +40,28 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="location_country">Country</label>
-      <select class="form-input" id="location_country" name="location_country">
-        <option value="">Select a country</option>
-        {% for code, name in countries %}
-          <option value="{{ code }}" {% if code == selected_country %}selected{% endif %}>{{ name }}</option>
-        {% endfor %}
-      </select>
+      <label class="form-label" for="location_country_input">Country</label>
+      <div class="combobox" data-combobox="country">
+        <input type="text" class="form-input" id="location_country_input" autocomplete="off"
+               placeholder="Type to search a country..." value="{{ selected_country_name }}" />
+        <input type="hidden" id="location_country" name="location_country" value="{{ selected_country or '' }}" />
+        <ul class="combobox-list" id="location_country_list"></ul>
+      </div>
     </div>
 
     <div class="form-group">
       <label class="form-label" for="location_city">City</label>
-      <select class="form-input" id="location_city" name="location_city" {% if not selected_country %}disabled{% endif %}>
-        {% if selected_country %}
-          <option value="">Select a city</option>
-          {% for city in selected_cities %}
-            <option value="{{ city }}" {% if city == selected_city %}selected{% endif %}>{{ city }}</option>
-          {% endfor %}
-        {% else %}
-          <option value="">Choose a country first</option>
-        {% endif %}
-      </select>
+      <div class="combobox" data-combobox="city">
+        <input type="text" class="form-input" id="location_city" name="location_city" autocomplete="off"
+               placeholder="Type to search a city..." value="{{ selected_city or '' }}"
+               {% if not selected_country %}disabled{% endif %} />
+        <ul class="combobox-list" id="location_city_list"></ul>
+      </div>
     </div>
 
     <div class="form-group">
       <label class="form-label" for="other_languages">Other languages</label>
-      <p class="form-hint" style="margin:.15rem 0 .4rem;font-size:.8rem;color:var(--color-muted,#777)">Other languages you speak, separated by commas.</p>
+      <p class="form-hint" style="margin:.15rem 0 .4rem;font-size:.8rem;color:var(--color-muted,#777)">Other languages you speak, separated by commas. (Your primary language is your preferred language — you can change it in Settings.)</p>
       <input class="form-input" type="text" id="other_languages" name="other_languages"
              value="{{ current_user.other_languages or '' }}" placeholder="Portuguese, Greek" maxlength="200" />
     </div>
@@ -105,28 +101,90 @@ function previewAvatar(input) {
   reader.readAsDataURL(input.files[0]);
 }
 
-var countrySelect = document.getElementById('location_country');
-var citySelect = document.getElementById('location_city');
+var countryData = {{ countries | tojson }};
+var cityData = [];
 
-countrySelect.addEventListener('change', function() {
-  var code = countrySelect.value;
-  if (!code) {
-    citySelect.innerHTML = '<option value="">Choose a country first</option>';
-    citySelect.disabled = true;
-    return;
-  }
-  citySelect.disabled = true;
-  citySelect.innerHTML = '<option value="">Loading cities...</option>';
+var countryInput  = document.getElementById('location_country_input');
+var countryHidden = document.getElementById('location_country');
+var countryList   = document.getElementById('location_country_list');
+var cityInput     = document.getElementById('location_city');
+var cityList      = document.getElementById('location_city_list');
+
+function renderCombobox(listEl, items, onPick) {
+  listEl.innerHTML = '';
+  if (!items.length) { listEl.classList.remove('is-open'); return; }
+  items.slice(0, 50).forEach(function(item) {
+    var li = document.createElement('li');
+    li.textContent = item.label;
+    li.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      onPick(item);
+      listEl.classList.remove('is-open');
+    });
+    listEl.appendChild(li);
+  });
+  listEl.classList.add('is-open');
+}
+
+function loadCities(code) {
+  cityInput.disabled = true;
+  cityInput.value = '';
+  cityInput.placeholder = 'Loading cities...';
   fetch('/api/cities/' + encodeURIComponent(code))
     .then(function(r) { return r.json(); })
     .then(function(cities) {
-      var options = '<option value="">Select a city</option>';
-      cities.forEach(function(city) {
-        options += '<option value="' + city.replace(/"/g, '&quot;') + '">' + city + '</option>';
-      });
-      citySelect.innerHTML = options;
-      citySelect.disabled = false;
+      cityData = cities;
+      cityInput.disabled = false;
+      cityInput.placeholder = 'Type to search a city...';
     });
+}
+
+countryInput.addEventListener('input', function() {
+  countryHidden.value = '';
+  var q = countryInput.value.trim().toLowerCase();
+  if (!q) { countryList.classList.remove('is-open'); return; }
+  var matches = countryData
+    .filter(function(c) { return c[1].toLowerCase().indexOf(q) !== -1; })
+    .map(function(c) { return { code: c[0], label: c[1] }; });
+  renderCombobox(countryList, matches, function(item) {
+    countryInput.value = item.label;
+    countryHidden.value = item.code;
+    loadCities(item.code);
+  });
 });
+countryInput.addEventListener('blur', function() {
+  setTimeout(function() { countryList.classList.remove('is-open'); }, 150);
+});
+
+cityInput.addEventListener('input', function() {
+  var q = cityInput.value.trim().toLowerCase();
+  if (!q) { cityList.classList.remove('is-open'); return; }
+  var matches = cityData
+    .filter(function(c) { return c.toLowerCase().indexOf(q) !== -1; })
+    .map(function(c) { return { label: c }; });
+  renderCombobox(cityList, matches, function(item) {
+    cityInput.value = item.label;
+  });
+});
+cityInput.addEventListener('blur', function() {
+  setTimeout(function() { cityList.classList.remove('is-open'); }, 150);
+});
+
+if (countryHidden.value) {
+  loadCities(countryHidden.value);
+} else {
+  fetch('https://ipapi.co/json/')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (countryHidden.value || !data || !data.country_code) return;
+      var match = countryData.find(function(c) { return c[0] === data.country_code; });
+      if (match) {
+        countryInput.value = match[1];
+        countryHidden.value = match[0];
+        loadCities(match[0]);
+      }
+    })
+    .catch(function() {});
+}
 </script>
 {% endblock %}
