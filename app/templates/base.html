@@ -15,13 +15,14 @@
 </head>
 <body>
 
-  <header class="site-header{% if current_user.is_authenticated and current_user.role == 'gold' %} site-header--gold{% endif %}">
+  <header class="site-header{% if current_user.is_authenticated and current_user.role == 'gold' %} site-header--gold{% endif %}{% if minimal_header %} site-header--minimal{% endif %}">
     <div class="container header-inner">
 
       <a class="logo" href="{{ url_for('main.gallery_es') if lang == 'es' else url_for('main.gallery_en') }}">
         AdCritic
       </a>
 
+      {% if not minimal_header %}
       <button class="nav-hamburger" id="navToggle" aria-label="Menú" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
@@ -132,6 +133,7 @@
           </a>
         </div>
       </div>
+      {% endif %}
 
     </div>
   </header>

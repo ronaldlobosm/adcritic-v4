@@ -213,11 +213,18 @@ class PostComment(db.Model):
 
 
 class AdComment(db.Model):
+    """A Gold member's critique of an Ad. Internally still "AdComment"/
+    ad_comments for backward compatibility with existing relationships and
+    data, but it's presented to users as an independent "Critique" article
+    with its own title, slug, and URL — not a nested comment."""
     __tablename__ = "ad_comments"
 
     id         = db.Column(db.Integer, primary_key=True)
     ad_id      = db.Column(db.Integer, db.ForeignKey("ads.id"), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    title      = db.Column(db.String(200), nullable=True)
+    slug       = db.Column(db.String(220), nullable=True, unique=True, index=True)
+    reads_count = db.Column(db.Integer, nullable=False, default=0)
     body       = db.Column(db.Text, nullable=False)
     body_language       = db.Column(db.String(5), nullable=False, default="es")
     translated_body     = db.Column(db.Text, nullable=True)
@@ -232,6 +239,11 @@ class AdComment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("User")
+
+    @property
+    def reading_time_minutes(self):
+        word_count = len((self.body or "").split())
+        return max(1, round(word_count / 200))
 
     def body_for(self, lang):
         if self.translated_body and self.translated_language == lang and self.body_language != lang:
@@ -295,6 +307,56 @@ class SavedAd(db.Model):
     user = db.relationship("User")
 
 
+class SavedCritique(db.Model):
+    """Save a Gold member's critique (separate from SavedAd, which saves
+    the official Ad analysis)."""
+    __tablename__ = "saved_critiques"
+    __table_args__ = (
+        db.UniqueConstraint("critique_id", "user_id", name="uq_saved_critique_user"),
+    )
+
+    id          = db.Column(db.Integer, primary_key=True)
+    critique_id = db.Column(db.Integer, db.ForeignKey("ad_comments.id"), nullable=False, index=True)
+    user_id     = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    critique = db.relationship("AdComment", backref=db.backref("saves", lazy="dynamic", cascade="all, delete-orphan"))
+    user     = db.relationship("User")
+
+
+class Follow(db.Model):
+    """One user following another (e.g. a reader following a Gold critic)."""
+    __tablename__ = "follows"
+    __table_args__ = (
+        db.UniqueConstraint("follower_id", "followed_id", name="uq_follow"),
+    )
+
+    id          = db.Column(db.Integer, primary_key=True)
+    follower_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    follower = db.relationship("User", foreign_keys=[follower_id])
+    followed = db.relationship("User", foreign_keys=[followed_id])
+
+
+class AdDebateComment(db.Model):
+    """Professional Debate — a Gold-only discussion thread scoped to a
+    campaign/Ad, separate from both the official analysis and any
+    individual critique."""
+    __tablename__ = "ad_debate_comments"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    ad_id      = db.Column(db.Integer, db.ForeignKey("ads.id"), nullable=False, index=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    body       = db.Column(db.Text, nullable=False)
+    status     = db.Column(db.String(20), nullable=False, default="approved")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    ad   = db.relationship("Ad", backref=db.backref("debate_comments", lazy="dynamic", cascade="all, delete-orphan"))
+    user = db.relationship("User")
+
+
 class BannedWord(db.Model):
     __tablename__ = "banned_words"
 
@@ -332,6 +394,7 @@ class User(UserMixin, db.Model):
     location        = db.Column(db.String(120), nullable=True)
     preferred_language = db.Column(db.String(2), nullable=True)
     other_languages = db.Column(db.String(200), nullable=True)
+    username_slug   = db.Column(db.String(140), nullable=True, unique=True, index=True)
 
     # Email verification
     email_verified         = db.Column(db.Boolean, nullable=False, default=False)

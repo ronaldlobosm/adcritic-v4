@@ -65,181 +65,56 @@
     {% endif %}
   </div>
 
-  {# ── Comments section ─────────────────────────────────────────────── #}
-  <section class="comments-section" id="comentarios">
-    <h2 class="comments-title">{{ ui.comments_title }}</h2>
+  {# ── Community Critiques ──────────────────────────────────────────── #}
+  <section class="community-critiques" id="community-critiques">
+    <div class="community-critiques__head">
+      <h2 class="comments-title">{{ ui.community_critiques_title }}</h2>
+      <a href="{{ url_for('main.ad_debate_en', ad_slug=ad.slug) }}" class="community-critiques__debate-link">{{ ui.debate_link }} →</a>
+    </div>
 
-    {% if comments %}
-      <div class="comments-list">
-        {% for comment in comments %}
-          <div class="comment-item comment-item--{{ 'gold' if comment.user.role == 'gold' else 'silver' }}">
-            <div class="comment-meta">
-              {{ avatar(comment.user) }}
-              <span class="comment-author-wrap">
-                <span class="comment-author">{{ comment.user.public_name }}</span>
-                {% if comment.user.professional_title %}
-                  <span class="comment-title">{{ comment.user.professional_title }}</span>
-                {% elif comment.user.role == 'gold' %}
-                  <span class="comment-title">Gold critic</span>
+    {% if critiques %}
+      <div class="critique-card-grid">
+        {% for critique in critiques %}
+          <a class="critique-card" href="{{ url_for('main.critique_detail_en', username=critique.user.username_slug, slug=critique.slug) }}">
+            <div class="critique-card__byline">
+              {{ avatar(critique.user, 'critique-card__avatar-img', 'critique-card__avatar-placeholder') }}
+              <span class="critique-card__author-wrap">
+                <span class="critique-card__author">{{ critique.user.public_name }}</span>
+                {% if critique.user.professional_title %}
+                  <span class="critique-card__role">{{ critique.user.professional_title }}</span>
                 {% endif %}
               </span>
-              <span class="comment-date">{{ relative_date(comment.created_at, 'en') }}</span>
-              {% if current_user.is_authenticated and (
-                  (current_user.id == comment.user_id and user_comment_editable)
-                  or current_user.role == 'admin'
-                  or (current_user.role == 'editor' and ad.created_by_id == current_user.id)
-              ) %}
-                <form method="post"
-                      action="{{ url_for('main.delete_ad_comment', comment_id=comment.id) }}"
-                      style="display:inline;margin-left:auto"
-                      onsubmit="return confirm('{{ ui.comment_delete_confirm }}')">
-                  <input type="hidden" name="lang" value="en" />
-                  <button type="submit" class="comment-delete-btn" title="{{ ui.comment_delete_confirm }}">✕</button>
-                </form>
-              {% endif %}
+              {% if critique.user.role == 'gold' %}<span class="critique-card__gold-badge">Gold</span>{% endif %}
             </div>
-            <div class="critique-ratings" aria-label="Critique ratings">
-              {% for label, value in [
-                (ui.rating_music, comment.rating_music),
-                (ui.rating_art_direction, comment.rating_art_direction),
-                (ui.rating_copywriting, comment.rating_copywriting),
-                (ui.rating_strategy, comment.rating_strategy)
-              ] %}
-                {% if value %}
-                  <div class="critique-rating">
-                    <span class="critique-rating__label">{{ label }}</span>
-                    <span class="critique-rating__stars" aria-label="{{ value }} out of 5">
-                      {% for i in range(1, 6) %}<span class="{% if i <= value %}is-filled{% endif %}">★</span>{% endfor %}
-                    </span>
-                  </div>
-                {% endif %}
-              {% endfor %}
+            <h3 class="critique-card__title">{{ critique.title or critique.body_for(lang)|truncate(60) }}</h3>
+            <p class="critique-card__excerpt">{{ critique.body_for(lang) | truncate(140) }}</p>
+            <div class="critique-card__meta">
+              <span>{{ relative_date(critique.created_at, 'en') }}</span>
+              <span>♥ {{ critique_like_counts.get(critique.id, 0) }}</span>
+              <span>{{ critique.reading_time_minutes }} {{ ui.min_read }}</span>
             </div>
-            <div class="comment-translation-wrap">
-              {% if comment.is_translated_for(lang) %}
-                <p class="comment-translation-note">
-                  {{ ui.translated_by.format(provider=comment.translation_provider or 'AdCritic') }}
-                  ·
-                  <button type="button" class="comment-translation-toggle"
-                          data-show-original="{{ ui.view_original }}"
-                          data-show-translation="{{ ui.view_translation }}">
-                    {{ ui.view_original }}
-                  </button>
-                </p>
-                <p class="comment-body comment-body--translated">{{ comment.body_for(lang) }}</p>
-                <p class="comment-body comment-body--original" hidden>{{ comment.body }}</p>
-              {% else %}
-                {% if comment.body_language and comment.body_language != lang %}
-                  <p class="comment-translation-note">
-                    {{ ui.original_in.format(language=language_name(comment.body_language, lang)) }}
-                  </p>
-                {% endif %}
-                <p class="comment-body">{{ comment.body }}</p>
-              {% endif %}
-            </div>
-            <div class="comment-community-bar">
-              {% set rating_stat = comment_rating_stats.get(comment.id) %}
-              <span class="comment-rating-average">
-                ★ {{ rating_stat.avg if rating_stat else '—' }}
-                <small>{{ rating_stat.count if rating_stat else 0 }}</small>
-              </span>
-              {% if current_user.is_authenticated %}
-                <form method="post" class="comment-like-form">
-                  <input type="hidden" name="_action" value="toggle_comment_like" />
-                  <input type="hidden" name="comment_id" value="{{ comment.id }}" />
-                  <button type="submit" class="{% if comment.id in liked_comment_ids %}is-liked{% endif %}">
-                    ♥ {{ comment_like_counts.get(comment.id, 0) }}
-                  </button>
-                </form>
-                <form method="post" class="comment-star-form" aria-label="Rate this critique">
-                  <input type="hidden" name="_action" value="rate_comment" />
-                  <input type="hidden" name="comment_id" value="{{ comment.id }}" />
-                  {% set current_rating = rated_comment_values.get(comment.id, 0) %}
-                  {% for value in range(1, 6) %}
-                    <button type="submit" name="rating" value="{{ value }}" class="{% if value <= current_rating %}is-selected{% endif %}">★</button>
-                  {% endfor %}
-                </form>
-              {% else %}
-                <span class="comment-like-count">♥ {{ comment_like_counts.get(comment.id, 0) }}</span>
-              {% endif %}
-            </div>
-          </div>
+            <span class="critique-card__cta">{{ ui.read_critique }} →</span>
+          </a>
         {% endfor %}
       </div>
     {% else %}
-      <p class="comments-empty">{{ ui.comment_empty }}</p>
+      <p class="comments-empty">{{ ui.no_critiques_yet }}</p>
     {% endif %}
 
-    {% if can_comment and can_submit_critique and uses_intro_critique %}
-      <div class="critique-locked critique-locked--intro">
-        <strong>{{ ui.comment_intro_title }}</strong>
-        <p>{{ ui.comment_intro_body }}</p>
-      </div>
-    {% endif %}
-
-    {% if can_comment and can_submit_critique and (not existing_user_comment or user_comment_editable) %}
-      <form class="comment-form" method="post">
-        <div class="critique-form-panel">
-          <div class="critique-form-head">
-            <span>{{ ui.comment_edit_title if existing_user_comment else 'Critical rating' }}</span>
-            <small>{{ ui.comment_edit_window if existing_user_comment else ui.rating_scale_hint }}</small>
-          </div>
-          {% for field, label in [
-            ('rating_music', ui.rating_music),
-            ('rating_art_direction', ui.rating_art_direction),
-            ('rating_copywriting', ui.rating_copywriting),
-            ('rating_strategy', ui.rating_strategy)
-          ] %}
-            <fieldset class="rating-field">
-              <legend>{{ label }}</legend>
-              <div class="rating-options">
-                {% for value in range(1, 6) %}
-                  <label>
-                    <input type="radio" name="{{ field }}" value="{{ value }}" required
-                           {% if existing_user_comment and (existing_user_comment|attr(field)) == value %}checked{% endif %} />
-                    <span>{{ value }}</span>
-                  </label>
-                {% endfor %}
-              </div>
-            </fieldset>
-          {% endfor %}
-        </div>
-        <div class="critique-composer">
-          <aside class="critique-composer__identity" aria-hidden="true">
-            {{ avatar(current_user, 'composer-avatar', 'composer-avatar-placeholder') }}
-          </aside>
-          <div class="critique-composer__field">
-            <textarea class="comment-input" name="body" rows="4"
-                      placeholder="{{ ui.comment_placeholder }}" required>{{ existing_user_comment.body if existing_user_comment else '' }}</textarea>
-          </div>
-        </div>
-        <button type="submit" class="comment-submit">
-          {{ ui.comment_update_btn if existing_user_comment else ui.comment_btn }}
-        </button>
-      </form>
-    {% elif can_comment and existing_user_comment %}
-      <div class="critique-locked">
-        <strong>{{ ui.comment_locked_title }}</strong>
-        <p>{{ ui.comment_locked_body }}</p>
-      </div>
-    {% elif can_comment and critique_block_reason == 'locked_by_date' %}
-      <div class="critique-locked">
-        <strong>{{ ui.comment_gold_since_title }}</strong>
-        <p>{{ ui.comment_gold_since_body }}</p>
-      </div>
-    {% elif current_user.is_authenticated %}
-      {# Logged in but not gold/staff #}
-      <div class="paywall-block" style="margin-top:1.5rem">
-        <h2 class="paywall-title">{{ ui.gold_only_title }}</h2>
-        <p class="paywall-body">{{ ui.gold_only_body }}</p>
-        <a href="{{ ui.gold_only_url }}" class="paywall-cta">{{ ui.gold_only_cta }}</a>
-      </div>
-    {% else %}
-      <p class="comment-login-prompt">
-        {{ ui.comment_login }}
-        <a href="{{ url_for('auth.login_en') }}">{{ ui.comment_login_link }}</a>
-      </p>
-    {% endif %}
+    <div class="community-critiques__cta">
+      {% if can_comment and can_submit_critique %}
+        <a href="{{ url_for('main.write_critique_en', ad_slug=ad.slug) }}" class="btn-primary">
+          {{ ui.edit_critique_cta if existing_user_comment else ui.publish_critique_cta }}
+        </a>
+      {% elif current_user.is_authenticated %}
+        <a href="{{ ui.gold_only_url }}" class="btn-primary">{{ ui.become_gold_cta }}</a>
+      {% else %}
+        <p class="comment-login-prompt">
+          {{ ui.comment_login }}
+          <a href="{{ url_for('auth.login_en') }}">{{ ui.comment_login_link }}</a>
+        </p>
+      {% endif %}
+    </div>
   </section>
 
   <div class="detail-lang-link">

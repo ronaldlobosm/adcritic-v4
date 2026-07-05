@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% from "partials/avatar.html" import avatar %}
+{% block title %}{{ critique.title }} - AdCritic{% endblock %}
+
+{% block content %}
+<div class="critique-page">
+  <div class="container critique-layout">
+
+    <aside class="critique-sidebar">
+      <div class="critique-sidebar__avatar">{{ avatar(author, 'critique-avatar-img', 'critique-avatar-placeholder') }}</div>
+      <h2 class="critique-sidebar__name">{{ author.public_name }}</h2>
+      {% if author.professional_title %}<p class="critique-sidebar__title">{{ author.professional_title }}</p>{% endif %}
+      {% if author.location %}<p class="critique-sidebar__location">{{ author.location }}</p>{% endif %}
+      {% if author.role == 'gold' %}<p class="critique-sidebar__badge">★ Gold Founder</p>{% endif %}
+
+      {% if current_user.is_authenticated and current_user.id != author.id %}
+        <form method="post" class="critique-follow-form">
+          <input type="hidden" name="_action" value="toggle_follow" />
+          <input type="hidden" name="user_id" value="{{ author.id }}" />
+          <button type="submit" class="critique-follow-btn{{ ' is-following' if following_author else '' }}">
+            {{ ui.unfollow_btn if following_author else ui.follow_btn }}
+          </button>
+        </form>
+      {% endif %}
+
+      {% if author.linkedin_url %}
+        <a href="{{ author.linkedin_url }}" target="_blank" rel="noopener" class="critique-sidebar__linkedin">LinkedIn ↗</a>
+      {% endif %}
+
+      <dl class="critique-sidebar__stats">
+        <div><dt>{{ ui.critiques_published_label }}</dt><dd>{{ author_stats.critiques_published }}</dd></div>
+        <div><dt>{{ ui.readers_label }}</dt><dd>{{ '{:,}'.format(author_stats.readers) }}</dd></div>
+        <div><dt>{{ ui.likes_received_label }}</dt><dd>{{ '{:,}'.format(author_stats.likes_received) }}</dd></div>
+        <div><dt>{{ ui.following_label }}</dt><dd>{{ author_stats.following }}</dd></div>
+      </dl>
+
+      {% set bio = author.bio_es or author.bio_en %}
+      {% if bio %}
+        <div class="critique-sidebar__about">
+          <h3>{{ ui.about_label }} {{ author.display_name or author.public_name }}</h3>
+          <p>{{ bio }}</p>
+        </div>
+      {% endif %}
+    </aside>
+
+    <main class="critique-main">
+      <p class="critique-kicker">{{ ui.critique_label }} · {{ ui.published_label }} {{ format_date(critique.created_at, lang) }}</p>
+      <h1 class="critique-title">{{ critique.title }}</h1>
+      <p class="critique-meta">
+        {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
+      </p>
+
+      <div class="critique-actions">
+        {% if current_user.is_authenticated %}
+          <form method="post" class="critique-action-form">
+            <input type="hidden" name="_action" value="toggle_critique_like" />
+            <button type="submit" class="critique-like-btn{{ ' is-liked' if liked else '' }}">♥ {{ like_count }}</button>
+          </form>
+          <form method="post" class="critique-action-form">
+            <input type="hidden" name="_action" value="toggle_save_critique" />
+            <button type="submit" class="critique-save-btn{{ ' is-saved' if saved else '' }}">{{ ui.save_btn }}</button>
+          </form>
+        {% else %}
+          <span class="critique-like-btn">♥ {{ like_count }}</span>
+        {% endif %}
+        <button type="button" class="critique-share-btn" data-share-url="{{ request.url }}">{{ ui.share_btn }}</button>
+        <span class="critique-read-time">{{ critique.reading_time_minutes }} {{ ui.min_read }}</span>
+      </div>
+
+      <div class="critique-body">
+        {% for para in critique.body_for(lang).split('\n') %}
+          {% if para.strip() %}<p>{{ para }}</p>{% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="critique-original-widget">
+        <h3>{{ ui.original_analysis_title }}</h3>
+        <div class="critique-original-widget__inner">
+          <a class="critique-original-widget__thumb" href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}">
+            {% if ad.youtube_id %}
+              <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/hqdefault.jpg" alt="" />
+            {% else %}
+              <span>{{ ad.brand[0] }}</span>
+            {% endif %}
+          </a>
+          <div class="critique-original-widget__body">
+            <span class="critique-original-widget__label">{{ ui.official_analysis_label }}</span>
+            <h4>{{ t.title if t else ad.brand }}</h4>
+            <p class="critique-original-widget__byline">{{ ui.editorial_team }} · {{ format_date(ad.published_at or ad.created_at, lang) }}</p>
+            <p class="critique-original-widget__meta">{{ ad.brand }} · {{ ad.year }} · {{ country_name(ad.country, lang) }}</p>
+            <a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}" class="critique-original-widget__cta">{{ ui.view_original_analysis }} →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="critique-cta">
+        <h3>{{ ui.publish_perspective_title }}</h3>
+        <p>{{ ui.publish_perspective_body }}</p>
+        {% if can_submit_critique %}
+          <a href="{{ url_for('main.write_critique_es', ad_slug=ad.slug) }}" class="btn-primary">{{ ui.publish_critique_cta }}</a>
+        {% else %}
+          <a href="{{ ui.gold_only_url }}" class="btn-primary">{{ ui.become_gold_cta }}</a>
+        {% endif %}
+      </div>
+    </main>
+  </div>
+
+  <footer class="critique-footer">
+    <p>AdCritic es una publicación independiente.<br>Nosotros analizamos. Tú decides.</p>
+  </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-share-url]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var url = btn.getAttribute('data-share-url');
+    if (navigator.share) {
+      navigator.share({ url: url, title: document.title });
+    } else {
+      navigator.clipboard.writeText(url);
+      btn.textContent = 'Enlace copiado';
+      setTimeout(function() { btn.textContent = '{{ ui.share_btn }}'; }, 1800);
+    }
+  });
+});
+</script>
+{% endblock %}

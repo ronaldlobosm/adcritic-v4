@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "partials/avatar.html" import avatar %}
+
+{% block title %}{{ ui.debate_title }} — {{ ad.brand }} — AdCritic{% endblock %}
+
+{% block content %}
+<div class="container detail-layout">
+
+  <nav class="breadcrumb">
+    <a href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}">← {{ ad.brand }}</a>
+  </nav>
+
+  <header class="detail-header">
+    <div class="detail-meta-row">
+      <span class="detail-brand">{{ ad.brand }}</span>
+      <span class="detail-sep">·</span>
+      <span class="detail-year">{{ ad.year }}</span>
+    </div>
+    <h1 class="detail-title">{{ ui.debate_title }}</h1>
+    <p class="write-critique-subtitle">{{ t.title if t else ad.brand }}</p>
+  </header>
+
+  {% if allowed %}
+    {% if debate_comments %}
+      <div class="debate-list">
+        {% for comment in debate_comments %}
+          <div class="debate-item">
+            <div class="debate-meta">
+              {{ avatar(comment.user) }}
+              <span class="debate-author-wrap">
+                <span class="debate-author">{{ comment.user.public_name }}</span>
+                {% if comment.user.professional_title %}
+                  <span class="debate-role">{{ comment.user.professional_title }}</span>
+                {% endif %}
+              </span>
+              <span class="debate-date">{{ relative_date(comment.created_at, 'en') }}</span>
+            </div>
+            <p class="debate-body">{{ comment.body }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="comments-empty">{{ ui.debate_empty }}</p>
+    {% endif %}
+
+    <form class="comment-form debate-form" method="post">
+      <div class="critique-composer">
+        <aside class="critique-composer__identity" aria-hidden="true">
+          {{ avatar(current_user, 'composer-avatar', 'composer-avatar-placeholder') }}
+        </aside>
+        <div class="critique-composer__field">
+          <textarea class="comment-input" name="body" rows="4"
+                    placeholder="{{ ui.debate_placeholder }}" required></textarea>
+        </div>
+      </div>
+      <button type="submit" class="comment-submit">{{ ui.debate_btn }}</button>
+    </form>
+  {% elif current_user.is_authenticated %}
+    <div class="paywall-block">
+      <h2 class="paywall-title">{{ ui.debate_gold_only_title }}</h2>
+      <p class="paywall-body">{{ ui.debate_gold_only_body }}</p>
+      <a href="{{ ui.gold_only_url }}" class="paywall-cta">{{ ui.become_gold_cta }}</a>
+    </div>
+  {% else %}
+    <div class="paywall-block">
+      <h2 class="paywall-title">{{ ui.debate_gold_only_title }}</h2>
+      <p class="paywall-body">{{ ui.debate_gold_only_body }}</p>
+      <a href="{{ url_for('auth.login_en') }}" class="paywall-cta">{{ ui.comment_login_link }}</a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

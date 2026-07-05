@@ -36,6 +36,66 @@ def can_comment_on_ad():
     return current_user.role in ("gold", "admin", "editor", "approver")
 
 
+def can_participate_in_debate():
+    """Professional Debate is Gold-only (+staff) to read AND write — unlike
+    critiques, Free users have no access at all."""
+    if not current_user.is_authenticated:
+        return False
+    return current_user.role in ("gold", "admin", "editor", "approver")
+
+
+# ---------------------------------------------------------------------------
+# Slugs (critic usernames, critique URLs)
+# ---------------------------------------------------------------------------
+
+def slugify(text_value):
+    """Lowercase, hyphenated, URL-safe version of a string."""
+    import re
+    value = (text_value or "").strip().lower()
+    value = re.sub(r"[^a-z0-9]+", "-", value)
+    return value.strip("-") or "item"
+
+
+def ensure_username_slug(user):
+    """Generate and assign user.username_slug if it doesn't have one yet.
+    Does not commit — caller is responsible for committing the session."""
+    from app.models import User
+
+    if user.username_slug:
+        return user.username_slug
+
+    base = slugify(user.display_name or user.email.split("@")[0])
+    candidate = base
+    i = 2
+    while User.query.filter(User.username_slug == candidate, User.id != user.id).first():
+        candidate = f"{base}-{i}"
+        i += 1
+    user.username_slug = candidate
+    return candidate
+
+
+def ensure_critique_slug(critique):
+    """Generate and assign critique.slug (and a fallback title) if missing.
+    Does not commit — caller is responsible for committing the session."""
+    from app.models import AdComment
+
+    if critique.slug:
+        return critique.slug
+
+    if not critique.title:
+        words = (critique.body or "").split()
+        critique.title = " ".join(words[:8]) or f"Critique #{critique.id or ''}"
+
+    base = slugify(critique.title)
+    candidate = base
+    i = 2
+    while AdComment.query.filter(AdComment.slug == candidate, AdComment.id != critique.id).first():
+        candidate = f"{base}-{i}"
+        i += 1
+    critique.slug = candidate
+    return candidate
+
+
 # ---------------------------------------------------------------------------
 # File type validation
 # ---------------------------------------------------------------------------

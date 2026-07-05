@@ -17,6 +17,7 @@ from app import db
 from app.models import (
     User, Category, PostCategory, MediaFile,
     Ad, AdTranslation, AdComment, AdCommentLike, AdCommentRating, SavedAd,
+    SavedCritique, Follow, AdDebateComment,
     Post, PostTranslation, PostComment,
     NewsletterSubscriber, SiteSettings, RoleContentAccess, BannedWord,
     Advertiser, AdCampaign, AdZone, BannerAd,
@@ -57,11 +58,25 @@ with app.app_context():
             ("location", "ALTER TABLE users ADD COLUMN location VARCHAR(120)"),
             ("preferred_language", "ALTER TABLE users ADD COLUMN preferred_language VARCHAR(2)"),
             ("other_languages", "ALTER TABLE users ADD COLUMN other_languages VARCHAR(200)"),
+            ("username_slug", "ALTER TABLE users ADD COLUMN username_slug VARCHAR(140) UNIQUE"),
         ]:
             if col not in existing:
                 conn.execute(text(ddl))
                 conn.commit()
                 print(f"[init] Added column users.{col}")
+
+        ad_comments_existing = [r[0] for r in conn.execute(
+            text("SELECT column_name FROM information_schema.columns WHERE table_name='ad_comments'")
+        )]
+        for col, ddl in [
+            ("title", "ALTER TABLE ad_comments ADD COLUMN title VARCHAR(200)"),
+            ("slug", "ALTER TABLE ad_comments ADD COLUMN slug VARCHAR(220) UNIQUE"),
+            ("reads_count", "ALTER TABLE ad_comments ADD COLUMN reads_count INTEGER NOT NULL DEFAULT 0"),
+        ]:
+            if col not in ad_comments_existing:
+                conn.execute(text(ddl))
+                conn.commit()
+                print(f"[init] Added column ad_comments.{col}")
 
         media_existing = [r[0] for r in conn.execute(
             text("SELECT column_name FROM information_schema.columns WHERE table_name='media_files'")

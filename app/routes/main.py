@@ -9,15 +9,22 @@ from app.models import (
     AdComment,
     AdCommentLike,
     AdCommentRating,
+    AdDebateComment,
     AdTranslation,
     Category,
+    Follow,
     NewsletterSubscriber,
     Post,
     PostTranslation,
     SavedAd,
+    SavedCritique,
+    User,
 )
 from app.countries import COUNTRIES, country_name, countries_sorted
-from app.utils import can_read_ad_analysis, can_comment_on_ad
+from app.utils import (
+    can_read_ad_analysis, can_comment_on_ad, can_participate_in_debate,
+    ensure_username_slug, ensure_critique_slug,
+)
 from app.translation import language_name, translate_text
 
 main = Blueprint("main", __name__)
@@ -70,6 +77,50 @@ CATALOG_UI = {
         "paywall_cta":           "Ver planes de membresía",
         "paywall_url":           "/es/membresia/",
         "gold_badge":            "Gold",
+        # Community Critiques (card list on the ad page)
+        "community_critiques_title": "Críticas de la comunidad",
+        "no_critiques_yet":      "Todavía no hay críticas de la comunidad para este anuncio.",
+        "read_critique":         "Leer crítica",
+        "publish_critique_cta":  "Publica tu crítica",
+        "edit_critique_cta":     "Editar tu crítica",
+        "become_gold_cta":       "Hazte Gold para publicar tu crítica",
+        "debate_link":           "Debate profesional",
+        "min_read":              "min de lectura",
+        # Individual critique page
+        "critique_label":        "Crítica",
+        "published_label":       "Publicado",
+        "campaign_label":        "Campaña",
+        "brand_label":           "Marca",
+        "year_label":            "Año",
+        "like_btn":              "Me gusta",
+        "save_btn":              "Guardar",
+        "share_btn":             "Compartir",
+        "follow_btn":            "Seguir crítico",
+        "unfollow_btn":          "Siguiendo",
+        "original_analysis_title": "Original AdCritic Analysis",
+        "official_analysis_label": "Análisis oficial",
+        "view_original_analysis":  "Ver análisis original",
+        "critiques_published_label": "Críticas publicadas",
+        "readers_label":         "Lectores",
+        "likes_received_label":  "Likes recibidos",
+        "following_label":       "Siguiendo",
+        "about_label":           "Sobre",
+        "publish_perspective_title": "¿Cuál es tu perspectiva?",
+        "publish_perspective_body":  "Publica tu propia crítica y únete a la conversación profesional.",
+        "editorial_team":        "Equipo Editorial AdCritic",
+        # Professional Debate
+        "debate_title":          "Debate profesional",
+        "debate_empty":          "Todavía no hay comentarios en este debate.",
+        "debate_placeholder":    "Comparte tu punto de vista con otros críticos Gold...",
+        "debate_btn":            "Publicar comentario",
+        "debate_gold_only_title": "Espacio exclusivo para críticos Gold",
+        "debate_gold_only_body":  "El debate profesional es un espacio de discusión entre miembros Gold sobre esta campaña.",
+        # Write/edit critique form
+        "write_critique_title":     "Escribe tu crítica",
+        "write_critique_edit_title": "Edita tu crítica",
+        "title_label":            "Título",
+        "title_placeholder":      "Un título para tu crítica...",
+        "back_to_ad":             "← Volver al anuncio",
     },
     "en": {
         "comments_title":        "Critiques",
@@ -114,6 +165,50 @@ CATALOG_UI = {
         "paywall_cta":           "View membership plans",
         "paywall_url":           "/en/membership/",
         "gold_badge":            "Gold",
+        # Community Critiques (card list on the ad page)
+        "community_critiques_title": "Community Critiques",
+        "no_critiques_yet":      "No community critiques yet for this ad.",
+        "read_critique":         "Read critique",
+        "publish_critique_cta":  "Publish your critique",
+        "edit_critique_cta":     "Edit your critique",
+        "become_gold_cta":       "Become Gold to publish your own critique",
+        "debate_link":           "Professional Debate",
+        "min_read":              "min read",
+        # Individual critique page
+        "critique_label":        "Critique",
+        "published_label":       "Published",
+        "campaign_label":        "Campaign",
+        "brand_label":           "Brand",
+        "year_label":            "Year",
+        "like_btn":              "Like",
+        "save_btn":              "Save",
+        "share_btn":             "Share",
+        "follow_btn":            "Follow critic",
+        "unfollow_btn":          "Following",
+        "original_analysis_title": "Original AdCritic Analysis",
+        "official_analysis_label": "Official Analysis",
+        "view_original_analysis":  "View original analysis",
+        "critiques_published_label": "Critiques published",
+        "readers_label":         "Readers",
+        "likes_received_label":  "Likes received",
+        "following_label":       "Following",
+        "about_label":           "About",
+        "publish_perspective_title": "What's your perspective?",
+        "publish_perspective_body":  "Publish your own critique and join the professional conversation.",
+        "editorial_team":        "AdCritic Editorial Team",
+        # Professional Debate
+        "debate_title":          "Professional Debate",
+        "debate_empty":          "No comments in this debate yet.",
+        "debate_placeholder":    "Share your perspective with other Gold critics...",
+        "debate_btn":            "Post comment",
+        "debate_gold_only_title": "Exclusive space for Gold critics",
+        "debate_gold_only_body":  "Professional Debate is a discussion space for Gold members about this campaign.",
+        # Write/edit critique form
+        "write_critique_title":     "Write your critique",
+        "write_critique_edit_title": "Edit your critique",
+        "title_label":            "Title",
+        "title_placeholder":      "A title for your critique...",
+        "back_to_ad":             "← Back to the ad",
     },
 }
 
@@ -259,6 +354,10 @@ def _critique_access_for_ad(user, ad, existing_comment=None):
 
 
 def _handle_ad_detail(lang, slug):
+    """Official analysis page for a campaign. Community critiques are shown
+    here only as summary cards linking out to their own page — the full
+    text, ratings, likes and the write/edit form all live on the critique's
+    own route (see _handle_critique_detail / _handle_write_critique)."""
     ui = CATALOG_UI[lang]
     ad = Ad.query.filter_by(slug=slug).first_or_404()
     if ad.status != "published":
@@ -286,43 +385,6 @@ def _handle_ad_detail(lang, slug):
 
     if request.method == "POST":
         action = request.form.get("_action", "")
-        if action == "toggle_comment_like":
-            if not current_user.is_authenticated:
-                abort(403)
-            comment_id = request.form.get("comment_id", type=int)
-            comment = AdComment.query.filter_by(id=comment_id, ad_id=ad.id, status="approved").first_or_404()
-            existing_like = AdCommentLike.query.filter_by(
-                comment_id=comment.id, user_id=current_user.id
-            ).first()
-            if existing_like:
-                db.session.delete(existing_like)
-            else:
-                db.session.add(AdCommentLike(comment_id=comment.id, user_id=current_user.id))
-            db.session.commit()
-            return redirect(url_for(detail_route, slug=slug) + "#comentarios")
-
-        if action == "rate_comment":
-            if not current_user.is_authenticated:
-                abort(403)
-            comment_id = request.form.get("comment_id", type=int)
-            rating = request.form.get("rating", type=int)
-            if rating is None or rating < 1 or rating > 5:
-                abort(400)
-            comment = AdComment.query.filter_by(id=comment_id, ad_id=ad.id, status="approved").first_or_404()
-            existing_rating = AdCommentRating.query.filter_by(
-                comment_id=comment.id, user_id=current_user.id
-            ).first()
-            if existing_rating:
-                existing_rating.rating = rating
-            else:
-                db.session.add(AdCommentRating(
-                    comment_id=comment.id,
-                    user_id=current_user.id,
-                    rating=rating,
-                ))
-            db.session.commit()
-            return redirect(url_for(detail_route, slug=slug) + "#comentarios")
-
         if action == "toggle_save_ad":
             if not current_user.is_authenticated:
                 abort(403)
@@ -333,97 +395,25 @@ def _handle_ad_detail(lang, slug):
                 db.session.add(SavedAd(ad_id=ad.id, user_id=current_user.id))
             db.session.commit()
             return redirect(url_for(detail_route, slug=slug))
-
-        if "body" in request.form:
-            # Comment submission
-            if not can_comment or not can_submit_critique:
-                abort(403)
-            body = request.form.get("body", "").strip()
-            if not body:
-                flash(ui["comment_err"], "error")
-            elif existing_user_comment and not user_comment_editable:
-                flash(ui["comment_locked"], "error")
-            elif any(_rating_value(field) is None for field in (
-                "rating_music", "rating_art_direction",
-                "rating_copywriting", "rating_strategy",
-            )):
-                flash(ui["rating_err"], "error")
-            else:
-                from app.moderation import comment_status_for_text
-                status = comment_status_for_text(body)
-                comment = existing_user_comment or AdComment(
-                    ad_id=ad.id, user_id=current_user.id
-                )
-                comment.body = body
-                comment.status = status
-                comment.rating_music = _rating_value("rating_music")
-                comment.rating_art_direction = _rating_value("rating_art_direction")
-                comment.rating_copywriting = _rating_value("rating_copywriting")
-                comment.rating_strategy = _rating_value("rating_strategy")
-                _set_comment_translation(comment, body, lang)
-                if existing_user_comment is None:
-                    db.session.add(comment)
-                    if uses_intro_critique and current_user.role == "gold":
-                        current_user.gold_intro_critique_used = True
-                db.session.commit()
-                if existing_user_comment:
-                    flash(ui["comment_updated"], "success")
-                else:
-                    flash(ui["comment_pending"] if status == "pending" else ui["comment_ok"],
-                          "info" if status == "pending" else "success")
-            return redirect(url_for(detail_route, slug=slug) + "#comentarios")
         else:
             # Newsletter subscribe
             _subscribe(lang)
             return redirect(url_for(detail_route, slug=slug))
 
-    comments = ad.comments.filter_by(status="approved").all()
-    comment_like_counts = {}
-    comment_rating_stats = {}
-    liked_comment_ids = set()
-    rated_comment_values = {}
-    saved_analysis = False
-    saved_count = SavedAd.query.filter_by(ad_id=ad.id).count()
-    if comments:
-        comment_ids = [comment.id for comment in comments]
+    critiques = ad.comments.filter_by(status="approved").order_by(AdComment.created_at.desc()).all()
+    critique_like_counts = {}
+    if critiques:
+        critique_ids = [c.id for c in critiques]
         like_rows = (
             db.session.query(AdCommentLike.comment_id, db.func.count(AdCommentLike.id))
-            .filter(AdCommentLike.comment_id.in_(comment_ids))
+            .filter(AdCommentLike.comment_id.in_(critique_ids))
             .group_by(AdCommentLike.comment_id)
             .all()
         )
-        rating_rows = (
-            db.session.query(
-                AdCommentRating.comment_id,
-                db.func.avg(AdCommentRating.rating),
-                db.func.count(AdCommentRating.id),
-            )
-            .filter(AdCommentRating.comment_id.in_(comment_ids))
-            .group_by(AdCommentRating.comment_id)
-            .all()
-        )
-        comment_like_counts = {comment_id: count for comment_id, count in like_rows}
-        comment_rating_stats = {
-            comment_id: {"avg": round(float(avg or 0), 1), "count": count}
-            for comment_id, avg, count in rating_rows
-        }
-        if current_user.is_authenticated:
-            liked_comment_ids = {
-                row.comment_id for row in AdCommentLike.query
-                .filter(
-                    AdCommentLike.user_id == current_user.id,
-                    AdCommentLike.comment_id.in_(comment_ids),
-                )
-                .all()
-            }
-            rated_comment_values = {
-                row.comment_id: row.rating for row in AdCommentRating.query
-                .filter(
-                    AdCommentRating.user_id == current_user.id,
-                    AdCommentRating.comment_id.in_(comment_ids),
-                )
-                .all()
-            }
+        critique_like_counts = {comment_id: count for comment_id, count in like_rows}
+
+    saved_analysis = False
+    saved_count = SavedAd.query.filter_by(ad_id=ad.id).count()
     if current_user.is_authenticated:
         saved_analysis = SavedAd.query.filter_by(ad_id=ad.id, user_id=current_user.id).first() is not None
 
@@ -436,19 +426,232 @@ def _handle_ad_detail(lang, slug):
         can_read=can_read,
         can_comment=can_comment,
         ui=ui,
-        comments=comments,
-        language_name=language_name,
+        critiques=critiques,
+        critique_like_counts=critique_like_counts,
         existing_user_comment=existing_user_comment,
         user_comment_editable=user_comment_editable,
         can_submit_critique=can_submit_critique,
         uses_intro_critique=uses_intro_critique,
         critique_block_reason=critique_block_reason,
-        comment_like_counts=comment_like_counts,
-        comment_rating_stats=comment_rating_stats,
-        liked_comment_ids=liked_comment_ids,
-        rated_comment_values=rated_comment_values,
         saved_analysis=saved_analysis,
         saved_count=saved_count,
+    )
+
+
+def _author_stats(user):
+    """Aggregate stats shown on a critique's author sidebar."""
+    critique_ids = [
+        row.id for row in AdComment.query.filter_by(user_id=user.id, status="approved").all()
+    ]
+    likes_received = 0
+    readers = 0
+    if critique_ids:
+        likes_received = (
+            AdCommentLike.query.filter(AdCommentLike.comment_id.in_(critique_ids)).count()
+        )
+        readers = (
+            db.session.query(db.func.coalesce(db.func.sum(AdComment.reads_count), 0))
+            .filter(AdComment.id.in_(critique_ids))
+            .scalar()
+        )
+    return {
+        "critiques_published": len(critique_ids),
+        "likes_received": likes_received,
+        "readers": readers or 0,
+        "following": Follow.query.filter_by(follower_id=user.id).count(),
+    }
+
+
+def _handle_critique_detail(lang, username, slug):
+    ui = CATALOG_UI[lang]
+    critique = AdComment.query.filter_by(slug=slug, status="approved").first_or_404()
+    author = critique.user
+    ad = critique.ad
+
+    canonical_route = f"main.critique_detail_{lang}"
+    if author.username_slug != username:
+        return redirect(url_for(canonical_route, username=author.username_slug, slug=slug), code=301)
+
+    if request.method == "POST":
+        action = request.form.get("_action", "")
+        if not current_user.is_authenticated:
+            abort(403)
+
+        if action == "toggle_critique_like":
+            existing = AdCommentLike.query.filter_by(
+                comment_id=critique.id, user_id=current_user.id
+            ).first()
+            if existing:
+                db.session.delete(existing)
+            else:
+                db.session.add(AdCommentLike(comment_id=critique.id, user_id=current_user.id))
+            db.session.commit()
+
+        elif action == "rate_critique":
+            rating = request.form.get("rating", type=int)
+            if rating is not None and 1 <= rating <= 5:
+                existing_rating = AdCommentRating.query.filter_by(
+                    comment_id=critique.id, user_id=current_user.id
+                ).first()
+                if existing_rating:
+                    existing_rating.rating = rating
+                else:
+                    db.session.add(AdCommentRating(
+                        comment_id=critique.id, user_id=current_user.id, rating=rating,
+                    ))
+                db.session.commit()
+
+        elif action == "toggle_save_critique":
+            existing = SavedCritique.query.filter_by(
+                critique_id=critique.id, user_id=current_user.id
+            ).first()
+            if existing:
+                db.session.delete(existing)
+            else:
+                db.session.add(SavedCritique(critique_id=critique.id, user_id=current_user.id))
+            db.session.commit()
+
+        elif action == "toggle_follow":
+            target_id = request.form.get("user_id", type=int)
+            if target_id and target_id != current_user.id:
+                existing = Follow.query.filter_by(
+                    follower_id=current_user.id, followed_id=target_id
+                ).first()
+                if existing:
+                    db.session.delete(existing)
+                else:
+                    db.session.add(Follow(follower_id=current_user.id, followed_id=target_id))
+                db.session.commit()
+
+        return redirect(url_for(canonical_route, username=username, slug=slug))
+
+    # One increment per view — no de-dup for v1.
+    critique.reads_count = (critique.reads_count or 0) + 1
+    db.session.commit()
+
+    like_count = AdCommentLike.query.filter_by(comment_id=critique.id).count()
+    liked = (
+        current_user.is_authenticated
+        and AdCommentLike.query.filter_by(comment_id=critique.id, user_id=current_user.id).first() is not None
+    )
+    saved = (
+        current_user.is_authenticated
+        and SavedCritique.query.filter_by(critique_id=critique.id, user_id=current_user.id).first() is not None
+    )
+    following_author = (
+        current_user.is_authenticated
+        and Follow.query.filter_by(follower_id=current_user.id, followed_id=author.id).first() is not None
+    )
+    can_submit_critique, _, _ = _critique_access_for_ad(current_user, ad)
+
+    return render_template(
+        f"{lang}/critique_detail.html",
+        lang=lang, ui=ui, minimal_header=True,
+        critique=critique, ad=ad, t=ad.translation(lang),
+        country_name=country_name,
+        author=author, author_stats=_author_stats(author),
+        like_count=like_count, liked=liked, saved=saved,
+        following_author=following_author,
+        can_submit_critique=can_submit_critique,
+    )
+
+
+def _handle_write_critique(lang, ad_slug):
+    ui = CATALOG_UI[lang]
+    ad = Ad.query.filter_by(slug=ad_slug).first_or_404()
+    if not can_comment_on_ad():
+        abort(403)
+
+    existing_user_comment = AdComment.query.filter_by(
+        ad_id=ad.id, user_id=current_user.id
+    ).order_by(AdComment.created_at.asc()).first()
+    user_comment_editable = _comment_is_editable(existing_user_comment)
+    can_submit_critique, uses_intro_critique, critique_block_reason = _critique_access_for_ad(
+        current_user, ad, existing_user_comment
+    )
+    if not can_submit_critique:
+        abort(403)
+    if existing_user_comment and not user_comment_editable:
+        abort(403)
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        body = request.form.get("body", "").strip()
+        if not title or not body:
+            flash(ui["comment_err"], "error")
+        elif any(_rating_value(field) is None for field in (
+            "rating_music", "rating_art_direction",
+            "rating_copywriting", "rating_strategy",
+        )):
+            flash(ui["rating_err"], "error")
+        else:
+            from app.moderation import comment_status_for_text
+            status = comment_status_for_text(body)
+            critique = existing_user_comment or AdComment(ad_id=ad.id, user_id=current_user.id)
+            critique.title = title
+            critique.body = body
+            critique.status = status
+            critique.rating_music = _rating_value("rating_music")
+            critique.rating_art_direction = _rating_value("rating_art_direction")
+            critique.rating_copywriting = _rating_value("rating_copywriting")
+            critique.rating_strategy = _rating_value("rating_strategy")
+            _set_comment_translation(critique, body, lang)
+            is_new = existing_user_comment is None
+            if is_new:
+                db.session.add(critique)
+                if uses_intro_critique and current_user.role == "gold":
+                    current_user.gold_intro_critique_used = True
+            ensure_username_slug(current_user)
+            db.session.flush()
+            ensure_critique_slug(critique)
+            db.session.commit()
+            flash(ui["comment_updated"] if not is_new else
+                  (ui["comment_pending"] if status == "pending" else ui["comment_ok"]),
+                  "success" if status != "pending" else "info")
+            return redirect(url_for(
+                f"main.critique_detail_{lang}",
+                username=current_user.username_slug, slug=critique.slug,
+            ))
+
+    return render_template(
+        f"{lang}/write_critique.html",
+        lang=lang, ui=ui, ad=ad, t=ad.translation(lang),
+        existing_user_comment=existing_user_comment,
+        uses_intro_critique=uses_intro_critique,
+    )
+
+
+def _handle_ad_debate(lang, ad_slug):
+    ui = CATALOG_UI[lang]
+    ad = Ad.query.filter_by(slug=ad_slug).first_or_404()
+    allowed = can_participate_in_debate()
+
+    if request.method == "POST":
+        if not allowed:
+            abort(403)
+        body = request.form.get("body", "").strip()
+        if body:
+            from app.moderation import comment_status_for_text
+            db.session.add(AdDebateComment(
+                ad_id=ad.id, user_id=current_user.id, body=body,
+                status=comment_status_for_text(body),
+            ))
+            db.session.commit()
+        return redirect(url_for(f"main.ad_debate_{lang}", ad_slug=ad_slug))
+
+    debate_comments = []
+    if allowed:
+        debate_comments = (
+            AdDebateComment.query
+            .filter_by(ad_id=ad.id, status="approved")
+            .order_by(AdDebateComment.created_at.asc())
+            .all()
+        )
+
+    return render_template(
+        f"{lang}/ad_debate.html",
+        lang=lang, ui=ui, ad=ad, t=ad.translation(lang),
+        allowed=allowed, debate_comments=debate_comments,
     )
 
 
@@ -507,6 +710,21 @@ def ad_detail_es(slug):
     return _handle_ad_detail("es", slug)
 
 
+@main.route("/es/campana/@<username>/<slug>", methods=["GET", "POST"])
+def critique_detail_es(username, slug):
+    return _handle_critique_detail("es", username, slug)
+
+
+@main.route("/es/anuncio/<ad_slug>/escribir-critica", methods=["GET", "POST"])
+def write_critique_es(ad_slug):
+    return _handle_write_critique("es", ad_slug)
+
+
+@main.route("/es/anuncio/<ad_slug>/debate", methods=["GET", "POST"])
+def ad_debate_es(ad_slug):
+    return _handle_ad_debate("es", ad_slug)
+
+
 # ---------------------------------------------------------------------------
 # English routes
 # ---------------------------------------------------------------------------
@@ -553,6 +771,21 @@ def ad_detail_en(slug):
     return _handle_ad_detail("en", slug)
 
 
+@main.route("/en/ad-campaign/@<username>/<slug>", methods=["GET", "POST"])
+def critique_detail_en(username, slug):
+    return _handle_critique_detail("en", username, slug)
+
+
+@main.route("/en/ad/<ad_slug>/write-critique", methods=["GET", "POST"])
+def write_critique_en(ad_slug):
+    return _handle_write_critique("en", ad_slug)
+
+
+@main.route("/en/ad/<ad_slug>/debate", methods=["GET", "POST"])
+def ad_debate_en(ad_slug):
+    return _handle_ad_debate("en", ad_slug)
+
+
 # ---------------------------------------------------------------------------
 # Delete own ad comment (public route)
 # ---------------------------------------------------------------------------
@@ -573,5 +806,5 @@ def delete_ad_comment(comment_id):
     db.session.delete(comment)
     db.session.commit()
     if slug:
-        return redirect(url_for(f"main.ad_detail_{lang}", slug=slug) + "#comentarios")
+        return redirect(url_for(f"main.ad_detail_{lang}", slug=slug) + "#community-critiques")
     return redirect(url_for("main.gallery_es"))
