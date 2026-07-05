@@ -137,13 +137,9 @@
     <div class="verify-banner">
       <div class="container verify-banner__inner">
         <span class="verify-banner__text">
-          {% if lang == 'es' %}Tu criterio merece firma. Confirma tu correo y empieza a publicar con nombre propio.
-          {% else %}Your critique deserves a byline. Confirm your email and start publishing with your name.{% endif %}
+          {% if lang == 'es' %}Revisa tu correo y presiona el enlace de confirmación para activar tu cuenta.
+          {% else %}Check your inbox and press the confirmation link to activate your account.{% endif %}
         </span>
-        <a href="{{ url_for('auth.verify_page_es') if lang == 'es' else url_for('auth.verify_page_en') }}"
-           class="verify-banner__link">
-          {{ 'Confirmar correo' if lang == 'es' else 'Confirm email' }}
-        </a>
         <form method="post"
               action="{{ url_for('auth.resend_verification_es') if lang == 'es' else url_for('auth.resend_verification_en') }}"
               class="verify-banner__form">

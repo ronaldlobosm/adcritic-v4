@@ -69,6 +69,7 @@ UI = {
         "err_avatar":        "No se pudo subir la imagen.",
         "ok_registered_free": "¡Cuenta creada! Bienvenido a AdCritic.",
         "ok_registered_gold": "¡Cuenta creada! Ahora elige tu plan Gold.",
+        "err_verify_email_send": "La cuenta se creó, pero no pudimos enviar el correo de confirmación. Usa Reenviar correo o avísanos si vuelve a fallar.",
         # Email verification
         "verify_title":       "Verifica tu correo",
         "verify_instruction": "Ingresa el código de 6 dígitos que enviamos a tu correo electrónico.",
@@ -147,6 +148,7 @@ UI = {
         "err_avatar":        "Could not upload the image.",
         "ok_registered_free": "Account created! Welcome to AdCritic.",
         "ok_registered_gold": "Account created! Now choose your Gold plan.",
+        "err_verify_email_send": "The account was created, but we could not send the confirmation email. Use Resend email or contact us if it keeps failing.",
         # Email verification
         "verify_title":       "Verify your email",
         "verify_instruction": "Enter the 6-digit code we sent to your email address.",
@@ -298,17 +300,21 @@ def _handle_register_step2(lang):
             db.session.commit()
             login_user(user)
 
-            # Send verification email (non-blocking — failure is logged, not fatal)
-            send_verification_email(user, lang)
+            # Send verification email immediately. Account creation still succeeds if SMTP is down.
+            email_ok, _email_err = send_verification_email(user, lang)
 
             # Clear signup session keys
             session.pop("signup_intent", None)
             session.pop("signup_lang", None)
 
             if intent == "gold":
+                if not email_ok:
+                    flash(ui["err_verify_email_send"], "error")
                 flash(ui["ok_registered_gold"], "success")
                 return redirect(_membership_url(lang))
             else:
+                if not email_ok:
+                    flash(ui["err_verify_email_send"], "error")
                 flash(ui["ok_registered_free"], "success")
                 return redirect(_account_url(lang))
 
@@ -446,7 +452,7 @@ def _handle_resend(lang):
     else:
         flash(ui["err_resend"], "error")
 
-    return redirect(_verify_page_url(lang))
+    return redirect(request.referrer or _account_url(lang))
 
 
 @auth.route("/es/cuenta/reenviar-verificacion", methods=["POST"])

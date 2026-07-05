@@ -731,6 +731,58 @@ a:hover { text-decoration: underline; }
 /* ============================================================
    FLASH MESSAGES
    ============================================================ */
+.verify-banner {
+  background:
+    linear-gradient(180deg, rgba(255,250,242,.98), rgba(246,239,226,.98));
+  border-bottom: 1px solid rgba(181,138,59,.32);
+  box-shadow: 0 10px 24px rgba(18,16,13,.05);
+}
+.verify-banner__inner {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem .85rem;
+  justify-content: center;
+  padding-block: .78rem;
+  text-align: center;
+}
+.verify-banner__text {
+  color: #2d261d;
+  font-size: .98rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.verify-banner__link,
+.verify-banner__button {
+  align-items: center;
+  background:
+    linear-gradient(145deg, #1a1712, #2a2218);
+  border: 1px solid rgba(216,168,74,.72);
+  border-radius: 999px;
+  color: #f4d27b;
+  display: inline-flex;
+  font-family: var(--font-body);
+  font-size: .78rem;
+  font-weight: 900;
+  justify-content: center;
+  letter-spacing: .06em;
+  line-height: 1;
+  min-height: 2rem;
+  padding: .55rem .85rem;
+  text-transform: uppercase;
+}
+.verify-banner__link:hover,
+.verify-banner__button:hover {
+  border-color: rgba(255,226,143,.95);
+  color: #ffe28f;
+  text-decoration: none;
+}
+.verify-banner__form {
+  display: inline-flex;
+}
+.verify-banner__button {
+  cursor: pointer;
+}
 .flash-messages { padding-top: 1rem; }
 .flash {
   padding: .75rem 1rem;
@@ -1797,7 +1849,8 @@ a:hover { text-decoration: underline; }
 
 .form-group { display: flex; flex-direction: column; gap: .4rem; }
 .form-label { font-size: .85rem; font-weight: 600; color: var(--color-ink-2); }
-.form-input {
+.form-input,
+.form-textarea {
   padding: .6rem .85rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -1806,7 +1859,13 @@ a:hover { text-decoration: underline; }
   background: var(--color-bg);
   color: var(--color-ink);
 }
-.form-input:focus { outline: 2px solid var(--color-accent); outline-offset: 1px; border-color: transparent; }
+.form-textarea {
+  line-height: 1.55;
+  min-height: 6rem;
+  resize: vertical;
+}
+.form-input:focus,
+.form-textarea:focus { outline: 2px solid var(--color-accent); outline-offset: 1px; border-color: transparent; }
 
 .auth-btn {
   padding: .7rem 1.5rem;
