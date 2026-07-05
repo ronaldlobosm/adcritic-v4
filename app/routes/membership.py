@@ -5,7 +5,7 @@ Membership pages, Stripe Checkout, Stripe Customer Portal, and webhook handler.
 """
 import os
 import stripe
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import (
     Blueprint, render_template, request, redirect,
@@ -41,6 +41,16 @@ def _price_ids():
         "yearly":          os.environ.get("STRIPE_PRICE_ID_YEARLY", ""),
         "monthly_founder": os.environ.get("STRIPE_PRICE_ID_MONTHLY_FOUNDER", ""),
         "yearly_founder":  os.environ.get("STRIPE_PRICE_ID_YEARLY_FOUNDER", ""),
+    }
+
+
+def _membership_asset_urls():
+    """Return Cloudinary-backed membership assets, with local fallbacks for dev."""
+    return {
+        "hero": os.environ.get("MEMBERSHIP_HERO_IMAGE_URL")
+        or url_for("static", filename="img/membership-hero.jpg"),
+        "shield": os.environ.get("FOUNDER_SHIELD_IMAGE_URL")
+        or url_for("static", filename="img/founder-shield-real.png"),
     }
 
 
@@ -162,12 +172,12 @@ def _activate_gold_membership(user):
 UI = {
     "es": {
         "page_title":          "Membresía Gold",
-        "hero_subtitle":       "Accede al análisis completo, publica críticas y apoya el proyecto.",
+        "hero_subtitle":       "Desbloquea análisis completos, valora trabajos de mérito publicitario y publica tus críticas junto a una comunidad de profesionales de la industria.",
         "plan_monthly":        "Mensual",
         "plan_yearly":         "Anual",
         "plan_yearly_save":    "Ahorra 25 %",
-        "plan_founder_badge":  "Precio fundador",
-        "founder_note":        "Precio especial para los primeros {n} miembros Gold. Quedan {left} lugares.",
+        "plan_founder_badge":  "Miembro fundador",
+        "founder_note":        "Precio especial para los primeros {n} miembros.",
         "founder_expired":     "",
         "features": [
             "Análisis completo de todos los anuncios",
@@ -200,12 +210,12 @@ UI = {
     },
     "en": {
         "page_title":          "Gold Membership",
-        "hero_subtitle":       "Unlock full analysis, post critiques, and support the project.",
+        "hero_subtitle":       "Unlock full analysis, recognize work of advertising merit, and publish your critiques alongside a community of industry professionals.",
         "plan_monthly":        "Monthly",
         "plan_yearly":         "Annual",
         "plan_yearly_save":    "Save 25%",
-        "plan_founder_badge":  "Founder price",
-        "founder_note":        "Special price for the first {n} Gold members. {left} spots left.",
+        "plan_founder_badge":  "Founder member",
+        "founder_note":        "Special price for the first {n} members.",
         "founder_expired":     "",
         "features": [
             "Full analysis of every ad",
@@ -265,11 +275,14 @@ def _handle_membership_page(lang):
 
     stripe_public_key = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
     checkout_url = url_for(f"membership.membership_checkout_{lang}")
+    alt_lang_url = url_for("membership.membership_en") if lang == "es" else url_for("membership.membership_es")
+    membership_assets = _membership_asset_urls()
 
     return render_template(
         f"{lang}/membership.html",
         lang=lang,
         ui=ui,
+        alt_lang_url=alt_lang_url,
         founder=founder,
         left=left,
         founder_claimed=founder_claimed,
@@ -280,6 +293,8 @@ def _handle_membership_page(lang):
         yearly_amount=yearly_amount,
         stripe_public_key=stripe_public_key,
         checkout_url=checkout_url,
+        membership_hero_url=membership_assets["hero"],
+        founder_shield_url=membership_assets["shield"],
     )
 
 
@@ -429,6 +444,7 @@ def membership_portal_en():
 # ---------------------------------------------------------------------------
 
 @membership_bp.route("/webhooks/stripe", methods=["POST"])
+@membership_bp.route("/stripe/webhook", methods=["POST"])
 def stripe_webhook():
     payload    = request.get_data()          # raw bytes — required for sig check
     sig_header = request.headers.get("Stripe-Signature", "")

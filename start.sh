@@ -61,5 +61,8 @@ PYEOF
 echo ">>> Seeding news posts..."
 python seed_news.py
 
+echo ">>> Checking admin password reset..."
+python reset_admin_password.py
+
 echo ">>> Starting gunicorn..."
 exec gunicorn run:app

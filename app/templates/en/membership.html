@@ -2,32 +2,53 @@
 {% block title %}{{ ui.page_title }} — AdCritic{% endblock %}
 
 {% block head %}
-{# Stripe.js — required for Embedded Checkout #}
 <script src="https://js.stripe.com/v3/" async></script>
+<style>
+  body,
+  .site-main {
+    background: #070605 !important;
+  }
+  .site-main {
+    padding-bottom: 0 !important;
+  }
+</style>
 {% endblock %}
+{% block header_ad %}{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width:860px;padding-top:3rem;padding-bottom:4rem">
 
-  {# ── Page header ─────────────────────────────────────────────────────── #}
-  <div style="text-align:center;margin-bottom:2.5rem">
-    <h1 style="font-family:'Playfair Display',serif;font-size:2.4rem;font-weight:900;margin-bottom:.6rem">
+{# ── Hero ────────────────────────────────────────────────────────────────── #}
+<div style="position:relative;width:100%;min-height:640px;display:flex;align-items:flex-end;justify-content:center;background:url('{{ membership_hero_url }}') center 52% / cover no-repeat;margin-bottom:0">
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,.5) 0%, rgba(0,0,0,.7) 48%, rgba(7,6,5,.95) 78%, #070605 100%)"></div>
+  <div style="position:relative;z-index:1;text-align:center;padding:4rem 1.5rem 3.5rem;max-width:640px;margin:0 auto">
+    <h1 style="font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:900;color:#fff;margin-bottom:.75rem;line-height:1.15">
       {{ ui.page_title }}
     </h1>
-    <p style="color:var(--color-muted,#666);font-size:1.05rem;max-width:520px;margin:0 auto">
+    <p style="color:rgba(255,255,255,.75);font-size:1.05rem;max-width:480px;margin:0 auto 1.5rem">
       {{ ui.hero_subtitle }}
     </p>
-
-  {% if founder %}
-    {% set founder_total_display = founder_total|default(1000) %}
-    {% set founder_claimed_display = founder_claimed|default(0) %}
-    {% set founder_left_display = founder_total_display - founder_claimed_display %}
-    <div class="founder-banner" style="margin-top:1.25rem;display:inline-flex;align-items:center;gap:.5rem;background:#fef3c7;border:1px solid #f59e0b;border-radius:.5rem;padding:.55rem 1rem;font-size:.9rem;font-weight:600;color:#92400e">
-      ⭐ {{ ui.plan_founder_badge }} —
-      {{ ui.founder_note.replace('{n}', founder_total_display|string).replace('{left}', founder_left_display|string) }}
-    </div>
-  {% endif %}
+    {% if founder %}
+      {% set founder_total_display = founder_total|default(1000) %}
+      {% set founder_claimed_display = founder_claimed|default(0) %}
+      {% set founder_left_display = founder_total_display - founder_claimed_display %}
+      <div class="founder-callout">
+        <div class="founder-callout__logo">
+          <span class="founder-crest" aria-hidden="true">
+            <img class="founder-crest__image"
+                 src="{{ founder_shield_url }}"
+                 alt="">
+          </span>
+          <span>{{ ui.plan_founder_badge }}</span>
+        </div>
+        <div class="founder-callout__copy">
+          {{ ui.founder_note.replace('{n}', founder_total_display|string).replace('{left}', founder_left_display|string) }}
+        </div>
+      </div>
+    {% endif %}
   </div>
+</div>
+
+<div class="container membership-plans-shell" style="max-width:860px;padding-top:0;padding-bottom:4rem;position:relative;z-index:2;margin-top:-25px">
 
   {# ── Already Gold ──────────────────────────────────────────────────── #}
   {% if current_user.is_authenticated and current_user.role == 'gold' %}
@@ -54,15 +75,15 @@
     <div class="membership-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
 
       {# Monthly card #}
-      <div class="membership-card" style="border:2px solid var(--color-border,#e5e5e0);border-radius:1rem;padding:2rem;display:flex;flex-direction:column">
-        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-muted,#666);margin-bottom:.75rem">
+      <div class="membership-card" style="border:2px solid var(--color-border,#e5e5e0);border-radius:1rem;padding:2rem;display:flex;flex-direction:column;background:#f5f0e8">
+        <div class="membership-plan-kicker" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-muted,#666);margin-bottom:.75rem">
           {{ ui.plan_monthly }}
-          {% if founder %}<span class="founder-tag" style="background:#f59e0b;color:#fff;border-radius:.25rem;padding:.1rem .45rem;margin-left:.4rem;font-size:.7rem">{{ ui.plan_founder_badge }}</span>{% endif %}
+          {% if founder %}<span class="founder-tag"><img class="founder-tag__icon" src="{{ founder_shield_url }}" alt="" aria-hidden="true">{{ ui.plan_founder_badge }}</span>{% endif %}
         </div>
-        <div style="font-size:3rem;font-weight:900;font-family:'Playfair Display',serif;line-height:1">
+        <div class="membership-plan-price" style="font-size:3rem;font-weight:900;font-family:'Playfair Display',serif;line-height:1">
           ${{ monthly_amount }}
         </div>
-        <div style="color:var(--color-muted,#666);font-size:.9rem;margin-bottom:1.5rem">{{ ui.period_monthly }}</div>
+        <div class="membership-plan-period" style="color:var(--color-muted,#666);font-size:.9rem;margin-bottom:1.5rem">{{ ui.period_monthly }}</div>
 
         <ul style="list-style:none;padding:0;margin:0 0 2rem;display:flex;flex-direction:column;gap:.6rem;flex:1">
           {% for feature in ui.features %}
@@ -74,12 +95,12 @@
         </ul>
 
         {% if current_user.is_authenticated %}
-        <button onclick="startCheckout('monthly')" class="btn-primary"
+        <button onclick="startCheckout('monthly')" class="btn-primary membership-subscribe"
                 style="width:100%;font-size:1rem;padding:.85rem;cursor:pointer;border:none">
           {{ ui.btn_subscribe }}
         </button>
         {% else %}
-        <a href="{{ url_for('auth.login_en') }}?next={{ request.path }}" class="btn-primary"
+        <a href="{{ url_for('auth.login_en') }}?next={{ request.path }}" class="btn-primary membership-subscribe"
            style="width:100%;font-size:1rem;padding:.85rem;text-align:center;display:block">
           {{ ui.btn_subscribe }}
         </a>
@@ -89,17 +110,17 @@
       {# Yearly card (highlighted) #}
       <div class="membership-card membership-card--featured"
            style="border:2px solid #f59e0b;border-radius:1rem;padding:2rem;display:flex;flex-direction:column;position:relative;background:#fffbeb">
-        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;font-size:.75rem;font-weight:700;border-radius:99px;padding:.2rem .85rem;white-space:nowrap">
+        <div class="membership-save-badge" style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;font-size:.75rem;font-weight:700;border-radius:99px;padding:.2rem .85rem;white-space:nowrap">
           {{ ui.plan_yearly_save }}
         </div>
-        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-muted,#666);margin-bottom:.75rem">
+        <div class="membership-plan-kicker" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-muted,#666);margin-bottom:.75rem">
           {{ ui.plan_yearly }}
-          {% if founder %}<span class="founder-tag" style="background:#f59e0b;color:#fff;border-radius:.25rem;padding:.1rem .45rem;margin-left:.4rem;font-size:.7rem">{{ ui.plan_founder_badge }}</span>{% endif %}
+          {% if founder %}<span class="founder-tag"><img class="founder-tag__icon" src="{{ founder_shield_url }}" alt="" aria-hidden="true">{{ ui.plan_founder_badge }}</span>{% endif %}
         </div>
-        <div style="font-size:3rem;font-weight:900;font-family:'Playfair Display',serif;line-height:1">
+        <div class="membership-plan-price" style="font-size:3rem;font-weight:900;font-family:'Playfair Display',serif;line-height:1">
           ${{ yearly_amount }}
         </div>
-        <div style="color:var(--color-muted,#666);font-size:.9rem;margin-bottom:1.5rem">{{ ui.period_yearly }}</div>
+        <div class="membership-plan-period" style="color:var(--color-muted,#666);font-size:.9rem;margin-bottom:1.5rem">{{ ui.period_yearly }}</div>
 
         <ul style="list-style:none;padding:0;margin:0 0 2rem;display:flex;flex-direction:column;gap:.6rem;flex:1">
           {% for feature in ui.features %}
@@ -111,12 +132,12 @@
         </ul>
 
         {% if current_user.is_authenticated %}
-        <button onclick="startCheckout('yearly')" class="btn-primary"
+        <button onclick="startCheckout('yearly')" class="btn-primary membership-subscribe"
                 style="width:100%;font-size:1rem;padding:.85rem;cursor:pointer;border:none">
           {{ ui.btn_subscribe }}
         </button>
         {% else %}
-        <a href="{{ url_for('auth.login_en') }}?next={{ request.path }}" class="btn-primary"
+        <a href="{{ url_for('auth.login_en') }}?next={{ request.path }}" class="btn-primary membership-subscribe"
            style="width:100%;font-size:1rem;padding:.85rem;text-align:center;display:block">
           {{ ui.btn_subscribe }}
         </a>
@@ -126,36 +147,40 @@
     </div>
 
     <p style="text-align:center;font-size:.8rem;color:var(--color-muted,#999);margin-top:1.5rem">
-      Payments securely processed by Stripe. Cancel anytime.
+      Payments securely processed by <span style="font-weight:700;color:#635BFF;letter-spacing:-.03em">stripe</span>. Cancel anytime.
     </p>
   </div>{# /plan-cards-section #}
 
-  {# ── Embedded Checkout container (hidden until a plan is selected) ── #}
-  <div id="checkout-wrap" style="display:none">
+  {# ── Embedded Checkout — full-bleed white band ── #}
+  <div id="checkout-wrap" class="membership-checkout-wrap" style="display:none;position:relative;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;width:100vw;background:#fff;padding:3rem max(1.5rem, calc(50vw - 520px))">
 
-    {# AdCritic-branded header bar #}
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem">
-      <div>
-        <h2 style="margin:0;font-size:1.25rem;font-weight:700">Complete your Gold subscription</h2>
-        <p style="margin:.2rem 0 0;font-size:.82rem;color:var(--color-muted,#777)">
-          🔒 Secure payment · processed by Stripe
-        </p>
+    <div style="max-width:980px;margin:0 auto">
+      {# Header #}
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:2rem">
+        <div>
+          <h2 class="membership-checkout-title" style="margin:0;font-size:1.25rem;font-weight:700;color:#1a1a1a">Complete your Gold Member subscription</h2>
+          <p class="membership-checkout-note" style="margin:.25rem 0 0;font-size:.82rem;color:#888;display:flex;align-items:center;gap:.35rem">
+            🔒 Secure payment · processed by
+            <span style="font-family:-apple-system,sans-serif;font-weight:700;font-size:.9rem;color:#635BFF;letter-spacing:-.03em">stripe</span>
+          </p>
+        </div>
+        <button onclick="backToPlans()"
+                class="membership-checkout-back"
+                style="background:none;border:1px solid #ddd;border-radius:.5rem;padding:.45rem .9rem;font-size:.85rem;cursor:pointer;color:#555">
+          ← Back to plans
+        </button>
       </div>
-      <button onclick="backToPlans()"
-              style="background:none;border:1px solid var(--color-border,#ddd);border-radius:.5rem;padding:.45rem .9rem;font-size:.85rem;cursor:pointer;color:var(--color-muted,#555)">
-        ← Back to plans
-      </button>
-    </div>
 
-    {# Loading placeholder — replaced by Stripe iframe on mount #}
-    <div id="checkout-loading"
-         style="text-align:center;padding:4rem 2rem;color:var(--color-muted,#999);font-size:.95rem">
-      <div style="margin-bottom:.75rem;font-size:1.5rem">⏳</div>
-      Loading payment form…
-    </div>
+      {# Loading placeholder #}
+      <div id="checkout-loading"
+           style="text-align:center;padding:4rem 2rem;color:#aaa;font-size:.95rem">
+        <div style="margin-bottom:.75rem;font-size:1.5rem">⏳</div>
+        Loading payment form…
+      </div>
 
-    {# Stripe mounts the embedded checkout form here #}
-    <div id="checkout-container"></div>
+      {# Stripe mounts here #}
+      <div id="checkout-container"></div>
+    </div>
 
   </div>{# /checkout-wrap #}
 

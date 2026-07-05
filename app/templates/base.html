@@ -134,23 +134,21 @@
 
     {# ── Email-verification banner — shown to logged-in users who haven't confirmed yet ── #}
     {% if current_user.is_authenticated and not current_user.email_verified %}
-    <div style="background:#fef9c3;border-bottom:1px solid #fde68a">
-      <div class="container" style="padding-top:.65rem;padding-bottom:.65rem;display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .75rem;font-size:.85rem;color:#78350f">
-        <span>📧
-          {% if lang == 'es' %}Confirma tu correo para activar tu cuenta.
-          {% else %}Please verify your email to activate your account.{% endif %}
+    <div class="verify-banner">
+      <div class="container verify-banner__inner">
+        <span class="verify-banner__text">
+          {% if lang == 'es' %}Tu criterio merece firma. Confirma tu correo y empieza a publicar con nombre propio.
+          {% else %}Your critique deserves a byline. Confirm your email and start publishing with your name.{% endif %}
         </span>
         <a href="{{ url_for('auth.verify_page_es') if lang == 'es' else url_for('auth.verify_page_en') }}"
-           style="font-weight:600;color:#92400e;text-decoration:underline">
-          {{ 'Verificar ahora' if lang == 'es' else 'Verify now' }}
+           class="verify-banner__link">
+          {{ 'Confirmar correo' if lang == 'es' else 'Confirm email' }}
         </a>
-        <span style="color:#d97706">·</span>
         <form method="post"
               action="{{ url_for('auth.resend_verification_es') if lang == 'es' else url_for('auth.resend_verification_en') }}"
-              style="display:inline;margin:0">
-          <button type="submit"
-                  style="background:none;border:none;padding:0;cursor:pointer;font:inherit;font-size:.85rem;color:#92400e;text-decoration:underline">
-            {{ 'Reenviar correo' if lang == 'es' else 'Resend email' }}
+              class="verify-banner__form">
+          <button type="submit" class="verify-banner__button">
+            {{ 'Enviar de nuevo' if lang == 'es' else 'Send again' }}
           </button>
         </form>
       </div>
@@ -167,16 +165,63 @@
       {% endif %}
     {% endwith %}
     {%- from "partials/ad_zone.html" import render as ad_zone -%}
-    {{ ad_zone("header_banner") }}
+    {% block header_ad %}{{ ad_zone("header_banner") }}{% endblock %}
     {% block content %}{% endblock %}
   </main>
 
   <footer class="site-footer">
     <div class="container footer-inner">
-      <span class="footer-brand">AdCritic</span>
-      <span class="footer-copy">
-        {% if lang == 'es' %}Análisis de publicidad, en serio.{% else %}Ad criticism, seriously.{% endif %}
-      </span>
+      <div class="footer-main">
+        <a class="footer-brand" href="{{ url_for('main.gallery_es') if lang == 'es' else url_for('main.gallery_en') }}">AdCritic</a>
+        <p class="footer-copy">
+          {% if lang == 'es' %}
+            Crítica publicitaria independiente para las ideas,<br>
+            la estrategia y la cultura detrás de cada anuncio.
+          {% else %}
+            Independent advertising criticism for the ideas,<br>
+            strategy and culture behind every ad.
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="footer-nav-row">
+        <nav class="footer-nav" aria-label="{{ 'Navegación del pie' if lang == 'es' else 'Footer navigation' }}">
+          <a href="{{ url_for('main.catalog_es') if lang == 'es' else url_for('main.catalog_en') }}">
+            {{ 'Críticas' if lang == 'es' else 'Critiques' }}
+          </a>
+          <a href="{{ url_for('posts.list_es') if lang == 'es' else url_for('posts.list_en') }}">
+            {{ 'Noticias' if lang == 'es' else 'News' }}
+          </a>
+          <a href="{{ url_for('membership.membership_es') if lang == 'es' else url_for('membership.membership_en') }}">
+            {{ 'Membresía Gold' if lang == 'es' else 'Gold Membership' }}
+          </a>
+          <a href="mailto:admin@adcritic.com">
+            {{ 'Contacto' if lang == 'es' else 'Contact' }}
+          </a>
+        </nav>
+        {% set is_membership_page = request.endpoint in ['membership.membership_es', 'membership.membership_en'] %}
+        {% set is_front_page = request.endpoint in ['main.gallery_es', 'main.gallery_en'] %}
+        {% if is_membership_page %}
+          <a class="footer-member-badge footer-member-badge--gold"
+             href="{{ url_for('membership.membership_es') if lang == 'es' else url_for('membership.membership_en') }}">
+            Gold Member
+          </a>
+        {% elif current_user.is_authenticated and not is_front_page %}
+          {% if current_user.role == 'gold' %}
+            <a class="footer-member-badge footer-member-badge--gold"
+               href="{{ url_for('account.my_account_es') if lang == 'es' else url_for('account.my_account_en') }}">
+              Gold Member
+            </a>
+          {% else %}
+            <a class="footer-member-badge footer-member-badge--free"
+               href="{{ url_for('account.my_account_es') if lang == 'es' else url_for('account.my_account_en') }}">
+              Free Member
+            </a>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="footer-legal">© 2026 AdCritic</div>
     </div>
   </footer>
 
