@@ -65,7 +65,7 @@
     <a href="#overview" data-profile-tab="overview" class="is-active">Overview</a>
     <a href="#critiques" data-profile-tab="critiques">{{ 'Críticas' if is_gold else 'Guardadas' }}</a>
     <a href="#activity" data-profile-tab="activity">Actividad</a>
-    <a href="#membership" data-profile-tab="membership">Membresía</a>
+    {% if is_gold %}<a href="#membership" data-profile-tab="membership">Membresía</a>{% endif %}
     <a href="#settings" data-profile-tab="settings">Settings</a>
   </nav>
 
@@ -152,11 +152,18 @@
               <a href="{{ url_for('membership.membership_portal_es') if is_gold else url_for('membership.membership_es') }}" class="gold-profile-button">{{ 'Gestionar suscripción' if is_gold else 'Hazte Gold' }}</a>
             </div>
             <div class="gold-membership-card__benefits">
-              <h3>Tus beneficios</h3>
+              <h3>{{ 'Tus beneficios' if is_gold else 'Acceso Free' }}</h3>
               <ul>
-                {% for feature in features %}
-                  <li>{{ feature }}</li>
-                {% endfor %}
+                {% if is_gold %}
+                  {% for feature in features %}
+                    <li>{{ feature }}</li>
+                  {% endfor %}
+                {% else %}
+                  <li>Dar like y valorar críticas de miembros Gold</li>
+                  <li>Guardar análisis en tu biblioteca de perfil</li>
+                  <li>Ver tu actividad reciente desde este perfil</li>
+                  <li>Pasar a Gold cuando quieras para análisis completos y publicar críticas</li>
+                {% endif %}
               </ul>
             </div>
           </div>
@@ -175,6 +182,7 @@
         </section>
       </section>
 
+      {% if is_gold %}
       <section class="gold-profile-view" data-profile-view="membership">
       <section class="gold-profile-panel gold-profile-membership">
         <div class="gold-profile-section-head">
@@ -204,6 +212,7 @@
         </div>
       </section>
       </section>
+      {% endif %}
 
       <section class="gold-profile-view" data-profile-view="critiques">
       <section class="gold-profile-panel">

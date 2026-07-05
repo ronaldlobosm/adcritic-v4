@@ -2274,7 +2274,7 @@ a:hover { text-decoration: underline; }
   border: 1px solid rgba(8,8,8,.12);
   border-top: none;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   margin-bottom: 2rem;
 }
 .gold-profile-tabs a {
