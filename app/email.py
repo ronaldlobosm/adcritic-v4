@@ -44,10 +44,24 @@ def send_verification_email(user, lang="es"):
         verify_link = url_for("auth.verify_link_es", token=token, _external=True)
         verify_page = url_for("auth.verify_page_es", _external=True)
         subject     = "Confirma tu correo en AdCritic"
+        preview     = "Un paso rápido para activar tu cuenta y empezar a publicar con tu nombre."
+        body        = (
+            f"{preview}\n\n"
+            f"Confirma tu correo con este enlace:\n{verify_link}\n\n"
+            f"O ingresa este código en la página de verificación: {code}\n"
+            f"{verify_page}"
+        )
     else:
         verify_link = url_for("auth.verify_link_en", token=token, _external=True)
         verify_page = url_for("auth.verify_page_en", _external=True)
         subject     = "Verify your email on AdCritic"
+        preview     = "One quick step to activate your account and start publishing with your name."
+        body        = (
+            f"{preview}\n\n"
+            f"Confirm your email with this link:\n{verify_link}\n\n"
+            f"Or enter this code on the verification page: {code}\n"
+            f"{verify_page}"
+        )
 
     html = render_template(
         f"email/verify_{lang}.html",
@@ -60,7 +74,7 @@ def send_verification_email(user, lang="es"):
     sender = current_app.config.get(
         "MAIL_DEFAULT_SENDER", "AdCritic <noreply@adcritic.com>"
     )
-    msg = Message(subject=subject, recipients=[user.email],
+    msg = Message(subject=subject, recipients=[user.email], body=body,
                   html=html, sender=sender)
     try:
         mail.send(msg)
