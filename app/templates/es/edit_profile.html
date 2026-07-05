@@ -50,11 +50,21 @@
     </div>
 
     <div class="form-group">
+      <label class="form-label" for="location_state">Estado / Provincia</label>
+      <div class="combobox" data-combobox="state">
+        <input type="text" class="form-input" id="location_state" name="location_state" autocomplete="off"
+               placeholder="Escribe para buscar un estado..." value="{{ selected_state or '' }}"
+               {% if not selected_country %}disabled{% endif %} />
+        <ul class="combobox-list" id="location_state_list"></ul>
+      </div>
+    </div>
+
+    <div class="form-group">
       <label class="form-label" for="location_city">Ciudad</label>
       <div class="combobox" data-combobox="city">
         <input type="text" class="form-input" id="location_city" name="location_city" autocomplete="off"
                placeholder="Escribe para buscar una ciudad..." value="{{ selected_city or '' }}"
-               {% if not selected_country %}disabled{% endif %} />
+               {% if not selected_state %}disabled{% endif %} />
         <ul class="combobox-list" id="location_city_list"></ul>
       </div>
     </div>
@@ -102,11 +112,14 @@ function previewAvatar(input) {
 }
 
 var countryData = {{ countries | tojson }};
+var stateData = [];
 var cityData = [];
 
 var countryInput  = document.getElementById('location_country_input');
 var countryHidden = document.getElementById('location_country');
 var countryList   = document.getElementById('location_country_list');
+var stateInput    = document.getElementById('location_state');
+var stateList     = document.getElementById('location_state_list');
 var cityInput     = document.getElementById('location_city');
 var cityList      = document.getElementById('location_city_list');
 
@@ -126,11 +139,27 @@ function renderCombobox(listEl, items, onPick) {
   listEl.classList.add('is-open');
 }
 
-function loadCities(code) {
+function loadStates(code) {
+  stateInput.disabled = true;
+  stateInput.value = '';
+  stateInput.placeholder = 'Cargando estados...';
+  cityInput.disabled = true;
+  cityInput.value = '';
+  cityData = [];
+  return fetch('/api/states/' + encodeURIComponent(code))
+    .then(function(r) { return r.json(); })
+    .then(function(states) {
+      stateData = states;
+      stateInput.disabled = false;
+      stateInput.placeholder = 'Escribe para buscar un estado...';
+    });
+}
+
+function loadCities(code, state) {
   cityInput.disabled = true;
   cityInput.value = '';
   cityInput.placeholder = 'Cargando ciudades...';
-  fetch('/api/cities/' + encodeURIComponent(code))
+  return fetch('/api/cities/' + encodeURIComponent(code) + '/' + encodeURIComponent(state))
     .then(function(r) { return r.json(); })
     .then(function(cities) {
       cityData = cities;
@@ -149,11 +178,26 @@ countryInput.addEventListener('input', function() {
   renderCombobox(countryList, matches, function(item) {
     countryInput.value = item.label;
     countryHidden.value = item.code;
-    loadCities(item.code);
+    loadStates(item.code);
   });
 });
 countryInput.addEventListener('blur', function() {
   setTimeout(function() { countryList.classList.remove('is-open'); }, 150);
+});
+
+stateInput.addEventListener('input', function() {
+  var q = stateInput.value.trim().toLowerCase();
+  if (!q) { stateList.classList.remove('is-open'); return; }
+  var matches = stateData
+    .filter(function(s) { return s.toLowerCase().indexOf(q) !== -1; })
+    .map(function(s) { return { label: s }; });
+  renderCombobox(stateList, matches, function(item) {
+    stateInput.value = item.label;
+    loadCities(countryHidden.value, item.label);
+  });
+});
+stateInput.addEventListener('blur', function() {
+  setTimeout(function() { stateList.classList.remove('is-open'); }, 150);
 });
 
 cityInput.addEventListener('input', function() {
@@ -171,18 +215,30 @@ cityInput.addEventListener('blur', function() {
 });
 
 if (countryHidden.value) {
-  loadCities(countryHidden.value);
+  loadStates(countryHidden.value).then(function() {
+    if (stateInput.value) loadCities(countryHidden.value, stateInput.value);
+  });
 } else {
   fetch('https://ipapi.co/json/')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (countryHidden.value || !data || !data.country_code) return;
       var match = countryData.find(function(c) { return c[0] === data.country_code; });
-      if (match) {
-        countryInput.value = match[1];
-        countryHidden.value = match[0];
-        loadCities(match[0]);
-      }
+      if (!match) return;
+      countryInput.value = match[1];
+      countryHidden.value = match[0];
+      loadStates(match[0]).then(function() {
+        if (!data.region) return;
+        var stateMatch = stateData.find(function(s) { return s.toLowerCase() === data.region.toLowerCase(); });
+        if (stateMatch) {
+          stateInput.value = stateMatch;
+          loadCities(match[0], stateMatch).then(function() {
+            if (data.city && cityData.indexOf(data.city) !== -1) {
+              cityInput.value = data.city;
+            }
+          });
+        }
+      });
     })
     .catch(function() {});
 }

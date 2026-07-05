@@ -9,7 +9,7 @@ from app.routes.membership import (
     _founder_active, _founder_claimed_count, FOUNDER_CUTOFF_COUNT,
 )
 from app.countries import countries_sorted, country_name, COUNTRIES
-from app.cities import cities_for_country
+from app.cities import states_for_country, cities_for_state
 from app.translate import translate_text
 
 account = Blueprint("account", __name__)
@@ -288,26 +288,28 @@ def my_account_en():
 
 def _parse_location(location, lang):
     """
-    Best-effort split of a stored "City, Country" string back into a
-    country code + city, so the edit form can preselect the cascading
-    selects for users who already have a location saved as free text.
+    Best-effort split of a stored "City, State, Country" string (or the
+    older two-part "City, Country") back into country code + state + city,
+    so the edit form can preselect the cascading selects for users who
+    already have a location saved.
     """
     if not location:
-        return None, None
+        return None, None, None
 
     parts = [p.strip() for p in location.split(",")]
     city_guess = parts[0] if parts else None
     country_guess = parts[-1] if len(parts) > 1 else None
+    state_guess = parts[1] if len(parts) > 2 else None
 
     if not country_guess:
-        return None, city_guess
+        return None, None, city_guess
 
     country_guess_lower = country_guess.lower()
     for code, entry in COUNTRIES.items():
         if entry.get("es", "").lower() == country_guess_lower or entry.get("en", "").lower() == country_guess_lower:
-            return code, city_guess
+            return code, state_guess, city_guess
 
-    return None, city_guess
+    return None, None, city_guess
 
 
 def _handle_edit_profile(lang):
@@ -319,12 +321,14 @@ def _handle_edit_profile(lang):
         bio          = request.form.get("bio", "").strip() or None
         linkedin_url = request.form.get("linkedin_url", "").strip() or None
         country_code = request.form.get("location_country", "").strip() or None
+        state        = request.form.get("location_state", "").strip() or None
         city         = request.form.get("location_city", "").strip() or None
         other_languages_spoken = request.form.get("other_languages", "").strip() or None
 
         location = None
         if city and country_code:
-            location = f"{city}, {COUNTRIES.get(country_code, {}).get(lang, country_code)}"
+            country_display = COUNTRIES.get(country_code, {}).get(lang, country_code)
+            location = f"{city}, {state}, {country_display}" if state else f"{city}, {country_display}"
         elif city:
             location = city
 
@@ -358,7 +362,7 @@ def _handle_edit_profile(lang):
         flash(ui["ok_profile_saved"], "success")
         return redirect(url_for(f"account.my_account_{lang}"))
 
-    selected_country, selected_city = _parse_location(current_user.location, lang)
+    selected_country, selected_state, selected_city = _parse_location(current_user.location, lang)
     alt_lang_url = (
         url_for("account.edit_profile_en") if lang == "es"
         else url_for("account.edit_profile_es")
@@ -372,15 +376,22 @@ def _handle_edit_profile(lang):
         countries=countries_sorted(lang),
         selected_country=selected_country,
         selected_country_name=country_name(selected_country, lang) if selected_country else "",
+        selected_state=selected_state,
+        selected_states=states_for_country(selected_country) if selected_country else [],
         selected_city=selected_city,
-        selected_cities=cities_for_country(selected_country) if selected_country else [],
     )
 
 
-@account.route("/api/cities/<country_code>")
+@account.route("/api/states/<country_code>")
 @login_required
-def api_cities(country_code):
-    return jsonify(cities_for_country(country_code))
+def api_states(country_code):
+    return jsonify(states_for_country(country_code))
+
+
+@account.route("/api/cities/<country_code>/<path:state_name>")
+@login_required
+def api_cities(country_code, state_name):
+    return jsonify(cities_for_state(country_code, state_name))
 
 
 @account.route("/es/mi-cuenta/editar", methods=["GET", "POST"])
