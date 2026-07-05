@@ -9,6 +9,25 @@ login_manager = LoginManager()
 mail = Mail()
 
 
+def _ensure_runtime_user_columns():
+    """Keep deployed databases compatible when a new profile field is introduced."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    if not inspector.has_table("users"):
+        return
+
+    existing = {col["name"] for col in inspector.get_columns("users")}
+    required = [
+        ("linkedin_url", "ALTER TABLE users ADD COLUMN linkedin_url VARCHAR(300)"),
+        ("location", "ALTER TABLE users ADD COLUMN location VARCHAR(120)"),
+    ]
+    with db.engine.begin() as conn:
+        for col, ddl in required:
+            if col not in existing:
+                conn.execute(text(ddl))
+
+
 def create_app(config_name=None):
     app = Flask(__name__)
 
@@ -18,6 +37,9 @@ def create_app(config_name=None):
 
     db.init_app(app)
     mail.init_app(app)
+
+    with app.app_context():
+        _ensure_runtime_user_columns()
 
     login_manager.init_app(app)
     login_manager.login_view = "auth.login_es"
