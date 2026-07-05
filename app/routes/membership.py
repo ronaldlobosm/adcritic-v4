@@ -24,6 +24,14 @@ membership_bp = Blueprint("membership", __name__)
 
 # Founder pricing is reserved for the first Gold subscribers only.
 FOUNDER_CUTOFF_COUNT = 1000
+DEFAULT_MEMBERSHIP_HERO_IMAGE_URL = (
+    "https://res.cloudinary.com/dslebikvo/image/upload/v1783213234/"
+    "adcritic/images/ibfubiameveuxywqkcxa.jpg"
+)
+DEFAULT_FOUNDER_SHIELD_IMAGE_URL = (
+    "https://res.cloudinary.com/dslebikvo/image/upload/v1783213240/"
+    "adcritic/images/zxhegdagsgxjq4htat9o.jpg"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -48,9 +56,9 @@ def _membership_asset_urls():
     """Return Cloudinary-backed membership assets, with local fallbacks for dev."""
     return {
         "hero": os.environ.get("MEMBERSHIP_HERO_IMAGE_URL")
-        or url_for("static", filename="img/membership-hero.jpg"),
+        or DEFAULT_MEMBERSHIP_HERO_IMAGE_URL,
         "shield": os.environ.get("FOUNDER_SHIELD_IMAGE_URL")
-        or url_for("static", filename="img/founder-shield-real.png"),
+        or DEFAULT_FOUNDER_SHIELD_IMAGE_URL,
     }
 
 
