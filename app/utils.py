@@ -65,6 +65,71 @@ def upload_dir(file_type):
     return os.path.join(base, subs.get(file_type, "images"))
 
 
+def _cloudinary_enabled():
+    return bool(os.environ.get("CLOUDINARY_URL"))
+
+
+def _cloudinary_resource_type(file_type):
+    return {
+        "image": "image",
+        "video": "video",
+        "subtitle": "raw",
+    }.get(file_type, "auto")
+
+
+def _cloudinary_folder(file_type):
+    base = current_app.config.get("CLOUDINARY_FOLDER", "adcritic").strip("/")
+    subs = {"image": "images", "video": "videos", "subtitle": "subtitles"}
+    return f"{base}/{subs.get(file_type, 'files')}"
+
+
+def _cloudinary_upload(path, file_type, *, public_id=None):
+    import cloudinary
+    import cloudinary.uploader
+
+    cloudinary.config(secure=True)
+    result = cloudinary.uploader.upload(
+        path,
+        folder=_cloudinary_folder(file_type),
+        public_id=public_id,
+        resource_type=_cloudinary_resource_type(file_type),
+        overwrite=False,
+        unique_filename=True,
+    )
+    return {
+        "url": result.get("secure_url") or result.get("url"),
+        "public_id": result.get("public_id"),
+    }
+
+
+def _remove_local_file(path):
+    try:
+        if path and os.path.exists(path):
+            os.remove(path)
+    except OSError:
+        pass
+
+
+def delete_remote_media_file(media_file):
+    if not _cloudinary_enabled():
+        return
+
+    import cloudinary
+    import cloudinary.uploader
+
+    cloudinary.config(secure=True)
+    resource_type = _cloudinary_resource_type(media_file.file_type)
+    for public_id, rtype in (
+        (media_file.cloudinary_public_id, resource_type),
+        (media_file.thumbnail_cloudinary_public_id, "image"),
+    ):
+        if public_id:
+            try:
+                cloudinary.uploader.destroy(public_id, resource_type=rtype)
+            except Exception as exc:
+                current_app.logger.warning("Cloudinary delete failed: %s", exc)
+
+
 # ---------------------------------------------------------------------------
 # Image optimization (Pillow)
 # ---------------------------------------------------------------------------
@@ -249,6 +314,33 @@ def save_upload_file(file_storage, allowed_types=None, uploader_id=None):
             current_app.logger.warning("Video transcoding error: %s", exc)
 
     file_size = os.path.getsize(save_path)
+    remote_url = None
+    thumbnail_remote_url = None
+    cloudinary_public_id = None
+    thumbnail_cloudinary_public_id = None
+
+    if _cloudinary_enabled():
+        try:
+            uploaded = _cloudinary_upload(save_path, file_type)
+            remote_url = uploaded["url"]
+            cloudinary_public_id = uploaded["public_id"]
+
+            if thumbnail:
+                thumb_path = os.path.join(save_dir, thumbnail)
+                uploaded_thumb = _cloudinary_upload(
+                    thumb_path,
+                    "image",
+                    public_id=os.path.splitext(thumbnail)[0],
+                )
+                thumbnail_remote_url = uploaded_thumb["url"]
+                thumbnail_cloudinary_public_id = uploaded_thumb["public_id"]
+
+            _remove_local_file(save_path)
+            if thumbnail:
+                _remove_local_file(os.path.join(save_dir, thumbnail))
+        except Exception as exc:
+            current_app.logger.error("Cloudinary upload failed: %s", exc)
+            return None, "No se pudo subir el archivo a Cloudinary."
 
     mf = MediaFile(
         filename=unique_name,
@@ -257,6 +349,10 @@ def save_upload_file(file_storage, allowed_types=None, uploader_id=None):
         uploaded_by=uploader_id if uploader_id is not None else current_user.id,
         file_size=file_size,
         thumbnail=thumbnail,
+        remote_url=remote_url,
+        thumbnail_remote_url=thumbnail_remote_url,
+        cloudinary_public_id=cloudinary_public_id,
+        thumbnail_cloudinary_public_id=thumbnail_cloudinary_public_id,
     )
     db.session.add(mf)
     db.session.flush()

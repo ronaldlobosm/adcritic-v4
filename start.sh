@@ -56,6 +56,20 @@ with app.app_context():
                 conn.execute(text(ddl))
                 conn.commit()
                 print(f"[init] Added column users.{col}")
+
+        media_existing = [r[0] for r in conn.execute(
+            text("SELECT column_name FROM information_schema.columns WHERE table_name='media_files'")
+        )]
+        for col, ddl in [
+            ("remote_url", "ALTER TABLE media_files ADD COLUMN remote_url VARCHAR(700)"),
+            ("thumbnail_remote_url", "ALTER TABLE media_files ADD COLUMN thumbnail_remote_url VARCHAR(700)"),
+            ("cloudinary_public_id", "ALTER TABLE media_files ADD COLUMN cloudinary_public_id VARCHAR(300)"),
+            ("thumbnail_cloudinary_public_id", "ALTER TABLE media_files ADD COLUMN thumbnail_cloudinary_public_id VARCHAR(300)"),
+        ]:
+            if col not in media_existing:
+                conn.execute(text(ddl))
+                conn.commit()
+                print(f"[init] Added column media_files.{col}")
 PYEOF
 
 echo ">>> Seeding news posts..."

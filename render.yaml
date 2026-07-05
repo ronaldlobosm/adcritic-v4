@@ -24,6 +24,10 @@ services:
         sync: false
       - key: FOUNDER_SHIELD_IMAGE_URL
         sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        value: adcritic
 
 databases:
   - name: adcritic-db

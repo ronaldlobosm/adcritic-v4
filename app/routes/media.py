@@ -6,7 +6,7 @@ from flask import (
 )
 from app import db
 from app.models import MediaFile
-from app.utils import save_upload_file, upload_dir
+from app.utils import delete_remote_media_file, save_upload_file, upload_dir
 from app.routes.admin import admin_required, get_admin_lang, ADMIN_UI
 
 media_bp = Blueprint("media", __name__, url_prefix="/admin/media")
@@ -50,6 +50,7 @@ def upload():
 @admin_required
 def delete(file_id):
     mf = MediaFile.query.get_or_404(file_id)
+    delete_remote_media_file(mf)
     try:
         save_dir = upload_dir(mf.file_type)
         for fname in (mf.filename, mf.thumbnail):

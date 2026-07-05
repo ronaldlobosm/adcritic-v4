@@ -27,6 +27,7 @@ class Config:
     MAIL_PASSWORD        = os.environ.get("MAIL_PASSWORD", "")
     MAIL_DEFAULT_SENDER  = os.environ.get("MAIL_FROM",     "AdCritic <noreply@adcritic.com>")
     SITE_URL             = os.environ.get("SITE_URL",      "http://localhost:5000")
+    CLOUDINARY_FOLDER    = os.environ.get("CLOUDINARY_FOLDER", "adcritic")
 
 
 class DevelopmentConfig(Config):

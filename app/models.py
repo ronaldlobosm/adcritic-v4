@@ -372,6 +372,12 @@ class MediaFile(db.Model):
     # Optimized thumbnail (images only — 400px wide JPEG)
     thumbnail         = db.Column(db.String(300), nullable=True)
 
+    # Remote storage (Cloudinary when configured)
+    remote_url        = db.Column(db.String(700), nullable=True)
+    thumbnail_remote_url = db.Column(db.String(700), nullable=True)
+    cloudinary_public_id = db.Column(db.String(300), nullable=True)
+    thumbnail_cloudinary_public_id = db.Column(db.String(300), nullable=True)
+
     # Editable metadata
     title_es          = db.Column(db.String(300), nullable=True)
     title_en          = db.Column(db.String(300), nullable=True)
@@ -385,11 +391,15 @@ class MediaFile(db.Model):
 
     @property
     def url(self):
+        if self.remote_url:
+            return self.remote_url
         subfolder = self._SUBFOLDERS.get(self.file_type, "images")
         return f"/static/uploads/{subfolder}/{self.filename}"
 
     @property
     def thumbnail_url(self):
+        if self.thumbnail_remote_url:
+            return self.thumbnail_remote_url
         if self.thumbnail:
             return f"/static/uploads/images/{self.thumbnail}"
         return self.url
