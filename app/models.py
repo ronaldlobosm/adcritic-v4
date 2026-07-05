@@ -288,6 +288,8 @@ class User(UserMixin, db.Model):
     email_verify_token     = db.Column(db.String(100), nullable=True, unique=True)
     email_verify_code      = db.Column(db.String(6),   nullable=True)
     email_verify_sent_at   = db.Column(db.DateTime,    nullable=True)
+    password_reset_token   = db.Column(db.String(100), nullable=True, unique=True)
+    password_reset_sent_at = db.Column(db.DateTime,    nullable=True)
 
     # Stripe subscription
     stripe_customer_id     = db.Column(db.String(100), nullable=True, unique=True)

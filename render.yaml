@@ -28,6 +28,18 @@ services:
         sync: false
       - key: CLOUDINARY_FOLDER
         value: adcritic
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USE_TLS
+        value: "true"
+      - key: MAIL_USERNAME
+        value: hello@adcritic.world
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        value: AdCritic <hello@adcritic.world>
 
 databases:
   - name: adcritic-db

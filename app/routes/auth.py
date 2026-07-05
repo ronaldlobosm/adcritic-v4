@@ -5,7 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User
 from app.utils import save_upload_file
-from app.email import send_verification_email
+from app.email import send_password_reset_email, send_verification_email
 from app.routes.membership import FOUNDER_CUTOFF_COUNT, _founder_active, _gold_count
 
 auth = Blueprint("auth", __name__)
@@ -26,6 +26,15 @@ UI = {
         "err_fields":        "Completa todos los campos.",
         "ok_login":          "Sesión iniciada.",
         "ok_logout":         "Sesión cerrada.",
+        "forgot_link":       "¿Olvidaste tu contraseña?",
+        "forgot_title":      "Recuperar contraseña",
+        "forgot_body":       "Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.",
+        "forgot_btn":        "Enviar enlace",
+        "forgot_sent":       "Si existe una cuenta con ese correo, te enviaremos un enlace de recuperación.",
+        "reset_title":       "Nueva contraseña",
+        "reset_btn":         "Guardar contraseña",
+        "reset_invalid":     "El enlace no es válido o ya expiró.",
+        "reset_ok":          "Tu contraseña fue actualizada. Ya puedes iniciar sesión.",
         # Step 1 — elegir plan
         "step1_title":       "Crea tu cuenta",
         "step1_subtitle":    "Elige cómo quieres empezar",
@@ -95,6 +104,15 @@ UI = {
         "err_fields":        "Please fill in all fields.",
         "ok_login":          "You're signed in.",
         "ok_logout":         "You've been signed out.",
+        "forgot_link":       "Forgot your password?",
+        "forgot_title":      "Reset password",
+        "forgot_body":       "Enter your email and we'll send you a link to create a new password.",
+        "forgot_btn":        "Send link",
+        "forgot_sent":       "If an account exists for that email, we'll send a reset link.",
+        "reset_title":       "New password",
+        "reset_btn":         "Save password",
+        "reset_invalid":     "This link is invalid or has expired.",
+        "reset_ok":          "Your password was updated. You can sign in now.",
         # Step 1 — choose plan
         "step1_title":       "Create your account",
         "step1_subtitle":    "Choose how you want to get started",
@@ -161,6 +179,9 @@ def _gallery_url(lang):
 
 def _login_url(lang):
     return url_for("auth.login_es") if lang == "es" else url_for("auth.login_en")
+
+def _forgot_password_url(lang):
+    return url_for("auth.forgot_password_es") if lang == "es" else url_for("auth.forgot_password_en")
 
 def _register_url(lang):
     return url_for("auth.register_es") if lang == "es" else url_for("auth.register_en")
@@ -473,6 +494,7 @@ def _handle_login(lang):
         ui=ui,
         alt_lang_url=alt_lang_url,
         register_url=_register_url(lang),
+        forgot_password_url=_forgot_password_url(lang),
     )
 
 
@@ -484,6 +506,90 @@ def login_es():
 @auth.route("/en/account/login", methods=["GET", "POST"])
 def login_en():
     return _handle_login("en")
+
+
+# ---------------------------------------------------------------------------
+# Password reset
+# ---------------------------------------------------------------------------
+
+def _handle_forgot_password(lang):
+    ui = UI[lang]
+    alt_lang_url = _forgot_password_url("en" if lang == "es" else "es")
+
+    if current_user.is_authenticated:
+        return redirect(_gallery_url(lang))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        if email:
+            user = User.query.filter_by(email=email, is_active=True).first()
+            if user:
+                send_password_reset_email(user, lang)
+        flash(ui["forgot_sent"], "info")
+        return redirect(_login_url(lang))
+
+    return render_template(
+        "auth/forgot_password.html",
+        lang=lang,
+        ui=ui,
+        alt_lang_url=alt_lang_url,
+        login_url=_login_url(lang),
+    )
+
+
+def _handle_reset_password(lang, token):
+    ui = UI[lang]
+    alt_lang_url = (
+        url_for("auth.reset_password_en", token=token)
+        if lang == "es" else url_for("auth.reset_password_es", token=token)
+    )
+    user = User.query.filter_by(password_reset_token=token).first()
+    expired = True
+    if user and user.password_reset_sent_at:
+        expired = datetime.utcnow() - user.password_reset_sent_at > timedelta(hours=1)
+
+    if not user or expired:
+        flash(ui["reset_invalid"], "error")
+        return redirect(_forgot_password_url(lang))
+
+    if request.method == "POST":
+        password = request.form.get("password", "").strip()
+        if len(password) < 8:
+            flash(ui["err_pw_short"], "error")
+        else:
+            user.set_password(password)
+            user.password_reset_token = None
+            user.password_reset_sent_at = None
+            db.session.commit()
+            flash(ui["reset_ok"], "success")
+            return redirect(_login_url(lang))
+
+    return render_template(
+        "auth/reset_password.html",
+        lang=lang,
+        ui=ui,
+        alt_lang_url=alt_lang_url,
+    )
+
+
+@auth.route("/es/cuenta/recuperar", methods=["GET", "POST"])
+def forgot_password_es():
+    return _handle_forgot_password("es")
+
+
+@auth.route("/en/account/forgot-password", methods=["GET", "POST"])
+def forgot_password_en():
+    return _handle_forgot_password("en")
+
+
+@auth.route("/es/cuenta/restablecer/<token>", methods=["GET", "POST"])
+def reset_password_es(token):
+    return _handle_reset_password("es", token)
+
+
+@auth.route("/en/account/reset-password/<token>", methods=["GET", "POST"])
+def reset_password_en(token):
+    return _handle_reset_password("en", token)
 
 
 # ---------------------------------------------------------------------------

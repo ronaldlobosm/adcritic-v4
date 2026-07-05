@@ -70,3 +70,46 @@ def send_verification_email(user, lang="es"):
             f"[email] Failed to send to {user.email}: {exc}"
         )
         return False, str(exc)
+
+
+# ---------------------------------------------------------------------------
+# Password reset
+# ---------------------------------------------------------------------------
+
+def send_password_reset_email(user, lang="es"):
+    """
+    Generate a URL-safe token, persist it on the user, and send a reset link.
+    Returns (True, None) on success or (False, error_message) on failure.
+    """
+    token = secrets.token_urlsafe(40)
+
+    user.password_reset_token = token
+    user.password_reset_sent_at = datetime.utcnow()
+    db.session.commit()
+
+    if lang == "es":
+        reset_link = url_for("auth.reset_password_es", token=token, _external=True)
+        subject = "Restablece tu contraseña en AdCritic"
+    else:
+        reset_link = url_for("auth.reset_password_en", token=token, _external=True)
+        subject = "Reset your AdCritic password"
+
+    html = render_template(
+        f"email/password_reset_{lang}.html",
+        user=user,
+        reset_link=reset_link,
+    )
+
+    sender = current_app.config.get(
+        "MAIL_DEFAULT_SENDER", "AdCritic <noreply@adcritic.com>"
+    )
+    msg = Message(subject=subject, recipients=[user.email],
+                  html=html, sender=sender)
+    try:
+        mail.send(msg)
+        return True, None
+    except Exception as exc:
+        current_app.logger.error(
+            f"[email] Failed to send password reset to {user.email}: {exc}"
+        )
+        return False, str(exc)

@@ -51,6 +51,8 @@ with app.app_context():
         for col, ddl in [
             ("first_name", "ALTER TABLE users ADD COLUMN first_name VARCHAR(80)"),
             ("last_name",  "ALTER TABLE users ADD COLUMN last_name  VARCHAR(80)"),
+            ("password_reset_token", "ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(100) UNIQUE"),
+            ("password_reset_sent_at", "ALTER TABLE users ADD COLUMN password_reset_sent_at TIMESTAMP"),
         ]:
             if col not in existing:
                 conn.execute(text(ddl))
