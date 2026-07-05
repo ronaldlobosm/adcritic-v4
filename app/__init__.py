@@ -9,11 +9,26 @@ login_manager = LoginManager()
 mail = Mail()
 
 
-def _ensure_runtime_user_columns():
-    """Keep deployed databases compatible when a new profile field is introduced."""
+def _ensure_runtime_schema():
+    """Keep deployed databases compatible when profile features are introduced."""
     from sqlalchemy import inspect, text
 
     inspector = inspect(db.engine)
+    existing_tables = set(inspector.get_table_names())
+
+    runtime_tables = [
+        "ad_comment_likes",
+        "ad_comment_ratings",
+        "saved_ads",
+    ]
+    missing_tables = [
+        db.metadata.tables[name]
+        for name in runtime_tables
+        if name in db.metadata.tables and name not in existing_tables
+    ]
+    if missing_tables:
+        db.metadata.create_all(bind=db.engine, tables=missing_tables)
+
     if not inspector.has_table("users"):
         return
 
@@ -39,7 +54,7 @@ def create_app(config_name=None):
     mail.init_app(app)
 
     with app.app_context():
-        _ensure_runtime_user_columns()
+        _ensure_runtime_schema()
 
     login_manager.init_app(app)
     login_manager.login_view = "auth.login_es"

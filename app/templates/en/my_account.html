@@ -71,7 +71,7 @@
       <div class="profile-completion-list">
         <h2>Complete your profile</h2>
         <ul>
-          {% for item in profile_completion.items %}
+          {% for item in profile_completion["items"] %}
             <li class="{{ 'is-complete' if item.complete else '' }}">
               <span aria-hidden="true"></span>{{ item.label }}
             </li>
