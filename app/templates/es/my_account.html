@@ -78,6 +78,15 @@
             </dd>
           </div>
         </dl>
+        {% if current_user.location and google_maps_embed_key %}
+          <div class="account-location-map">
+            <iframe
+              src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_embed_key }}&q={{ current_user.location | urlencode }}"
+              width="100%" height="220" style="border:0" loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade" title="Mapa de {{ current_user.location }}">
+            </iframe>
+          </div>
+        {% endif %}
       </section>
 
       <section class="gold-profile-panel" id="activity">
@@ -155,7 +164,7 @@
                   <li><span class="benefit-icon" aria-hidden="true">💬</span><strong>Únete a discusiones Gold</strong><span>Debate y conecta con profesionales de la industria.</span></li>
                   <li><span class="benefit-icon" aria-hidden="true">📊</span><strong>Reportes y casos exclusivos</strong><span>Investigación, entrevistas y tendencias solo para Gold.</span></li>
                   <li><span class="benefit-icon" aria-hidden="true">🏆</span><strong>Gana reconocimiento</strong><span>Obtén badges y visibilidad como contribuidor activo.</span></li>
-                  <li><span class="benefit-icon" aria-hidden="true">🛡️</span><strong>Badge Founder</strong><span>Muestra tu apoyo a la crítica publicitaria independiente.</span></li>
+                  <li><span class="benefit-icon" aria-hidden="true">🛡️</span><strong>Badge Founder</strong><span>{{ 'Exclusivo para los primeros 1,000 miembros Gold — quedan ' ~ founder_left ~ '.' if founder_active else 'El cupo de fundador ya se agotó.' }}</span></li>
                 {% endif %}
               </ul>
             </div>
@@ -363,7 +372,17 @@
               <button type="submit" class="gold-profile-button">{{ ui.btn_change_pw }}</button>
             </form>
           </details>
-          <a href="{{ alt_lang_url }}">Idioma <span>Español</span></a>
+          <details>
+            <summary>Idioma <span>{{ 'Inglés' if current_user.preferred_language == 'en' else 'Español' }}</span></summary>
+            <form method="post" class="account-form account-security-form">
+              <input type="hidden" name="_action" value="language" />
+              <select class="form-input" name="preferred_language">
+                <option value="es" {% if current_user.preferred_language != 'en' %}selected{% endif %}>Español</option>
+                <option value="en" {% if current_user.preferred_language == 'en' %}selected{% endif %}>English</option>
+              </select>
+              <button type="submit" class="gold-profile-button">Guardar</button>
+            </form>
+          </details>
           <a href="mailto:hello@adcritic.world">Email <span>{{ current_user.email }}</span></a>
           <span class="is-danger">Eliminar cuenta</span>
         </div>

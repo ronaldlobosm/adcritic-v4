@@ -1,9 +1,16 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.utils import save_upload_file
 from app.models import AdComment, AdCommentLike, AdCommentRating, SavedAd
-from app.routes.membership import _get_subscription_info, _plan_label, UI as MEMBERSHIP_UI
+from app.routes.membership import (
+    _get_subscription_info, _plan_label, UI as MEMBERSHIP_UI,
+    _founder_active, _founder_claimed_count, FOUNDER_CUTOFF_COUNT,
+)
+from app.countries import countries_sorted, COUNTRIES
+from app.cities import cities_for_country
+from app.translate import translate_text
 
 account = Blueprint("account", __name__)
 
@@ -37,6 +44,7 @@ UI = {
         "btn_save_profile":  "Guardar perfil",
         "ok_profile_saved":  "Perfil actualizado.",
         "err_avatar":        "No se pudo subir la imagen.",
+        "err_bio_translate": "Tu bio se guardó, pero no se pudo traducir automáticamente al otro idioma.",
         # Password section
         "section_password":  "Cambiar contraseña",
         "label_current_pw":  "Contraseña actual",
@@ -90,6 +98,7 @@ UI = {
         "btn_save_profile":  "Save profile",
         "ok_profile_saved":  "Profile updated.",
         "err_avatar":        "Could not upload image.",
+        "err_bio_translate": "Your bio was saved, but it couldn't be auto-translated into the other language.",
         # Password section
         "section_password":  "Change password",
         "label_current_pw":  "Current password",
@@ -146,6 +155,14 @@ def _handle_account(lang):
                 db.session.commit()
                 flash(ui["ok_pw_changed"], "success")
                 return redirect(url_for(f"account.my_account_{lang}"))
+
+        # ── Preferred language ────────────────────────────────────────────
+        elif action == "language":
+            preferred = request.form.get("preferred_language", "")
+            if preferred in ("es", "en"):
+                current_user.preferred_language = preferred
+                db.session.commit()
+            return redirect(url_for(f"account.my_account_{lang}") + "#settings")
 
     role_label = ui.get(f"role_{current_user.role}", current_user.role)
     profile_item_labels = {
@@ -232,6 +249,9 @@ def _handle_account(lang):
         }
 
     features = MEMBERSHIP_UI[lang]["features"]
+    founder_active = _founder_active()
+    founder_left   = max(0, FOUNDER_CUTOFF_COUNT - _founder_claimed_count())
+    google_maps_embed_key = os.environ.get("GOOGLE_MAPS_EMBED_KEY", "")
 
     return render_template(
         f"{lang}/my_account.html",
@@ -239,6 +259,9 @@ def _handle_account(lang):
         ui=ui,
         alt_lang_url=alt_lang_url,
         role_label=role_label,
+        founder_active=founder_active,
+        founder_left=founder_left,
+        google_maps_embed_key=google_maps_embed_key,
         sub_info=sub_info,
         plan_label=plan_label,
         comments=comments,
@@ -263,23 +286,60 @@ def my_account_en():
     return _handle_account("en")
 
 
+def _parse_location(location, lang):
+    """
+    Best-effort split of a stored "City, Country" string back into a
+    country code + city, so the edit form can preselect the cascading
+    selects for users who already have a location saved as free text.
+    """
+    if not location:
+        return None, None
+
+    parts = [p.strip() for p in location.split(",")]
+    city_guess = parts[0] if parts else None
+    country_guess = parts[-1] if len(parts) > 1 else None
+
+    if not country_guess:
+        return None, city_guess
+
+    country_guess_lower = country_guess.lower()
+    for code, entry in COUNTRIES.items():
+        if entry.get("es", "").lower() == country_guess_lower or entry.get("en", "").lower() == country_guess_lower:
+            return code, city_guess
+
+    return None, city_guess
+
+
 def _handle_edit_profile(lang):
     ui = UI[lang]
 
     if request.method == "POST":
         display_name = request.form.get("display_name", "").strip() or None
         professional_title = request.form.get("professional_title", "").strip() or None
-        bio_es       = request.form.get("bio_es", "").strip() or None
-        bio_en       = request.form.get("bio_en", "").strip() or None
+        bio          = request.form.get("bio", "").strip() or None
         linkedin_url = request.form.get("linkedin_url", "").strip() or None
-        location     = request.form.get("location", "").strip() or None
+        country_code = request.form.get("location_country", "").strip() or None
+        city         = request.form.get("location_city", "").strip() or None
+
+        location = None
+        if city and country_code:
+            location = f"{city}, {COUNTRIES.get(country_code, {}).get(lang, country_code)}"
+        elif city:
+            location = city
+
+        other_lang = "en" if lang == "es" else "es"
+        translated = translate_text(bio, lang, other_lang) if bio else None
 
         current_user.display_name       = display_name
         current_user.professional_title = professional_title
-        current_user.bio_es             = bio_es
-        current_user.bio_en             = bio_en
         current_user.linkedin_url       = linkedin_url
         current_user.location           = location
+        setattr(current_user, f"bio_{lang}", bio)
+        if not bio:
+            setattr(current_user, f"bio_{other_lang}", None)
+        elif translated:
+            setattr(current_user, f"bio_{other_lang}", translated)
+        # else: translation failed — keep whatever translation was already saved
 
         avatar_file = request.files.get("avatar_file")
         if avatar_file and avatar_file.filename:
@@ -289,15 +349,30 @@ def _handle_edit_profile(lang):
             else:
                 flash(f"{ui['err_avatar']} {err or ''}", "error")
 
+        if bio and not translated:
+            flash(ui["err_bio_translate"], "error")
+
         db.session.commit()
         flash(ui["ok_profile_saved"], "success")
         return redirect(url_for(f"account.my_account_{lang}"))
+
+    selected_country, selected_city = _parse_location(current_user.location, lang)
 
     return render_template(
         f"{lang}/edit_profile.html",
         lang=lang,
         ui=ui,
+        countries=countries_sorted(lang),
+        selected_country=selected_country,
+        selected_city=selected_city,
+        selected_cities=cities_for_country(selected_country) if selected_country else [],
     )
+
+
+@account.route("/api/cities/<country_code>")
+@login_required
+def api_cities(country_code):
+    return jsonify(cities_for_country(country_code))
 
 
 @account.route("/es/mi-cuenta/editar", methods=["GET", "POST"])

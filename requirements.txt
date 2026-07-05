@@ -9,3 +9,4 @@ imageio-ffmpeg>=0.4.9
 stripe>=9.0.0
 Flask-Mail>=0.9.1
 cloudinary>=1.40.0
+requests>=2.31.0

@@ -40,19 +40,33 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="location">Location</label>
-      <input class="form-input" type="text" id="location" name="location"
-             value="{{ current_user.location or '' }}" placeholder="Lima, Peru" maxlength="120" />
+      <label class="form-label" for="location_country">Country</label>
+      <select class="form-input" id="location_country" name="location_country">
+        <option value="">Select a country</option>
+        {% for code, name in countries %}
+          <option value="{{ code }}" {% if code == selected_country %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="bio_es">Bio (ES)</label>
-      <textarea class="form-textarea" id="bio_es" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
+      <label class="form-label" for="location_city">City</label>
+      <select class="form-input" id="location_city" name="location_city" {% if not selected_country %}disabled{% endif %}>
+        {% if selected_country %}
+          <option value="">Select a city</option>
+          {% for city in selected_cities %}
+            <option value="{{ city }}" {% if city == selected_city %}selected{% endif %}>{{ city }}</option>
+          {% endfor %}
+        {% else %}
+          <option value="">Choose a country first</option>
+        {% endif %}
+      </select>
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="bio_en">Bio (EN)</label>
-      <textarea class="form-textarea" id="bio_en" name="bio_en" rows="3">{{ current_user.bio_en or '' }}</textarea>
+      <label class="form-label" for="bio">Bio</label>
+      <p class="form-hint" style="margin:.15rem 0 .4rem;font-size:.8rem;color:var(--color-muted,#777)">Automatically translated into Spanish when you save.</p>
+      <textarea class="form-textarea" id="bio" name="bio" rows="3">{{ current_user.bio_en or '' }}</textarea>
     </div>
 
     <div class="form-actions" style="margin-top:.5rem">
@@ -83,5 +97,29 @@ function previewAvatar(input) {
   };
   reader.readAsDataURL(input.files[0]);
 }
+
+var countrySelect = document.getElementById('location_country');
+var citySelect = document.getElementById('location_city');
+
+countrySelect.addEventListener('change', function() {
+  var code = countrySelect.value;
+  if (!code) {
+    citySelect.innerHTML = '<option value="">Choose a country first</option>';
+    citySelect.disabled = true;
+    return;
+  }
+  citySelect.disabled = true;
+  citySelect.innerHTML = '<option value="">Loading cities...</option>';
+  fetch('/api/cities/' + encodeURIComponent(code))
+    .then(function(r) { return r.json(); })
+    .then(function(cities) {
+      var options = '<option value="">Select a city</option>';
+      cities.forEach(function(city) {
+        options += '<option value="' + city.replace(/"/g, '&quot;') + '">' + city + '</option>';
+      });
+      citySelect.innerHTML = options;
+      citySelect.disabled = false;
+    });
+});
 </script>
 {% endblock %}

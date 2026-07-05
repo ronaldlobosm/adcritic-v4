@@ -40,6 +40,10 @@ services:
         sync: false
       - key: MAIL_FROM
         value: AdCritic <hello@adcritic.world>
+      - key: GOOGLE_TRANSLATE_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_EMBED_KEY
+        sync: false
 
 databases:
   - name: adcritic-db

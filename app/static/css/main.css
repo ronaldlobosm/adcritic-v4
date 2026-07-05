@@ -799,6 +799,24 @@ a:hover { text-decoration: underline; }
 .flash--success { background: #ecf8ec; color: #1a5c1a; border-left: 3px solid #2e8b2e; }
 .flash--error   { background: #fdecea; color: #8b1a1a; border-left: 3px solid var(--color-accent); }
 .flash--info    { background: #eef4fb; color: #1a3c5c; border-left: 3px solid #3a7bbf; }
+.flash--login-gold,
+.flash--login-free {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 1.15rem 1.5rem;
+  border-left: none;
+}
+.flash--login-gold {
+  background: linear-gradient(145deg, #171207, #050402 60%, #000);
+  color: #f0d38a;
+  border: 1px solid rgba(212,175,87,.55);
+}
+.flash--login-free {
+  background: linear-gradient(145deg, #fbfbfb, #e4e6e8);
+  color: #34393e;
+  border: 1px solid rgba(125,130,136,.35);
+}
 
 /* ============================================================
    GALLERY HERO
@@ -2428,6 +2446,13 @@ a:hover { text-decoration: underline; }
   gap: 1rem;
   margin: 0;
 }
+.account-location-map {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-top: 1.25rem;
+  overflow: hidden;
+}
+.account-location-map iframe { display: block; }
 .gold-profile-about dt,
 .gold-membership-card dt {
   color: var(--color-ink-3);
@@ -2447,6 +2472,7 @@ a:hover { text-decoration: underline; }
   grid-template-columns: minmax(230px, .8fr) minmax(0, 1fr);
 }
 .gold-membership-card__summary {
+  align-content: start;
   background: #080808;
   color: #fffaf2;
   display: grid;
@@ -2455,6 +2481,28 @@ a:hover { text-decoration: underline; }
 }
 .gold-membership-card__summary .gold-profile-button {
   justify-self: start;
+  margin-top: auto;
+}
+.gold-profile-page--free .gold-membership-card__summary .gold-profile-button {
+  background: #c9a227;
+  border-color: #c9a227;
+  color: #1a1206;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+.gold-profile-page--free .gold-membership-card__summary .gold-profile-button:hover {
+  background: #b58a3b;
+  border-color: #b58a3b;
+}
+.gold-profile-page--free .gold-membership-card__summary .gold-profile-button::after {
+  animation: founderSequenceSheen 24s ease-in-out 6s infinite;
+  background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,.1) 38%, rgba(255,255,255,.8) 50%, rgba(255,255,255,.1) 62%, transparent 100%);
+  content: "";
+  inset: -65% -30%;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-150%) rotate(12deg);
 }
 .gold-membership-card__summary dt { color: rgba(255,250,242,.55); }
 .gold-membership-card__summary dd {
@@ -4035,8 +4083,6 @@ a:hover { text-decoration: underline; }
     padding: 0;
     display: none;
   }
-  .nav-item--dropdown:hover .nav-dropdown,
-  .nav-item--dropdown:focus-within .nav-dropdown { display: block; }
   .nav-dropdown-item { color: rgba(255,255,255,.7); padding: .6rem 1.75rem; }
   .nav-dropdown-item:first-child { color: rgba(255,255,255,.35); border-color: rgba(255,255,255,.1); }
   .nav-dropdown-item:hover { background: rgba(255,255,255,.07); color: #fff; }

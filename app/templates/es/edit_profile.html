@@ -40,19 +40,33 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="location">Ubicación</label>
-      <input class="form-input" type="text" id="location" name="location"
-             value="{{ current_user.location or '' }}" placeholder="Lima, Perú" maxlength="120" />
+      <label class="form-label" for="location_country">País</label>
+      <select class="form-input" id="location_country" name="location_country">
+        <option value="">Selecciona un país</option>
+        {% for code, name in countries %}
+          <option value="{{ code }}" {% if code == selected_country %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="bio_es">Bio (ES)</label>
-      <textarea class="form-textarea" id="bio_es" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
+      <label class="form-label" for="location_city">Ciudad</label>
+      <select class="form-input" id="location_city" name="location_city" {% if not selected_country %}disabled{% endif %}>
+        {% if selected_country %}
+          <option value="">Selecciona una ciudad</option>
+          {% for city in selected_cities %}
+            <option value="{{ city }}" {% if city == selected_city %}selected{% endif %}>{{ city }}</option>
+          {% endfor %}
+        {% else %}
+          <option value="">Elige primero un país</option>
+        {% endif %}
+      </select>
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="bio_en">Bio (EN)</label>
-      <textarea class="form-textarea" id="bio_en" name="bio_en" rows="3">{{ current_user.bio_en or '' }}</textarea>
+      <label class="form-label" for="bio">Bio</label>
+      <p class="form-hint" style="margin:.15rem 0 .4rem;font-size:.8rem;color:var(--color-muted,#777)">Se traduce automáticamente al inglés al guardar.</p>
+      <textarea class="form-textarea" id="bio" name="bio" rows="3">{{ current_user.bio_es or '' }}</textarea>
     </div>
 
     <div class="form-actions" style="margin-top:.5rem">
@@ -83,5 +97,29 @@ function previewAvatar(input) {
   };
   reader.readAsDataURL(input.files[0]);
 }
+
+var countrySelect = document.getElementById('location_country');
+var citySelect = document.getElementById('location_city');
+
+countrySelect.addEventListener('change', function() {
+  var code = countrySelect.value;
+  if (!code) {
+    citySelect.innerHTML = '<option value="">Elige primero un país</option>';
+    citySelect.disabled = true;
+    return;
+  }
+  citySelect.disabled = true;
+  citySelect.innerHTML = '<option value="">Cargando ciudades...</option>';
+  fetch('/api/cities/' + encodeURIComponent(code))
+    .then(function(r) { return r.json(); })
+    .then(function(cities) {
+      var options = '<option value="">Selecciona una ciudad</option>';
+      cities.forEach(function(city) {
+        options += '<option value="' + city.replace(/"/g, '&quot;') + '">' + city + '</option>';
+      });
+      citySelect.innerHTML = options;
+      citySelect.disabled = false;
+    });
+});
 </script>
 {% endblock %}

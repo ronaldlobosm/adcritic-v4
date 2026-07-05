@@ -286,6 +286,7 @@ def _handle_register_step2(lang):
                 display_name=display_name,
                 bio_es=bio if lang == "es" else None,
                 bio_en=bio if lang == "en" else None,
+                preferred_language=lang,
             )
             user.set_password(password)
             db.session.add(user)
@@ -493,7 +494,21 @@ def _handle_login(lang):
                 flash(ui["err_inactive"], "error")
             elif user and user.check_password(password):
                 login_user(user, remember=True)
-                flash(ui["ok_login"], "success")
+                name = user.public_name
+                if user.role == "gold":
+                    message = (
+                        f"Bienvenido de vuelta, {name}. Tu membresía Gold sigue activa — a seguir leyendo y publicando con criterio."
+                        if lang == "es" else
+                        f"Welcome back, {name}. Your Gold membership is active — let's keep the critiques sharp."
+                    )
+                    flash(message, "login-gold")
+                else:
+                    message = (
+                        f"Hola, {name}. Listo para ver qué hay de nuevo en la crítica publicitaria."
+                        if lang == "es" else
+                        f"Hi, {name}. Ready to see what's new in ad criticism."
+                    )
+                    flash(message, "login-free")
                 next_url = request.args.get("next")
                 return redirect(next_url or _gallery_url(lang))
             else:

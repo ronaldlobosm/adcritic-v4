@@ -78,6 +78,15 @@
             </dd>
           </div>
         </dl>
+        {% if current_user.location and google_maps_embed_key %}
+          <div class="account-location-map">
+            <iframe
+              src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_embed_key }}&q={{ current_user.location | urlencode }}"
+              width="100%" height="220" style="border:0" loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade" title="Map of {{ current_user.location }}">
+            </iframe>
+          </div>
+        {% endif %}
       </section>
 
       <section class="gold-profile-panel" id="activity">
@@ -155,7 +164,7 @@
                   <li><span class="benefit-icon" aria-hidden="true">💬</span><strong>Join Gold discussions</strong><span>Debate and connect with industry professionals.</span></li>
                   <li><span class="benefit-icon" aria-hidden="true">📊</span><strong>Exclusive reports & case studies</strong><span>Gold-only research, interviews and trend reports.</span></li>
                   <li><span class="benefit-icon" aria-hidden="true">🏆</span><strong>Earn recognition</strong><span>Get badges and visibility as an active contributor.</span></li>
-                  <li><span class="benefit-icon" aria-hidden="true">🛡️</span><strong>Founder badge</strong><span>Show your support for independent ad criticism.</span></li>
+                  <li><span class="benefit-icon" aria-hidden="true">🛡️</span><strong>Founder badge</strong><span>{{ 'Exclusive to the first 1,000 Gold members — ' ~ founder_left ~ ' left.' if founder_active else 'The founder allotment is fully claimed.' }}</span></li>
                 {% endif %}
               </ul>
             </div>
@@ -363,7 +372,17 @@
               <button type="submit" class="gold-profile-button">{{ ui.btn_change_pw }}</button>
             </form>
           </details>
-          <a href="{{ alt_lang_url }}">Language <span>English</span></a>
+          <details>
+            <summary>Language <span>{{ 'Spanish' if current_user.preferred_language == 'es' else 'English' }}</span></summary>
+            <form method="post" class="account-form account-security-form">
+              <input type="hidden" name="_action" value="language" />
+              <select class="form-input" name="preferred_language">
+                <option value="en" {% if current_user.preferred_language != 'es' %}selected{% endif %}>English</option>
+                <option value="es" {% if current_user.preferred_language == 'es' %}selected{% endif %}>Español</option>
+              </select>
+              <button type="submit" class="gold-profile-button">Save</button>
+            </form>
+          </details>
           <a href="mailto:hello@adcritic.world">Email <span>{{ current_user.email }}</span></a>
           <span class="is-danger">Delete account</span>
         </div>
