@@ -88,13 +88,14 @@
           <h2>Location</h2>
         </div>
         {% if google_maps_embed_key %}
+          {% set location_parts = current_user.location.split(',') %}
           <div class="account-location-map">
             <iframe
               src="https://www.google.com/maps/embed/v1/search?key={{ google_maps_embed_key }}&q={{ current_user.location | urlencode }}&zoom=13"
               width="100%" height="220" style="border:0" loading="lazy"
               referrerpolicy="no-referrer-when-downgrade" title="Map of {{ current_user.location }}">
             </iframe>
-            <p class="gold-profile-location__text">{{ current_user.location }}</p>
+            <p class="gold-profile-location__text">{{ location_parts[1:] | map('trim') | join(', ') if location_parts|length > 1 else current_user.location }}</p>
           </div>
         {% else %}
           <p class="gold-profile-location__text gold-profile-location__text--standalone">{{ current_user.location }}</p>
