@@ -6,6 +6,9 @@
   <title>Verify your email — AdCritic</title>
 </head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:'IBM Plex Sans',Arial,sans-serif">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">
+    One quick step to activate your account and start publishing with your name.
+  </div>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 16px">
     <tr>
       <td align="center">
@@ -24,9 +27,13 @@
               <p style="margin:0 0 8px;font-size:1rem;color:#374151">
                 Hi{% if user.display_name %}, <strong>{{ user.display_name }}</strong>{% endif %} 👋
               </p>
-              <h1 style="margin:0 0 20px;font-size:1.5rem;font-weight:700;color:#111827;line-height:1.3">
+              <h1 style="margin:0 0 8px;font-size:1.5rem;font-weight:700;color:#111827;line-height:1.3">
                 Confirm your email address
               </h1>
+              <p style="margin:0 0 20px;font-size:1rem;color:#4b5563;line-height:1.5">
+                <span style="display:inline-block;margin-right:6px;color:#b58a3b;font-weight:700">✓</span>
+                One quick step to activate your account and start publishing with your name.
+              </p>
               <p style="margin:0 0 28px;font-size:.95rem;color:#6b7280;line-height:1.6">
                 To activate your AdCritic account you need to verify your email address.
                 If you don't confirm it within <strong>7 days</strong>, the account will be automatically deleted.
