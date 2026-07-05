@@ -53,6 +53,7 @@ with app.app_context():
             ("last_name",  "ALTER TABLE users ADD COLUMN last_name  VARCHAR(80)"),
             ("password_reset_token", "ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(100) UNIQUE"),
             ("password_reset_sent_at", "ALTER TABLE users ADD COLUMN password_reset_sent_at TIMESTAMP"),
+            ("linkedin_url", "ALTER TABLE users ADD COLUMN linkedin_url VARCHAR(300)"),
         ]:
             if col not in existing:
                 conn.execute(text(ddl))

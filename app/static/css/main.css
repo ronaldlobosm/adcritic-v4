@@ -2173,6 +2173,36 @@ a:hover { text-decoration: underline; }
   padding: .45rem .6rem;
   text-transform: uppercase;
 }
+.gold-profile-page--free .gold-profile-hero {
+  border-color: rgba(200,204,209,.34);
+}
+.gold-profile-page--free .gold-profile-hero__avatar img,
+.gold-profile-page--free .gold-profile-hero__avatar span {
+  color: #c8ccd1;
+  filter: grayscale(1);
+}
+.gold-profile-page--free .gold-profile-hero__kicker,
+.gold-profile-page--free .gold-profile-label,
+.gold-profile-page--free .gold-profile-badge {
+  color: #d9dcdf;
+}
+.gold-profile-page--free .gold-profile-badge,
+.gold-profile-page--free .gold-profile-edit summary {
+  border-color: rgba(200,204,209,.62);
+}
+.gold-profile-page--free .gold-membership-card {
+  border-color: rgba(125,130,136,.32);
+}
+.gold-profile-page--free .gold-membership-card__summary {
+  background: #111;
+}
+.gold-profile-page--free .gold-membership-card__benefits li::before {
+  color: #7d8288;
+}
+.gold-profile-page--free .gold-recognition-grid .is-earned span {
+  border-color: #7d8288;
+  color: #7d8288;
+}
 .gold-profile-hero__bio {
   color: rgba(255,250,242,.68);
   font-size: .95rem;

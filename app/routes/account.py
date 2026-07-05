@@ -133,11 +133,13 @@ def _handle_account(lang):
             professional_title = request.form.get("professional_title", "").strip() or None
             bio_es       = request.form.get("bio_es", "").strip() or None
             bio_en       = request.form.get("bio_en", "").strip() or None
+            linkedin_url = request.form.get("linkedin_url", "").strip() or None
 
             current_user.display_name       = display_name
             current_user.professional_title = professional_title
             current_user.bio_es             = bio_es
             current_user.bio_en             = bio_en
+            current_user.linkedin_url       = linkedin_url
 
             avatar_file = request.files.get("avatar_file")
             if avatar_file and avatar_file.filename:
@@ -190,7 +192,13 @@ def _handle_account(lang):
         )
     comment_like_counts = {}
     comment_rating_stats = {}
-    saved_ads_count = SavedAd.query.filter_by(user_id=current_user.id).count()
+    saved_ads = (
+        SavedAd.query
+        .filter_by(user_id=current_user.id)
+        .order_by(SavedAd.created_at.desc())
+        .all()
+    )
+    saved_ads_count = len(saved_ads)
     if comments:
         comment_ids = [comment.id for comment in comments]
         like_rows = (
@@ -230,6 +238,7 @@ def _handle_account(lang):
         comment_like_counts=comment_like_counts,
         comment_rating_stats=comment_rating_stats,
         saved_ads_count=saved_ads_count,
+        saved_ads=saved_ads,
     )
 
 

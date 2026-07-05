@@ -2,10 +2,10 @@
 {% block title %}{{ ui.gold_page_title if current_user.role == 'gold' else ui.page_title }} - AdCritic{% endblock %}
 
 {% block content %}
-{% if current_user.role == 'gold' %}
+{% set is_gold = current_user.role == 'gold' %}
 {% set member_since = current_user.gold_started_at or current_user.created_at %}
 {% set bio = current_user.bio_es or current_user.bio_en %}
-<div class="gold-profile-page">
+<div class="gold-profile-page{% if not is_gold %} gold-profile-page--free{% endif %}">
   <section class="gold-profile-hero">
     <div class="gold-profile-hero__avatar">
       {% if current_user.avatar_url %}
@@ -16,11 +16,11 @@
     </div>
 
     <div class="gold-profile-hero__body">
-      <div class="gold-profile-hero__kicker">Perfil Gold AdCritic</div>
+      <div class="gold-profile-hero__kicker">Perfil {{ 'Gold' if is_gold else 'Free' }} AdCritic</div>
       <h1>{{ current_user.public_name }}</h1>
       <p class="gold-profile-hero__title">{{ current_user.professional_title or "Crítico publicitario" }}</p>
       <div class="gold-profile-hero__meta">
-        <span class="gold-profile-badge">Founder Gold</span>
+        <span class="gold-profile-badge">{{ 'Founder Gold' if is_gold else 'Free Member' }}</span>
         <span>Miembro desde {{ format_date(member_since, 'es') }}</span>
       </div>
       {% if bio %}
@@ -45,6 +45,10 @@
           <input type="file" name="avatar_file" id="avatarFileInput" accept=".jpg,.jpeg,.png" onchange="previewAvatar(this)" />
         </label>
         <label>
+          <span>LinkedIn</span>
+          <input class="form-input" type="url" name="linkedin_url" value="{{ current_user.linkedin_url or '' }}" placeholder="https://www.linkedin.com/in/..." maxlength="300" />
+        </label>
+        <label>
           <span>Bio (ES)</span>
           <textarea class="form-textarea" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
         </label>
@@ -59,7 +63,7 @@
 
   <nav class="gold-profile-tabs" aria-label="Secciones del perfil Gold">
     <a href="#overview" data-profile-tab="overview" class="is-active">Overview</a>
-    <a href="#critiques" data-profile-tab="critiques">Críticas</a>
+    <a href="#critiques" data-profile-tab="critiques">{{ 'Críticas' if is_gold else 'Guardadas' }}</a>
     <a href="#activity" data-profile-tab="activity">Actividad</a>
     <a href="#membership" data-profile-tab="membership">Membresía</a>
     <a href="#settings" data-profile-tab="settings">Settings</a>
@@ -73,7 +77,16 @@
         <dl>
           <div><dt>Profesión</dt><dd>{{ current_user.professional_title or "Crítico publicitario" }}</dd></div>
           <div><dt>Idiomas</dt><dd>Español / Inglés</dd></div>
-          <div><dt>Website</dt><dd class="is-muted">Pronto podrás añadir enlaces al perfil.</dd></div>
+          <div>
+            <dt>LinkedIn</dt>
+            <dd>
+              {% if current_user.linkedin_url %}
+                <a href="{{ current_user.linkedin_url }}" target="_blank" rel="noopener">Ver perfil</a>
+              {% else %}
+                <span class="is-muted">Añade tu LinkedIn desde Editar perfil.</span>
+              {% endif %}
+            </dd>
+          </div>
         </dl>
       </section>
 
@@ -109,7 +122,7 @@
             <li>
               <span class="gold-profile-timeline__icon">G</span>
               <div>
-                <strong>Membresía Gold activada</strong>
+                <strong>{{ 'Membresía Gold activada' if is_gold else 'Perfil Free abierto' }}</strong>
                 <p>{{ saved_ads_count }} análisis guardados en tu biblioteca.</p>
               </div>
               <time>{{ relative_date(member_since, 'es') }}</time>
@@ -123,20 +136,20 @@
       <section class="gold-profile-view is-active" data-profile-view="overview">
         <section class="gold-profile-panel gold-profile-membership">
           <div class="gold-profile-section-head">
-            <h2>Membresía Gold</h2>
-            <span class="gold-profile-label">Founder Member</span>
+            <h2>{{ 'Membresía Gold' if is_gold else 'Tu membresía' }}</h2>
+            <span class="gold-profile-label">{{ 'Founder Member' if is_gold else 'Free Member' }}</span>
           </div>
           <div class="gold-membership-card">
             <div class="gold-membership-card__summary">
-              <span class="gold-profile-badge">Gold Founder</span>
+              <span class="gold-profile-badge">{{ 'Gold Founder' if is_gold else 'Free Member' }}</span>
               <dl>
-                <div><dt>Plan</dt><dd>{{ plan_label or "Gold" }}</dd></div>
+                <div><dt>Plan</dt><dd>{{ plan_label or ("Gold" if is_gold else "Free") }}</dd></div>
                 <div>
-                  <dt>{{ ui.label_cancels if sub_info and sub_info.cancel_at_period_end else ui.label_renews }}</dt>
-                  <dd>{{ format_date(sub_info.renews_at, 'es') if sub_info and sub_info.renews_at else "Activa" }}</dd>
+                  <dt>{{ ui.label_cancels if sub_info and sub_info.cancel_at_period_end else (ui.label_renews if is_gold else "Acceso") }}</dt>
+                  <dd>{{ format_date(sub_info.renews_at, 'es') if sub_info and sub_info.renews_at else ("Activa" if is_gold else "Perfil básico") }}</dd>
                 </div>
               </dl>
-              <a href="{{ url_for('membership.membership_portal_es') }}" class="gold-profile-button">Gestionar suscripción</a>
+              <a href="{{ url_for('membership.membership_portal_es') if is_gold else url_for('membership.membership_es') }}" class="gold-profile-button">{{ 'Gestionar suscripción' if is_gold else 'Hazte Gold' }}</a>
             </div>
             <div class="gold-membership-card__benefits">
               <h3>Tus beneficios</h3>
@@ -154,7 +167,7 @@
             <h2>Reconocimiento</h2>
           </div>
           <div class="gold-recognition-grid">
-            <article class="is-earned"><span>F</span><h3>Founder Member</h3><p>Perfil especial para los primeros miembros Gold.</p></article>
+            <article class="is-earned"><span>F</span><h3>{{ 'Founder Member' if is_gold else 'Free Member' }}</h3><p>{{ 'Perfil especial para los primeros miembros Gold.' if is_gold else 'Perfil editorial para usuarios registrados.' }}</p></article>
             <article class="{{ 'is-earned' if comments|length > 0 else '' }}"><span>P</span><h3>Professional Critic</h3><p>Publica tu primera crítica.</p></article>
             <article class="{{ 'is-earned' if comments|length >= 10 else '' }}"><span>T</span><h3>Top Contributor</h3><p>10 críticas publicadas.</p></article>
             <article><span>A</span><h3>Advertising Historian</h3><p>50 análisis explorados.</p></article>
@@ -165,20 +178,20 @@
       <section class="gold-profile-view" data-profile-view="membership">
       <section class="gold-profile-panel gold-profile-membership">
         <div class="gold-profile-section-head">
-          <h2>Membresía Gold</h2>
-          <span class="gold-profile-label">Founder Member</span>
+          <h2>{{ 'Membresía Gold' if is_gold else 'Tu membresía' }}</h2>
+          <span class="gold-profile-label">{{ 'Founder Member' if is_gold else 'Free Member' }}</span>
         </div>
         <div class="gold-membership-card">
           <div class="gold-membership-card__summary">
-            <span class="gold-profile-badge">Gold Founder</span>
+            <span class="gold-profile-badge">{{ 'Gold Founder' if is_gold else 'Free Member' }}</span>
             <dl>
-              <div><dt>Plan</dt><dd>{{ plan_label or "Gold" }}</dd></div>
+              <div><dt>Plan</dt><dd>{{ plan_label or ("Gold" if is_gold else "Free") }}</dd></div>
               <div>
-                <dt>{{ ui.label_cancels if sub_info and sub_info.cancel_at_period_end else ui.label_renews }}</dt>
-                <dd>{{ format_date(sub_info.renews_at, 'es') if sub_info and sub_info.renews_at else "Activa" }}</dd>
+                <dt>{{ ui.label_cancels if sub_info and sub_info.cancel_at_period_end else (ui.label_renews if is_gold else "Acceso") }}</dt>
+                <dd>{{ format_date(sub_info.renews_at, 'es') if sub_info and sub_info.renews_at else ("Activa" if is_gold else "Perfil básico") }}</dd>
               </div>
             </dl>
-            <a href="{{ url_for('membership.membership_portal_es') }}" class="gold-profile-button">Gestionar suscripción</a>
+            <a href="{{ url_for('membership.membership_portal_es') if is_gold else url_for('membership.membership_es') }}" class="gold-profile-button">{{ 'Gestionar suscripción' if is_gold else 'Hazte Gold' }}</a>
           </div>
           <div class="gold-membership-card__benefits">
             <h3>Tus beneficios</h3>
@@ -195,10 +208,41 @@
       <section class="gold-profile-view" data-profile-view="critiques">
       <section class="gold-profile-panel">
         <div class="gold-profile-section-head">
-          <h2>Mis críticas</h2>
+          <h2>{{ 'Mis críticas' if is_gold else 'Guardadas' }}</h2>
           <a href="{{ url_for('main.catalog_es') }}">Explorar catálogo</a>
         </div>
-        {% if comments %}
+        {% if not is_gold %}
+          {% if saved_ads %}
+            <div class="gold-critique-list">
+              {% for saved in saved_ads %}
+                {% set ad = saved.ad %}
+                {% set t = ad.translation('es') if ad else None %}
+                <article class="gold-critique-card">
+                  <a class="gold-critique-card__thumb" href="{{ url_for('main.ad_detail_es', slug=ad.slug) if ad else '#' }}">
+                    {% if ad and ad.youtube_id %}
+                      <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/hqdefault.jpg" alt="" />
+                    {% else %}
+                      <span>{{ ad.brand[0] if ad else "A" }}</span>
+                    {% endif %}
+                  </a>
+                  <div>
+                    <p class="gold-profile-label">{{ ad.brand if ad else "AdCritic" }}</p>
+                    <h3>{{ t.title if t else "Análisis guardado" }}</h3>
+                    <p>{{ format_date(saved.created_at, 'es') }}</p>
+                  </div>
+                  <footer><span>Guardado</span></footer>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="gold-empty-state">
+              <div class="gold-empty-state__mark">S</div>
+              <h3>Todavía no has guardado análisis.</h3>
+              <p>Guarda críticas desde el catálogo y construye tu biblioteca de referencia.</p>
+              <a href="{{ url_for('main.catalog_es') }}" class="gold-profile-button">Explorar el catálogo</a>
+            </div>
+          {% endif %}
+        {% elif comments %}
           <div class="gold-critique-list">
             {% for comment in comments %}
               {% set ad = comment.ad %}
@@ -301,22 +345,6 @@
     </main>
   </div>
 </div>
-{% else %}
-<div class="container account-layout account-layout--free">
-  <h1 class="account-title">{{ ui.page_title }}</h1>
-  <div class="account-card">
-    <div class="account-row"><span class="account-label">{{ ui.label_email }}</span><span class="account-value">{{ current_user.email }}</span></div>
-    <div class="account-row"><span class="account-label">{{ ui.label_role }}</span><span class="account-value"><span class="role-badge role-badge--free">{{ role_label }}</span></span></div>
-  </div>
-  <div class="account-section">
-    <h2 class="account-section-title">{{ ui.section_membership }}</h2>
-    <div class="account-card account-card--silver">
-      <p style="margin:0 0 1rem;color:var(--color-muted,#666)">{{ ui.no_subscription }}</p>
-      <a href="{{ url_for('membership.membership_es') }}" class="btn-primary">{{ ui.upgrade_link }}</a>
-    </div>
-  </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block scripts %}

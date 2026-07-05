@@ -328,6 +328,7 @@ class User(UserMixin, db.Model):
     avatar_media_id = db.Column(db.Integer, db.ForeignKey("media_files.id"), nullable=True)
     bio_es          = db.Column(db.Text, nullable=True)
     bio_en          = db.Column(db.Text, nullable=True)
+    linkedin_url    = db.Column(db.String(300), nullable=True)
 
     # Email verification
     email_verified         = db.Column(db.Boolean, nullable=False, default=False)
