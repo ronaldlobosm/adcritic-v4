@@ -26,7 +26,7 @@
       {% if bio %}
         <p class="gold-profile-hero__bio">{{ bio }}</p>
       {% endif %}
-      <a href="{{ url_for('account.edit_profile_es') }}" class="gold-profile-button" style="margin-top:1rem">Editar perfil</a>
+      <a href="{{ url_for('account.edit_profile_es') }}" class="{{ 'btn-pill-gold' if is_gold else 'btn-pill-silver' }}" style="margin-top:1rem">Editar perfil</a>
     </div>
 
     <aside class="gold-profile-actions" aria-label="Progreso del perfil">
@@ -90,79 +90,86 @@
         {% if google_maps_embed_key %}
           {% set location_parts = current_user.location.split(',') %}
           {% set location_caption = location_parts[1:] | map('trim') | join(', ') if location_parts|length > 1 else current_user.location %}
-          {% if is_gold %}
-            <div class="account-location-map account-location-map--dark">
-              <div id="locationMap" style="width:100%;height:220px"></div>
-              <p class="gold-profile-location__text">{{ location_caption }}</p>
-            </div>
-            <script>
-            var LOCATION_QUERY = {{ current_user.location | tojson }};
-            function initLocationMap() {
-              var mapEl = document.getElementById('locationMap');
-              if (!mapEl || typeof google === 'undefined') return;
-              var darkStyle = [
-                {elementType: 'geometry', stylers: [{color: '#212121'}]},
-                {elementType: 'labels.icon', stylers: [{visibility: 'off'}]},
-                {elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
-                {elementType: 'labels.text.stroke', stylers: [{color: '#212121'}]},
-                {featureType: 'administrative', elementType: 'geometry', stylers: [{color: '#757575'}]},
-                {featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{color: '#9e9e9e'}]},
-                {featureType: 'administrative.land_parcel', stylers: [{visibility: 'off'}]},
-                {featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{color: '#bdbdbd'}]},
-                {featureType: 'poi', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
-                {featureType: 'poi.park', elementType: 'geometry', stylers: [{color: '#181818'}]},
-                {featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
-                {featureType: 'poi.park', elementType: 'labels.text.stroke', stylers: [{color: '#1b1b1b'}]},
-                {featureType: 'road', elementType: 'geometry.fill', stylers: [{color: '#2c2c2c'}]},
-                {featureType: 'road', elementType: 'labels.text.fill', stylers: [{color: '#8a8a8a'}]},
-                {featureType: 'road.arterial', elementType: 'geometry', stylers: [{color: '#373737'}]},
-                {featureType: 'road.highway', elementType: 'geometry', stylers: [{color: '#3c3c3c'}]},
-                {featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{color: '#4e4e4e'}]},
-                {featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
-                {featureType: 'transit', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
-                {featureType: 'water', elementType: 'geometry', stylers: [{color: '#000000'}]},
-                {featureType: 'water', elementType: 'labels.text.fill', stylers: [{color: '#3d3d3d'}]}
-              ];
-              var geocoder = new google.maps.Geocoder();
-              geocoder.geocode({address: LOCATION_QUERY}, function(results, status) {
-                if (status !== 'OK' || !results[0]) return;
-                var map = new google.maps.Map(mapEl, {
-                  center: results[0].geometry.location,
-                  zoom: 12,
-                  styles: darkStyle,
-                  disableDefaultUI: false,
-                  streetViewControl: false,
-                  mapTypeControl: false,
-                  zoomControl: false,
-                  fullscreenControl: true
-                });
-                new google.maps.Marker({
-                  position: results[0].geometry.location,
-                  map: map,
-                  icon: {
-                    path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z',
-                    fillColor: '#d4af57',
-                    fillOpacity: 1,
-                    strokeColor: '#0d0d0c',
-                    strokeWeight: 1,
-                    scale: 1.7,
-                    anchor: new google.maps.Point(12, 22)
-                  }
-                });
+          <div class="account-location-map{{ ' account-location-map--dark' if is_gold else ' account-location-map--silver' }}">
+            <div id="locationMap" style="width:100%;height:220px"></div>
+            <p class="gold-profile-location__text">{{ location_caption }}</p>
+          </div>
+          <script>
+          var LOCATION_QUERY = {{ current_user.location | tojson }};
+          var IS_GOLD = {{ 'true' if is_gold else 'false' }};
+          function initLocationMap() {
+            var mapEl = document.getElementById('locationMap');
+            if (!mapEl || typeof google === 'undefined') return;
+            var darkStyle = [
+              {elementType: 'geometry', stylers: [{color: '#212121'}]},
+              {elementType: 'labels.icon', stylers: [{visibility: 'off'}]},
+              {elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {elementType: 'labels.text.stroke', stylers: [{color: '#212121'}]},
+              {featureType: 'administrative', elementType: 'geometry', stylers: [{color: '#757575'}]},
+              {featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{color: '#9e9e9e'}]},
+              {featureType: 'administrative.land_parcel', stylers: [{visibility: 'off'}]},
+              {featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{color: '#bdbdbd'}]},
+              {featureType: 'poi', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {featureType: 'poi.park', elementType: 'geometry', stylers: [{color: '#181818'}]},
+              {featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
+              {featureType: 'poi.park', elementType: 'labels.text.stroke', stylers: [{color: '#1b1b1b'}]},
+              {featureType: 'road', elementType: 'geometry.fill', stylers: [{color: '#2c2c2c'}]},
+              {featureType: 'road', elementType: 'labels.text.fill', stylers: [{color: '#8a8a8a'}]},
+              {featureType: 'road.arterial', elementType: 'geometry', stylers: [{color: '#373737'}]},
+              {featureType: 'road.highway', elementType: 'geometry', stylers: [{color: '#3c3c3c'}]},
+              {featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{color: '#4e4e4e'}]},
+              {featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
+              {featureType: 'transit', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {featureType: 'water', elementType: 'geometry', stylers: [{color: '#000000'}]},
+              {featureType: 'water', elementType: 'labels.text.fill', stylers: [{color: '#3d3d3d'}]}
+            ];
+            var silverStyle = [
+              {elementType: 'geometry', stylers: [{color: '#f5f5f5'}]},
+              {elementType: 'labels.icon', stylers: [{visibility: 'off'}]},
+              {elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
+              {elementType: 'labels.text.stroke', stylers: [{color: '#f5f5f5'}]},
+              {featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{color: '#bdbdbd'}]},
+              {featureType: 'poi', elementType: 'geometry', stylers: [{color: '#eeeeee'}]},
+              {featureType: 'poi', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {featureType: 'poi.park', elementType: 'geometry', stylers: [{color: '#e5e5e5'}]},
+              {featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{color: '#9e9e9e'}]},
+              {featureType: 'road', elementType: 'geometry', stylers: [{color: '#ffffff'}]},
+              {featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {featureType: 'road.highway', elementType: 'geometry', stylers: [{color: '#dadada'}]},
+              {featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
+              {featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{color: '#9e9e9e'}]},
+              {featureType: 'transit.line', elementType: 'geometry', stylers: [{color: '#e5e5e5'}]},
+              {featureType: 'transit.station', elementType: 'geometry', stylers: [{color: '#eeeeee'}]},
+              {featureType: 'water', elementType: 'geometry', stylers: [{color: '#c9c9c9'}]},
+              {featureType: 'water', elementType: 'labels.text.fill', stylers: [{color: '#9e9e9e'}]}
+            ];
+            var geocoder = new google.maps.Geocoder();
+            geocoder.geocode({address: LOCATION_QUERY}, function(results, status) {
+              if (status !== 'OK' || !results[0]) return;
+              var map = new google.maps.Map(mapEl, {
+                center: results[0].geometry.location,
+                zoom: 12,
+                styles: IS_GOLD ? darkStyle : silverStyle,
+                disableDefaultUI: true,
+                fullscreenControl: true
               });
-            }
-            </script>
-            <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_embed_key }}&callback=initLocationMap" async></script>
-          {% else %}
-            <div class="account-location-map">
-              <iframe
-                src="https://www.google.com/maps/embed/v1/search?key={{ google_maps_embed_key }}&q={{ current_user.location | urlencode }}&zoom=12"
-                width="100%" height="220" style="border:0" loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade" title="Mapa de {{ current_user.location }}">
-              </iframe>
-              <p class="gold-profile-location__text">{{ location_caption }}</p>
-            </div>
-          {% endif %}
+              new google.maps.Marker({
+                position: results[0].geometry.location,
+                map: map,
+                icon: {
+                  path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z',
+                  fillColor: IS_GOLD ? '#d4af57' : '#8a8f94',
+                  fillOpacity: 1,
+                  strokeColor: IS_GOLD ? '#0d0d0c' : '#3f4347',
+                  strokeWeight: 1,
+                  scale: 1.7,
+                  anchor: new google.maps.Point(12, 22)
+                }
+              });
+            });
+          }
+          </script>
+          <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_embed_key }}&callback=initLocationMap" async></script>
         {% else %}
           <p class="gold-profile-location__text gold-profile-location__text--standalone">{{ current_user.location }}</p>
         {% endif %}
@@ -214,7 +221,7 @@
 
     <main class="gold-profile-main">
       <section class="gold-profile-view is-active" data-profile-view="overview">
-        <section class="gold-profile-panel gold-profile-membership">
+        <section class="gold-profile-panel gold-profile-membership{{ ' gold-profile-membership--dark' if is_gold else '' }}">
           <div class="gold-profile-section-head">
             <h2>{{ 'Membresía Gold' if is_gold else 'Tu membresía' }}</h2>
             <span class="gold-profile-label">{{ 'Founder Member' if is_gold else 'Free Member' }}</span>
@@ -402,6 +409,45 @@
           </div>
         {% endif %}
       </section>
+
+      {% if is_gold %}
+      <section class="gold-profile-panel">
+        <div class="gold-profile-section-head">
+          <h2>Guardados</h2>
+          <a href="{{ url_for('main.catalog_es') }}">Explorar catálogo</a>
+        </div>
+        {% if saved_ads %}
+          <div class="gold-critique-list">
+            {% for saved in saved_ads %}
+              {% set ad = saved.ad %}
+              {% set t = ad.translation('es') if ad else None %}
+              <article class="gold-critique-card">
+                <a class="gold-critique-card__thumb" href="{{ url_for('main.ad_detail_es', slug=ad.slug) if ad else '#' }}">
+                  {% if ad and ad.youtube_id %}
+                    <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/hqdefault.jpg" alt="" />
+                  {% else %}
+                    <span>{{ ad.brand[0] if ad else "A" }}</span>
+                  {% endif %}
+                </a>
+                <div>
+                  <p class="gold-profile-label">{{ ad.brand if ad else "AdCritic" }}</p>
+                  <h3>{{ t.title if t else "Análisis guardado" }}</h3>
+                  <p>{{ format_date(saved.created_at, 'es') }}</p>
+                </div>
+                <footer><span>Guardado</span></footer>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="gold-empty-state">
+            <div class="gold-empty-state__mark">S</div>
+            <h3>Todavía no has guardado análisis.</h3>
+            <p>Guarda críticas desde el catálogo y construye tu biblioteca de referencia.</p>
+            <a href="{{ url_for('main.catalog_es') }}" class="gold-profile-button">Explorar el catálogo</a>
+          </div>
+        {% endif %}
+      </section>
+      {% endif %}
       </section>
 
       <section class="gold-profile-view" data-profile-view="activity">
@@ -449,7 +495,7 @@
               <input class="form-input" type="password" name="current_password" placeholder="{{ ui.label_current_pw }}" required />
               <input class="form-input" type="password" name="new_password" placeholder="{{ ui.label_new_pw }}" required minlength="8" />
               <input class="form-input" type="password" name="confirm_password" placeholder="{{ ui.label_confirm_pw }}" required minlength="8" />
-              <button type="submit" class="gold-profile-button">{{ ui.btn_change_pw }}</button>
+              <button type="submit" class="{{ 'btn-pill-gold' if is_gold else 'btn-pill-silver' }}">{{ ui.btn_change_pw }}</button>
             </form>
           </details>
           <details>
@@ -460,7 +506,7 @@
                 <option value="es" {% if current_user.preferred_language != 'en' %}selected{% endif %}>Español</option>
                 <option value="en" {% if current_user.preferred_language == 'en' %}selected{% endif %}>English</option>
               </select>
-              <button type="submit" class="gold-profile-button">Guardar</button>
+              <button type="submit" class="{{ 'btn-pill-gold' if is_gold else 'btn-pill-silver' }}">Guardar</button>
             </form>
           </details>
           <a href="mailto:hello@adcritic.world">Email <span>{{ current_user.email }}</span></a>

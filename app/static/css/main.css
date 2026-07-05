@@ -789,6 +789,41 @@ a:hover { text-decoration: underline; }
 .verify-banner__button {
   cursor: pointer;
 }
+.btn-pill-gold,
+.btn-pill-silver {
+  align-items: center;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--font-body);
+  font-size: .82rem;
+  font-weight: 900;
+  justify-content: center;
+  letter-spacing: .06em;
+  line-height: 1;
+  padding: .7rem 1.4rem;
+  text-transform: uppercase;
+}
+.btn-pill-gold {
+  background: linear-gradient(145deg, #1a1712, #2a2218);
+  border: 1px solid rgba(216,168,74,.72);
+  color: #f4d27b;
+}
+.btn-pill-gold:hover {
+  border-color: rgba(255,226,143,.95);
+  color: #ffe28f;
+  text-decoration: none;
+}
+.btn-pill-silver {
+  background: linear-gradient(145deg, #f2f3f4, #dfe1e3);
+  border: 1px solid rgba(125,130,136,.5);
+  color: #45494d;
+}
+.btn-pill-silver:hover {
+  border-color: rgba(90,95,100,.75);
+  color: #1c1f22;
+  text-decoration: none;
+}
 .flash-messages { padding-top: 1rem; }
 .flash {
   padding: .75rem 1rem;
@@ -2471,6 +2506,32 @@ a:hover { text-decoration: underline; }
 .gold-profile-location--dark .gold-profile-section-head h2 {
   color: #fffaf2;
 }
+.gold-profile-membership--dark {
+  background: #0d0d0c;
+  border-color: rgba(181,138,59,.32);
+  color: #fffaf2;
+}
+.gold-profile-membership--dark .gold-profile-section-head {
+  border-bottom-color: rgba(181,138,59,.4);
+}
+.gold-profile-membership--dark .gold-profile-section-head h2 {
+  color: #fffaf2;
+}
+.gold-profile-membership--dark .gold-membership-card__benefits {
+  background: #0d0d0c;
+}
+.gold-profile-membership--dark .gold-membership-card__benefits h3 {
+  color: #d4af57;
+}
+.gold-profile-membership--dark .gold-membership-card__benefits li strong {
+  color: #fffaf2;
+}
+.gold-profile-membership--dark .gold-membership-card__benefits li span {
+  color: rgba(255,250,242,.6);
+}
+.gold-profile-membership--dark .gold-membership-card__benefits li::before {
+  color: #d4af57;
+}
 .gold-profile-about p {
   color: var(--color-ink-2);
   line-height: 1.7;
@@ -2517,6 +2578,20 @@ a:hover { text-decoration: underline; }
   transform: scale(.72);
   transform-origin: top right;
 }
+.account-location-map--silver {
+  border-color: rgba(125,130,136,.35);
+}
+.account-location-map--silver #locationMap {
+  background: #f5f5f5;
+}
+.account-location-map--silver .gold-profile-location__text {
+  background: #eceeef;
+  color: #4c5257;
+}
+.account-location-map--silver .gm-fullscreen-control {
+  transform: scale(.72);
+  transform-origin: top right;
+}
 .gold-profile-about dt,
 .gold-membership-card dt {
   color: var(--color-ink-3);
@@ -2538,10 +2613,10 @@ a:hover { text-decoration: underline; }
 .gold-membership-card__summary {
   align-content: start;
   background:
-    radial-gradient(circle at 25% 0%, rgba(181,138,59,.22), transparent 55%),
-    radial-gradient(circle at 90% 100%, rgba(181,138,59,.1), transparent 50%),
-    linear-gradient(165deg, #100e0a 0%, #060504 55%, #000 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), inset 0 -50px 70px rgba(0,0,0,.55);
+    radial-gradient(ellipse at 20% -15%, rgba(212,175,87,.4), transparent 62%),
+    radial-gradient(ellipse at 105% 115%, rgba(212,175,87,.24), transparent 58%),
+    linear-gradient(165deg, #241d10 0%, #0c0a06 45%, #000 100%);
+  box-shadow: inset 0 1px 0 rgba(255,244,214,.08), inset 0 -70px 90px rgba(0,0,0,.65);
   color: #fffaf2;
   display: grid;
   gap: 1.4rem;

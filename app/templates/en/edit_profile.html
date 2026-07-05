@@ -83,7 +83,7 @@
     </div>
 
     <div class="form-actions" style="margin-top:.5rem">
-      <button type="submit" class="auth-btn">Save profile</button>
+      <button type="submit" class="{{ 'btn-pill-gold' if current_user.role == 'gold' else 'btn-pill-silver' }}">Save profile</button>
       <a href="{{ url_for('account.my_account_en') }}" class="btn-secondary">Cancel</a>
     </div>
   </form>
