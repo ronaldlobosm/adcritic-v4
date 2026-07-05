@@ -1612,31 +1612,19 @@ a:hover { text-decoration: underline; }
 .founder-callout {
   border: 0;
   display: block;
-  filter:
-    drop-shadow(0 14px 34px rgba(0,0,0,.34))
-    drop-shadow(0 0 22px rgba(216,168,74,.14));
   height: auto;
   margin: 0 auto;
-  max-width: 640px;
+  max-width: 500px;
   object-fit: contain;
-  width: min(100%, 640px);
+  width: min(100%, 500px);
 }
 .founder-callout-wrap {
   display: inline-block;
   isolation: isolate;
-  max-width: 640px;
+  max-width: 500px;
   overflow: hidden;
   position: relative;
-  width: min(100%, 640px);
-}
-.founder-callout-wrap::after {
-  animation: founderSequenceSheen 24s ease-in-out 0s infinite;
-  background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,.08) 38%, rgba(255,255,255,.7) 50%, rgba(255,255,255,.08) 62%, transparent 100%);
-  content: "";
-  inset: -70% -38%;
-  pointer-events: none;
-  position: absolute;
-  transform: translateX(-150%) rotate(12deg);
+  width: min(100%, 500px);
 }
 @keyframes founderSequenceSheen {
   0% {
@@ -1723,6 +1711,12 @@ a:hover { text-decoration: underline; }
 
   .founder-callout {
     max-width: 360px;
+    width: min(100%, 360px);
+  }
+
+  .founder-callout-wrap {
+    max-width: 360px;
+    width: min(100%, 360px);
   }
 
 }
