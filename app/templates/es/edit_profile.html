@@ -64,6 +64,13 @@
     </div>
 
     <div class="form-group">
+      <label class="form-label" for="other_languages">Otros idiomas</label>
+      <p class="form-hint" style="margin:.15rem 0 .4rem;font-size:.8rem;color:var(--color-muted,#777)">Otros idiomas que hablas, separados por coma.</p>
+      <input class="form-input" type="text" id="other_languages" name="other_languages"
+             value="{{ current_user.other_languages or '' }}" placeholder="Portugués, Griego" maxlength="200" />
+    </div>
+
+    <div class="form-group">
       <label class="form-label" for="bio">Bio</label>
       <p class="form-hint" style="margin:.15rem 0 .4rem;font-size:.8rem;color:var(--color-muted,#777)">Se traduce automáticamente al inglés al guardar.</p>
       <textarea class="form-textarea" id="bio" name="bio" rows="3">{{ current_user.bio_es or '' }}</textarea>

@@ -331,6 +331,7 @@ class User(UserMixin, db.Model):
     linkedin_url    = db.Column(db.String(300), nullable=True)
     location        = db.Column(db.String(120), nullable=True)
     preferred_language = db.Column(db.String(2), nullable=True)
+    other_languages = db.Column(db.String(200), nullable=True)
 
     # Email verification
     email_verified         = db.Column(db.Boolean, nullable=False, default=False)

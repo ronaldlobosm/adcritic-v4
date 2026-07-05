@@ -65,7 +65,9 @@
         <p>{{ bio or "Añade una biografía breve para presentar tu mirada crítica." }}</p>
         <dl>
           <div><dt>Profesión</dt><dd>{{ current_user.professional_title or "Crítico publicitario" }}</dd></div>
-          <div><dt>Idiomas</dt><dd>Español / Inglés</dd></div>
+          {% set primary_language_name = 'English' if current_user.preferred_language == 'en' else 'Español' %}
+          {% set other_language_list = current_user.other_languages.split(',') if current_user.other_languages else [] %}
+          <div><dt>Idiomas</dt><dd>{{ ([primary_language_name] + other_language_list|map('trim')|list) | join(' / ') }}</dd></div>
           <div><dt>Ubicación</dt><dd>{{ current_user.location or "Añade tu ubicación desde Editar perfil." }}</dd></div>
           <div>
             <dt>LinkedIn</dt>
@@ -78,7 +80,15 @@
             </dd>
           </div>
         </dl>
-        {% if current_user.location and google_maps_embed_key %}
+      </section>
+
+      {% if current_user.location %}
+      <section class="gold-profile-panel gold-profile-location">
+        <div class="gold-profile-section-head">
+          <h2>Ubicación</h2>
+        </div>
+        <p class="gold-profile-location__text">{{ current_user.location }}</p>
+        {% if google_maps_embed_key %}
           <div class="account-location-map">
             <iframe
               src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_embed_key }}&q={{ current_user.location | urlencode }}"
@@ -88,6 +98,7 @@
           </div>
         {% endif %}
       </section>
+      {% endif %}
 
       <section class="gold-profile-panel" id="activity">
         <div class="gold-profile-section-head">

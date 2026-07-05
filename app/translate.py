@@ -2,11 +2,14 @@
 app/translate.py — Machine translation for the bio field via the Google
 Cloud Translation API (Basic/v2, authenticated with a plain API key).
 """
+import logging
 import os
 
 import requests
 
 TRANSLATE_URL = "https://translation.googleapis.com/language/translate/v2"
+
+logger = logging.getLogger(__name__)
 
 
 def translate_text(text, source, target):
@@ -22,6 +25,7 @@ def translate_text(text, source, target):
 
     api_key = os.environ.get("GOOGLE_TRANSLATE_API_KEY", "")
     if not api_key:
+        logger.warning("[translate] GOOGLE_TRANSLATE_API_KEY is not set — skipping translation")
         return None
 
     try:
@@ -33,5 +37,10 @@ def translate_text(text, source, target):
         )
         resp.raise_for_status()
         return resp.json()["data"]["translations"][0]["translatedText"]
-    except (requests.RequestException, KeyError, IndexError, ValueError):
+    except requests.RequestException as exc:
+        body = exc.response.text[:300] if exc.response is not None else str(exc)
+        logger.error(f"[translate] Google Translate API call failed: {body}")
+        return None
+    except (KeyError, IndexError, ValueError) as exc:
+        logger.error(f"[translate] Unexpected Google Translate response shape: {exc}")
         return None

@@ -2446,10 +2446,14 @@ a:hover { text-decoration: underline; }
   gap: 1rem;
   margin: 0;
 }
+.gold-profile-location__text {
+  color: var(--color-ink);
+  font-size: 1.05rem;
+  margin: 0 0 1rem;
+}
 .account-location-map {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  margin-top: 1.25rem;
   overflow: hidden;
 }
 .account-location-map iframe { display: block; }
@@ -2477,6 +2481,7 @@ a:hover { text-decoration: underline; }
   color: #fffaf2;
   display: grid;
   gap: 1.4rem;
+  justify-items: start;
   padding: 1.5rem;
 }
 .gold-membership-card__summary .gold-profile-button {

@@ -320,6 +320,7 @@ def _handle_edit_profile(lang):
         linkedin_url = request.form.get("linkedin_url", "").strip() or None
         country_code = request.form.get("location_country", "").strip() or None
         city         = request.form.get("location_city", "").strip() or None
+        other_languages_spoken = request.form.get("other_languages", "").strip() or None
 
         location = None
         if city and country_code:
@@ -334,6 +335,7 @@ def _handle_edit_profile(lang):
         current_user.professional_title = professional_title
         current_user.linkedin_url       = linkedin_url
         current_user.location           = location
+        current_user.other_languages     = other_languages_spoken
         setattr(current_user, f"bio_{lang}", bio)
         if not bio:
             setattr(current_user, f"bio_{other_lang}", None)
@@ -357,11 +359,16 @@ def _handle_edit_profile(lang):
         return redirect(url_for(f"account.my_account_{lang}"))
 
     selected_country, selected_city = _parse_location(current_user.location, lang)
+    alt_lang_url = (
+        url_for("account.edit_profile_en") if lang == "es"
+        else url_for("account.edit_profile_es")
+    )
 
     return render_template(
         f"{lang}/edit_profile.html",
         lang=lang,
         ui=ui,
+        alt_lang_url=alt_lang_url,
         countries=countries_sorted(lang),
         selected_country=selected_country,
         selected_city=selected_city,

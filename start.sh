@@ -56,6 +56,7 @@ with app.app_context():
             ("linkedin_url", "ALTER TABLE users ADD COLUMN linkedin_url VARCHAR(300)"),
             ("location", "ALTER TABLE users ADD COLUMN location VARCHAR(120)"),
             ("preferred_language", "ALTER TABLE users ADD COLUMN preferred_language VARCHAR(2)"),
+            ("other_languages", "ALTER TABLE users ADD COLUMN other_languages VARCHAR(200)"),
         ]:
             if col not in existing:
                 conn.execute(text(ddl))
