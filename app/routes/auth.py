@@ -5,7 +5,11 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User
 from app.utils import save_upload_file
-from app.email import send_password_reset_email, send_verification_email
+from app.email import (
+    send_internal_signup_notification,
+    send_password_reset_email,
+    send_verification_email,
+)
 from app.routes.membership import FOUNDER_CUTOFF_COUNT, _founder_active, _gold_count
 
 auth = Blueprint("auth", __name__)
@@ -302,6 +306,7 @@ def _handle_register_step2(lang):
 
             # Send verification email immediately. Account creation still succeeds if SMTP is down.
             email_ok, _email_err = send_verification_email(user, lang)
+            send_internal_signup_notification(user, intent, lang)
 
             # Clear signup session keys
             session.pop("signup_intent", None)

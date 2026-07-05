@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<body style="margin:0;background:#080706;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#181512">
+  <div style="max-width:560px;margin:0 auto;padding:36px 18px">
+    <div style="background:linear-gradient(145deg,#fff8dc 0%,#f0cf75 38%,#8f651d 39%,#fff1b4 56%,#b17a25 73%,#fff9df 100%);border:1px solid #7a5616;border-radius:10px;padding:3px;box-shadow:0 24px 70px rgba(0,0,0,.45)">
+      <div style="background:#17130f;border-radius:8px;padding:28px;color:#fffaf2">
+        <h1 style="font-family:Georgia,serif;margin:0 0 14px;font-size:28px;color:#fffaf2">User upgraded to Gold</h1>
+        <table cellpadding="0" cellspacing="0" style="width:100%;font-size:15px;line-height:1.6;color:#d8cdbb">
+          <tr>
+            <td style="padding:6px 0;color:#f2d77d;font-weight:700;width:150px">Email</td>
+            <td style="padding:6px 0">{{ user.email }}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#f2d77d;font-weight:700">Name</td>
+            <td style="padding:6px 0">{{ user.public_name }}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#f2d77d;font-weight:700">User ID</td>
+            <td style="padding:6px 0">{{ user.id }}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#f2d77d;font-weight:700">Subscription</td>
+            <td style="padding:6px 0">{{ subscription_id or '-' }}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#f2d77d;font-weight:700">Price</td>
+            <td style="padding:6px 0">{{ price_id or '-' }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

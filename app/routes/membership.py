@@ -15,7 +15,11 @@ from flask_login import login_required, current_user
 
 from app import db
 from app.models import AdComment, User
-from app.email import send_gold_welcome_email, send_refund_notice_email
+from app.email import (
+    send_gold_welcome_email,
+    send_internal_gold_activation_notification,
+    send_refund_notice_email,
+)
 
 membership_bp = Blueprint("membership", __name__)
 
@@ -632,6 +636,11 @@ def _handle_checkout_completed(session):
         metadata = _sg(session, "metadata") or {}
         lang = _sg(metadata, "lang") or "es"
         send_gold_welcome_email(user, lang)
+        send_internal_gold_activation_notification(
+            user,
+            price_id=price_id,
+            subscription_id=subscription_id,
+        )
 
 
 def _handle_invoice_paid(invoice):

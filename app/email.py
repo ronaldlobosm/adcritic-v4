@@ -130,6 +130,87 @@ def send_password_reset_email(user, lang="es"):
 
 
 # ---------------------------------------------------------------------------
+# Internal notifications
+# ---------------------------------------------------------------------------
+
+def send_internal_signup_notification(user, intent="free", lang="es"):
+    """Notify the AdCritic team whenever a new account is created."""
+    recipient = current_app.config.get(
+        "SIGNUP_NOTIFICATION_EMAIL", "hello@adcritic.world"
+    )
+    plan = "Gold" if intent == "gold" else "Free"
+    language = "Spanish" if lang == "es" else "English"
+    subject = f"New AdCritic signup: {plan}"
+
+    body = "\n".join([
+        "A new user signed up for AdCritic.",
+        "",
+        f"Plan selected: {plan}",
+        f"Email: {user.email}",
+        f"Name: {user.public_name}",
+        f"Language: {language}",
+        f"User ID: {user.id}",
+        f"Created at: {user.created_at}",
+    ])
+    html = render_template(
+        "email/internal_signup_notice.html",
+        user=user,
+        plan=plan,
+        language=language,
+    )
+    sender = current_app.config.get(
+        "MAIL_DEFAULT_SENDER", "AdCritic <noreply@adcritic.com>"
+    )
+    msg = Message(subject=subject, recipients=[recipient], body=body,
+                  html=html, sender=sender)
+    try:
+        mail.send(msg)
+        return True, None
+    except Exception as exc:
+        current_app.logger.error(
+            f"[email] Failed to send signup notice for {user.email}: {exc}"
+        )
+        return False, str(exc)
+
+
+def send_internal_gold_activation_notification(user, *, price_id=None, subscription_id=None):
+    """Notify the AdCritic team whenever a user becomes Gold."""
+    recipient = current_app.config.get(
+        "SIGNUP_NOTIFICATION_EMAIL", "hello@adcritic.world"
+    )
+    subject = "AdCritic user upgraded to Gold"
+    body = "\n".join([
+        "A user is now Gold on AdCritic.",
+        "",
+        f"Email: {user.email}",
+        f"Name: {user.public_name}",
+        f"User ID: {user.id}",
+        f"Stripe subscription: {subscription_id or user.stripe_subscription_id or '-'}",
+        f"Stripe price: {price_id or user.stripe_price_id or '-'}",
+        f"Gold started at: {user.gold_started_at}",
+    ])
+    html = render_template(
+        "email/internal_gold_activation_notice.html",
+        user=user,
+        price_id=price_id or user.stripe_price_id,
+        subscription_id=subscription_id or user.stripe_subscription_id,
+    )
+    sender = current_app.config.get(
+        "MAIL_DEFAULT_SENDER", "AdCritic <noreply@adcritic.com>"
+    )
+    msg = Message(subject=subject, recipients=[recipient], body=body,
+                  html=html, sender=sender)
+    try:
+        mail.send(msg)
+        return True, None
+    except Exception as exc:
+        current_app.logger.error(
+            f"[email] Failed to send Gold activation notice for {user.email}: {exc}"
+        )
+        return False, str(exc)
+
+
+# ---------------------------------------------------------------------------
 # Gold membership
 # ---------------------------------------------------------------------------
 
