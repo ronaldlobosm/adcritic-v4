@@ -28,37 +28,48 @@
       {% endif %}
     </div>
 
-    <details class="gold-profile-edit">
-      <summary>Editar perfil</summary>
-      <form method="post" enctype="multipart/form-data" class="gold-profile-edit__panel">
-        <input type="hidden" name="_action" value="profile" />
-        <label>
-          <span>Nombre</span>
-          <input class="form-input" type="text" name="display_name" value="{{ current_user.display_name or '' }}" maxlength="100" />
-        </label>
-        <label>
-          <span>Cargo profesional</span>
-          <input class="form-input" type="text" name="professional_title" value="{{ current_user.professional_title or '' }}" maxlength="140" />
-        </label>
-        <label>
-          <span>Foto de perfil</span>
-          <input type="file" name="avatar_file" id="avatarFileInput" accept=".jpg,.jpeg,.png" onchange="previewAvatar(this)" />
-        </label>
-        <label>
-          <span>LinkedIn</span>
-          <input class="form-input" type="url" name="linkedin_url" value="{{ current_user.linkedin_url or '' }}" placeholder="https://www.linkedin.com/in/..." maxlength="300" />
-        </label>
-        <label>
-          <span>Bio (ES)</span>
-          <textarea class="form-textarea" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
-        </label>
-        <label>
-          <span>Bio (EN)</span>
-          <textarea class="form-textarea" name="bio_en" rows="3">{{ current_user.bio_en or '' }}</textarea>
-        </label>
-        <button type="submit" class="gold-profile-button">Guardar perfil</button>
-      </form>
-    </details>
+    <div class="gold-profile-actions">
+      <div class="profile-completion-card" aria-label="Progreso del perfil">
+        <strong>{{ profile_completion.percent }}%</strong>
+        <span>Perfil completo</span>
+        {% if profile_completion.missing_count %}
+          <small>Falta: {{ profile_completion.missing|join(', ') }}</small>
+        {% else %}
+          <small>Listo para la comunidad.</small>
+        {% endif %}
+      </div>
+      <details class="gold-profile-edit">
+        <summary>Editar perfil</summary>
+        <form method="post" enctype="multipart/form-data" class="gold-profile-edit__panel">
+          <input type="hidden" name="_action" value="profile" />
+          <label>
+            <span>Nombre</span>
+            <input class="form-input" type="text" name="display_name" value="{{ current_user.display_name or '' }}" maxlength="100" />
+          </label>
+          <label>
+            <span>Cargo profesional</span>
+            <input class="form-input" type="text" name="professional_title" value="{{ current_user.professional_title or '' }}" maxlength="140" />
+          </label>
+          <label>
+            <span>Foto de perfil</span>
+            <input type="file" name="avatar_file" id="avatarFileInput" accept=".jpg,.jpeg,.png" onchange="previewAvatar(this)" />
+          </label>
+          <label>
+            <span>LinkedIn</span>
+            <input class="form-input" type="url" name="linkedin_url" value="{{ current_user.linkedin_url or '' }}" placeholder="https://www.linkedin.com/in/..." maxlength="300" />
+          </label>
+          <label>
+            <span>Bio (ES)</span>
+            <textarea class="form-textarea" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
+          </label>
+          <label>
+            <span>Bio (EN)</span>
+            <textarea class="form-textarea" name="bio_en" rows="3">{{ current_user.bio_en or '' }}</textarea>
+          </label>
+          <button type="submit" class="gold-profile-button">Guardar perfil</button>
+        </form>
+      </details>
+    </div>
   </section>
 
   <nav class="gold-profile-tabs" aria-label="Secciones del perfil Gold">

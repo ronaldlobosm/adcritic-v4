@@ -174,6 +174,39 @@ def _handle_account(lang):
                 return redirect(url_for(f"account.my_account_{lang}"))
 
     role_label = ui.get(f"role_{current_user.role}", current_user.role)
+    profile_missing_labels = {
+        "es": {
+            "avatar": "foto",
+            "name": "nombre",
+            "title": "cargo",
+            "bio": "bio",
+            "linkedin": "LinkedIn",
+        },
+        "en": {
+            "avatar": "photo",
+            "name": "name",
+            "title": "title",
+            "bio": "bio",
+            "linkedin": "LinkedIn",
+        },
+    }[lang]
+    profile_checks = [
+        ("avatar", bool(current_user.avatar_url)),
+        ("name", bool(current_user.display_name)),
+        ("title", bool(current_user.professional_title)),
+        ("bio", bool(current_user.bio_es or current_user.bio_en)),
+        ("linkedin", bool(current_user.linkedin_url)),
+    ]
+    profile_missing = [
+        profile_missing_labels[key]
+        for key, is_complete in profile_checks
+        if not is_complete
+    ]
+    profile_completion = {
+        "percent": round(((len(profile_checks) - len(profile_missing)) / len(profile_checks)) * 100),
+        "missing": profile_missing,
+        "missing_count": len(profile_missing),
+    }
 
     # Fetch Stripe subscription info for Gold users
     sub_info   = None
@@ -239,6 +272,7 @@ def _handle_account(lang):
         comment_rating_stats=comment_rating_stats,
         saved_ads_count=saved_ads_count,
         saved_ads=saved_ads,
+        profile_completion=profile_completion,
     )
 
 
