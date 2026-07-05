@@ -26,19 +26,7 @@
       {% if bio %}
         <p class="gold-profile-hero__bio">{{ bio }}</p>
       {% endif %}
-    </div>
-
-    <div class="gold-profile-actions">
-      <div class="profile-completion-card" aria-label="Progreso del perfil">
-        <strong>{{ profile_completion.percent }}%</strong>
-        <span>Perfil completo</span>
-        {% if profile_completion.missing_count %}
-          <small>Falta: {{ profile_completion.missing|join(', ') }}</small>
-        {% else %}
-          <small>Listo para la comunidad.</small>
-        {% endif %}
-      </div>
-      <details class="gold-profile-edit">
+      <details class="gold-profile-edit" id="editProfileDetails">
         <summary>Editar perfil</summary>
         <form method="post" enctype="multipart/form-data" class="gold-profile-edit__panel">
           <input type="hidden" name="_action" value="profile" />
@@ -59,6 +47,10 @@
             <input class="form-input" type="url" name="linkedin_url" value="{{ current_user.linkedin_url or '' }}" placeholder="https://www.linkedin.com/in/..." maxlength="300" />
           </label>
           <label>
+            <span>Ubicación</span>
+            <input class="form-input" type="text" name="location" value="{{ current_user.location or '' }}" placeholder="Lima, Perú" maxlength="120" />
+          </label>
+          <label>
             <span>Bio (ES)</span>
             <textarea class="form-textarea" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
           </label>
@@ -70,6 +62,23 @@
         </form>
       </details>
     </div>
+
+    <aside class="gold-profile-actions" aria-label="Progreso del perfil">
+      <div class="profile-completion-ring" style="--profile-progress: {{ profile_completion.percent }}%">
+        <strong>{{ profile_completion.percent }}%</strong>
+        <span>Completo</span>
+      </div>
+      <div class="profile-completion-list">
+        <h2>Completa tu perfil</h2>
+        <ul>
+          {% for item in profile_completion.items %}
+            <li class="{{ 'is-complete' if item.complete else '' }}">
+              <span aria-hidden="true"></span>{{ item.label }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </aside>
   </section>
 
   <nav class="gold-profile-tabs" aria-label="Secciones del perfil Gold">
@@ -83,11 +92,15 @@
   <div class="gold-profile-grid" id="overview">
     <aside class="gold-profile-stack">
       <section class="gold-profile-panel gold-profile-about">
-        <h2>About</h2>
+        <div class="gold-profile-section-head">
+          <h2>About</h2>
+          <a href="#edit-profile" data-open-profile-edit>Editar</a>
+        </div>
         <p>{{ bio or "Añade una biografía breve para presentar tu mirada crítica." }}</p>
         <dl>
           <div><dt>Profesión</dt><dd>{{ current_user.professional_title or "Crítico publicitario" }}</dd></div>
           <div><dt>Idiomas</dt><dd>Español / Inglés</dd></div>
+          <div><dt>Ubicación</dt><dd>{{ current_user.location or "Añade tu ubicación desde Editar perfil." }}</dd></div>
           <div>
             <dt>LinkedIn</dt>
             <dd>
@@ -104,6 +117,7 @@
       <section class="gold-profile-panel" id="activity">
         <div class="gold-profile-section-head">
           <h2>Actividad reciente</h2>
+          <a href="#activity" data-profile-tab-link="activity">Ver toda</a>
         </div>
         <ol class="gold-profile-timeline">
           {% if comments %}
@@ -163,34 +177,84 @@
               <a href="{{ url_for('membership.membership_portal_es') if is_gold else url_for('membership.membership_es') }}" class="gold-profile-button">{{ 'Gestionar suscripción' if is_gold else 'Hazte Gold' }}</a>
             </div>
             <div class="gold-membership-card__benefits">
-              <h3>{{ 'Tus beneficios' if is_gold else 'Acceso Free' }}</h3>
+              <h3>{{ 'Tus beneficios' if is_gold else 'Desbloquea la experiencia completa de AdCritic' }}</h3>
               <ul>
                 {% if is_gold %}
                   {% for feature in features %}
                     <li>{{ feature }}</li>
                   {% endfor %}
                 {% else %}
-                  <li>Dar like y valorar críticas de miembros Gold</li>
-                  <li>Guardar análisis en tu biblioteca de perfil</li>
-                  <li>Ver tu actividad reciente desde este perfil</li>
-                  <li>Pasar a Gold cuando quieras para análisis completos y publicar críticas</li>
+                  <li><strong>Lee análisis editoriales completos</strong><span>Accede a breakdowns profundos de las mejores campañas.</span></li>
+                  <li><strong>Publica tus propias críticas</strong><span>Comparte tu perspectiva y construye reputación.</span></li>
+                  <li><strong>Únete a discusiones Gold</strong><span>Debate y conecta con profesionales de la industria.</span></li>
+                  <li><strong>Reportes y casos exclusivos</strong><span>Investigación, entrevistas y tendencias solo para Gold.</span></li>
+                  <li><strong>Gana reconocimiento</strong><span>Obtén badges y visibilidad como contribuidor activo.</span></li>
+                  <li><strong>Badge Founder</strong><span>Muestra tu apoyo a la crítica publicitaria independiente.</span></li>
                 {% endif %}
               </ul>
             </div>
           </div>
         </section>
 
-        <section class="gold-profile-panel">
+        <section class="gold-profile-panel gold-profile-saved-overview">
           <div class="gold-profile-section-head">
-            <h2>Reconocimiento</h2>
+            <h2>Análisis guardados</h2>
+            <a href="#critiques" data-profile-tab-link="critiques">Ver todos</a>
           </div>
-          <div class="gold-recognition-grid">
-            <article class="is-earned"><span>F</span><h3>{{ 'Founder Member' if is_gold else 'Free Member' }}</h3><p>{{ 'Perfil especial para los primeros miembros Gold.' if is_gold else 'Perfil editorial para usuarios registrados.' }}</p></article>
-            <article class="{{ 'is-earned' if comments|length > 0 else '' }}"><span>P</span><h3>Professional Critic</h3><p>Publica tu primera crítica.</p></article>
-            <article class="{{ 'is-earned' if comments|length >= 10 else '' }}"><span>T</span><h3>Top Contributor</h3><p>10 críticas publicadas.</p></article>
-            <article><span>A</span><h3>Advertising Historian</h3><p>50 análisis explorados.</p></article>
-          </div>
+          {% if saved_ads %}
+            <div class="gold-saved-grid">
+              {% for saved in saved_ads[:4] %}
+                {% set ad = saved.ad %}
+                {% set t = ad.translation('es') if ad else None %}
+                <article>
+                  <a class="gold-saved-card__thumb" href="{{ url_for('main.ad_detail_es', slug=ad.slug) if ad else '#' }}">
+                    {% if ad and ad.youtube_id %}
+                      <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/hqdefault.jpg" alt="" />
+                    {% else %}
+                      <span>{{ ad.brand[0] if ad else "A" }}</span>
+                    {% endif %}
+                  </a>
+                  <h3>{{ t.title if t else "Análisis guardado" }}</h3>
+                  <p>{{ ad.brand if ad else "AdCritic" }}{% if ad %}<span>•</span>{{ ad.year }}{% endif %}</p>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="gold-empty-state gold-empty-state--compact">
+              <h3>Todavía no has guardado análisis.</h3>
+              <p>Guarda críticas desde el catálogo y construye tu biblioteca de referencia.</p>
+              <a href="{{ url_for('main.catalog_es') }}" class="gold-profile-button">Explorar el catálogo</a>
+            </div>
+          {% endif %}
         </section>
+
+        <div class="gold-overview-bottom">
+          <section class="gold-profile-panel">
+            <div class="gold-profile-section-head">
+              <h2>Reconocimiento</h2>
+            </div>
+            <p class="gold-profile-panel__intro">Badges que puedes ganar mientras participas en la comunidad.</p>
+            <div class="gold-recognition-grid gold-recognition-grid--overview">
+              <article class="is-earned"><span>F</span><h3>{{ 'Founder Member' if is_gold else 'Free Member' }}</h3><p>{{ 'Perfil especial para los primeros miembros Gold.' if is_gold else 'Ya eres parte de AdCritic.' }}</p></article>
+              <article class="{{ 'is-earned' if saved_ads_count >= 5 else '' }}"><span>★</span><h3>Active Reader</h3><p>Da like y guarda 5 análisis.</p></article>
+              <article class="{{ 'is-earned' if saved_ads_count >= 10 else '' }}"><span>S</span><h3>Collector</h3><p>Guarda 10 análisis en tu biblioteca.</p></article>
+              <article class="{{ 'is-earned' if comments|length >= 1 else '' }}"><span>C</span><h3>Engaged</h3><p>Participa en la conversación crítica.</p></article>
+              <article class="{{ 'is-earned' if comments|length > 0 else '' }}"><span>P</span><h3>Future Critic</h3><p>Publica tu primera crítica.</p></article>
+            </div>
+          </section>
+
+          <section class="gold-profile-panel gold-overview-settings">
+            <div class="gold-profile-section-head">
+              <h2>Settings</h2>
+            </div>
+            <div class="gold-settings-list gold-settings-list--overview">
+              <a href="#edit-profile" data-open-profile-edit><strong>Editar perfil</strong><span>Actualiza tu información pública</span></a>
+              <a href="#settings" data-profile-tab-link="settings"><strong>Configuración</strong><span>Email, contraseña y preferencias</span></a>
+              <a href="#settings" data-profile-tab-link="settings"><strong>Notificaciones</strong><span>Elige qué quieres recibir</span></a>
+              <a href="mailto:hello@adcritic.world"><strong>Ayuda y soporte</strong><span>Contacta al equipo</span></a>
+            </div>
+          </section>
+        </div>
       </section>
 
       {% if is_gold %}
@@ -398,6 +462,27 @@ document.querySelectorAll('[data-profile-tab]').forEach(function(tab) {
       view.classList.toggle('is-active', view.getAttribute('data-profile-view') === target);
     });
     if (history.replaceState) history.replaceState(null, '', '#' + target);
+  });
+});
+
+document.querySelectorAll('[data-profile-tab-link]').forEach(function(link) {
+  link.addEventListener('click', function(event) {
+    var target = link.getAttribute('data-profile-tab-link');
+    var tab = document.querySelector('[data-profile-tab="' + target + '"]');
+    if (!tab) return;
+    event.preventDefault();
+    tab.click();
+  });
+});
+
+document.querySelectorAll('[data-open-profile-edit]').forEach(function(link) {
+  link.addEventListener('click', function(event) {
+    event.preventDefault();
+    var details = document.getElementById('editProfileDetails');
+    if (details) {
+      details.open = true;
+      details.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   });
 });
 

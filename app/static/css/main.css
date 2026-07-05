@@ -2190,11 +2190,12 @@ a:hover { text-decoration: underline; }
 .gold-profile-page--free .gold-profile-edit summary {
   border-color: rgba(200,204,209,.62);
 }
-.gold-profile-page--free .profile-completion-card {
-  border-color: rgba(200,204,209,.46);
+.gold-profile-page--free {
+  --profile-ring: #f1f3f4;
 }
-.gold-profile-page--free .profile-completion-card span {
-  color: #d9dcdf;
+.gold-profile-page--free .profile-completion-list li.is-complete span {
+  border-color: #7fc481;
+  color: #7fc481;
 }
 .gold-profile-page--free .gold-membership-card {
   border-color: rgba(125,130,136,.32);
@@ -2219,42 +2220,103 @@ a:hover { text-decoration: underline; }
 .gold-profile-actions {
   align-self: center;
   display: grid;
-  gap: .75rem;
-  justify-items: end;
+  gap: 1.4rem;
+  grid-template-columns: auto minmax(170px, 1fr);
+  justify-items: start;
+  min-width: 360px;
+  --profile-ring: #d4af57;
 }
-.profile-completion-card {
-  background: rgba(255,250,242,.035);
-  border: 1px solid rgba(181,138,59,.45);
+.profile-completion-ring {
+  align-items: center;
+  background: conic-gradient(var(--profile-ring) var(--profile-progress), rgba(255,250,242,.1) 0);
+  border-radius: 50%;
   color: #fffaf2;
-  min-width: 160px;
-  padding: .85rem;
+  display: grid;
+  height: 150px;
+  justify-items: center;
+  padding: 14px;
+  place-content: center;
+  position: relative;
+  text-align: center;
+  width: 150px;
 }
-.profile-completion-card strong {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1.9rem;
+.profile-completion-ring::before {
+  background: #080808;
+  border-radius: 50%;
+  content: "";
+  inset: 14px;
+  position: absolute;
+}
+.profile-completion-ring strong,
+.profile-completion-ring span {
+  position: relative;
+  z-index: 1;
+}
+.profile-completion-ring strong {
+  font-family: var(--font-body);
+  font-size: 2.35rem;
+  font-weight: 900;
+  letter-spacing: 0;
   line-height: 1;
-  margin-bottom: .35rem;
 }
-.profile-completion-card span {
-  color: #d4af57;
-  display: block;
-  font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .14em;
-  line-height: 1.2;
+.profile-completion-ring span {
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  margin-top: .25rem;
   text-transform: uppercase;
 }
-.profile-completion-card small {
-  color: rgba(255,250,242,.62);
-  display: block;
-  font-size: .76rem;
-  line-height: 1.4;
-  margin-top: .45rem;
-  max-width: 180px;
+.profile-completion-list h2 {
+  color: #fffaf2;
+  font-family: var(--font-body);
+  font-size: .95rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  margin: 0 0 .8rem;
+}
+.profile-completion-list ul {
+  display: grid;
+  gap: .55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.profile-completion-list li {
+  align-items: center;
+  color: rgba(255,250,242,.74);
+  display: flex;
+  font-size: .84rem;
+  gap: .55rem;
+  line-height: 1.25;
+}
+.profile-completion-list li span {
+  border: 1px solid rgba(255,250,242,.45);
+  border-radius: 50%;
+  display: inline-block;
+  flex: 0 0 auto;
+  height: 14px;
+  position: relative;
+  width: 14px;
+}
+.profile-completion-list li.is-complete {
+  color: #fffaf2;
+}
+.profile-completion-list li.is-complete span {
+  border-color: #7fc481;
+}
+.profile-completion-list li.is-complete span::after {
+  border-bottom: 2px solid #7fc481;
+  border-right: 2px solid #7fc481;
+  content: "";
+  height: 7px;
+  left: 4px;
+  position: absolute;
+  top: 1px;
+  transform: rotate(45deg);
+  width: 4px;
 }
 .gold-profile-edit {
-  justify-self: end;
+  margin-top: 1rem;
   position: relative;
 }
 .gold-profile-edit summary,
@@ -2431,6 +2493,9 @@ a:hover { text-decoration: underline; }
 .gold-membership-card__benefits h3 {
   margin-bottom: 1rem;
 }
+.gold-profile-page--free .gold-membership-card__benefits h3 {
+  color: #b63a2f;
+}
 .gold-membership-card__benefits ul,
 .gold-empty-state ul {
   display: grid;
@@ -2445,12 +2510,50 @@ a:hover { text-decoration: underline; }
   padding-left: 1.2rem;
   position: relative;
 }
+.gold-membership-card__benefits li strong {
+  color: var(--color-ink);
+  display: block;
+  font-family: var(--font-body);
+  font-size: .92rem;
+  line-height: 1.25;
+}
+.gold-membership-card__benefits li span {
+  color: var(--color-ink-3);
+  display: block;
+  font-size: .8rem;
+  line-height: 1.35;
+  margin-top: .15rem;
+}
 .gold-membership-card__benefits li::before {
   color: #b58a3b;
   content: "/";
   font-weight: 900;
   left: 0;
   position: absolute;
+}
+.gold-profile-page--free .gold-membership-card__benefits li {
+  padding-left: 2rem;
+}
+.gold-profile-page--free .gold-membership-card__benefits li::before {
+  border: 1px solid #d4af57;
+  border-radius: 2px;
+  color: #d4af57;
+  content: "";
+  height: 18px;
+  left: 0;
+  top: .1rem;
+  width: 18px;
+}
+.gold-profile-page--free .gold-membership-card__benefits li::after {
+  border: 1px solid #d4af57;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  content: "";
+  height: 8px;
+  left: 4px;
+  position: absolute;
+  top: -.28rem;
+  width: 10px;
 }
 .gold-empty-state {
   align-items: center;
@@ -2477,6 +2580,53 @@ a:hover { text-decoration: underline; }
   color: var(--color-ink-2);
   margin: 0;
   max-width: 360px;
+}
+.gold-empty-state--compact {
+  min-height: 180px;
+  padding: 1rem;
+}
+.gold-profile-saved-overview {
+  overflow: hidden;
+}
+.gold-saved-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.gold-saved-grid article {
+  min-width: 0;
+}
+.gold-saved-card__thumb {
+  aspect-ratio: 16 / 9;
+  background: #080808;
+  color: #d4af57;
+  display: grid;
+  margin-bottom: .75rem;
+  overflow: hidden;
+  place-items: center;
+}
+.gold-saved-card__thumb img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+.gold-saved-grid h3 {
+  display: -webkit-box;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.08;
+  margin: 0 0 .35rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.gold-saved-grid p {
+  color: var(--color-ink-3);
+  font-size: .82rem;
+  margin: 0;
+}
+.gold-saved-grid p span {
+  margin: 0 .45rem;
 }
 .gold-critique-list {
   display: grid;
@@ -2568,6 +2718,18 @@ a:hover { text-decoration: underline; }
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
+.gold-profile-panel__intro {
+  color: var(--color-ink-2);
+  margin: .6rem 0 0;
+}
+.gold-overview-bottom {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .85fr);
+}
+.gold-recognition-grid--overview {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
 .gold-recognition-grid article {
   border-left: 1px solid var(--color-border);
   color: var(--color-ink-3);
@@ -2627,6 +2789,30 @@ a:hover { text-decoration: underline; }
 .gold-settings-list .is-danger {
   color: #b63a2f;
 }
+.gold-overview-settings .gold-profile-section-head {
+  margin-bottom: .25rem;
+}
+.gold-settings-list--overview {
+  border: none;
+}
+.gold-settings-list--overview a {
+  align-items: center;
+  display: grid;
+  gap: .2rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: .95rem 0;
+}
+.gold-settings-list--overview a::after {
+  color: var(--color-ink-2);
+  content: "›";
+  font-size: 1.4rem;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.gold-settings-list--overview strong,
+.gold-settings-list--overview span {
+  grid-column: 1;
+}
 .gold-connected-accounts {
   border: 1px solid var(--color-border);
   margin-top: 1.5rem;
@@ -2660,20 +2846,25 @@ a:hover { text-decoration: underline; }
 @media (max-width: 900px) {
   .gold-profile-hero,
   .gold-profile-grid,
-  .gold-membership-card {
+  .gold-membership-card,
+  .gold-overview-bottom {
     grid-template-columns: 1fr;
   }
   .gold-profile-edit {
     justify-self: start;
   }
   .gold-profile-actions {
-    justify-items: start;
+    grid-template-columns: auto minmax(0, 1fr);
+    min-width: 0;
   }
   .gold-profile-edit__panel {
     left: 0;
     right: auto;
   }
   .gold-recognition-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gold-saved-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -2685,11 +2876,21 @@ a:hover { text-decoration: underline; }
   .gold-profile-hero {
     padding: 1.5rem;
   }
+  .gold-profile-actions {
+    grid-template-columns: 1fr;
+  }
+  .profile-completion-ring {
+    height: 132px;
+    width: 132px;
+  }
   .gold-profile-hero__avatar {
     height: 124px;
     width: 124px;
   }
   .gold-profile-tabs {
+    grid-template-columns: 1fr;
+  }
+  .gold-saved-grid {
     grid-template-columns: 1fr;
   }
   .gold-social-login-grid {

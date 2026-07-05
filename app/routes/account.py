@@ -134,12 +134,14 @@ def _handle_account(lang):
             bio_es       = request.form.get("bio_es", "").strip() or None
             bio_en       = request.form.get("bio_en", "").strip() or None
             linkedin_url = request.form.get("linkedin_url", "").strip() or None
+            location     = request.form.get("location", "").strip() or None
 
             current_user.display_name       = display_name
             current_user.professional_title = professional_title
             current_user.bio_es             = bio_es
             current_user.bio_en             = bio_en
             current_user.linkedin_url       = linkedin_url
+            current_user.location           = location
 
             avatar_file = request.files.get("avatar_file")
             if avatar_file and avatar_file.filename:
@@ -174,36 +176,37 @@ def _handle_account(lang):
                 return redirect(url_for(f"account.my_account_{lang}"))
 
     role_label = ui.get(f"role_{current_user.role}", current_user.role)
-    profile_missing_labels = {
+    profile_item_labels = {
         "es": {
-            "avatar": "foto",
-            "name": "nombre",
-            "title": "cargo",
-            "bio": "bio",
-            "linkedin": "LinkedIn",
+            "avatar": "Agrega una foto de perfil",
+            "title": "Agrega tu cargo",
+            "location": "Agrega tu ubicación",
+            "linkedin": "Agrega tu LinkedIn",
+            "bio": "Escribe una bio breve",
         },
         "en": {
-            "avatar": "photo",
-            "name": "name",
-            "title": "title",
-            "bio": "bio",
-            "linkedin": "LinkedIn",
+            "avatar": "Add a profile photo",
+            "title": "Add a title",
+            "location": "Add your location",
+            "linkedin": "Add your LinkedIn",
+            "bio": "Write a short bio",
         },
     }[lang]
     profile_checks = [
         ("avatar", bool(current_user.avatar_url)),
-        ("name", bool(current_user.display_name)),
         ("title", bool(current_user.professional_title)),
-        ("bio", bool(current_user.bio_es or current_user.bio_en)),
+        ("location", bool(current_user.location)),
         ("linkedin", bool(current_user.linkedin_url)),
+        ("bio", bool(current_user.bio_es or current_user.bio_en)),
     ]
-    profile_missing = [
-        profile_missing_labels[key]
+    profile_items = [
+        {"label": profile_item_labels[key], "complete": is_complete}
         for key, is_complete in profile_checks
-        if not is_complete
     ]
+    profile_missing = [item["label"] for item in profile_items if not item["complete"]]
     profile_completion = {
         "percent": round(((len(profile_checks) - len(profile_missing)) / len(profile_checks)) * 100),
+        "items": profile_items,
         "missing": profile_missing,
         "missing_count": len(profile_missing),
     }
