@@ -113,3 +113,32 @@ def send_password_reset_email(user, lang="es"):
             f"[email] Failed to send password reset to {user.email}: {exc}"
         )
         return False, str(exc)
+
+
+def send_admin_reassignment_email(admin_user, deleted_user_email, *, posts_count=0, ads_count=0):
+    """Notify the admin that deleted-user content was reassigned and drafted."""
+    if not admin_user or not admin_user.email:
+        return False, "missing_admin_email"
+
+    subject = "Contenido reasignado para revisión en AdCritic"
+    html = render_template(
+        "email/admin_reassignment_notice.html",
+        admin_user=admin_user,
+        deleted_user_email=deleted_user_email,
+        posts_count=posts_count,
+        ads_count=ads_count,
+        admin_url=url_for("admin.dashboard", _external=True),
+    )
+    sender = current_app.config.get(
+        "MAIL_DEFAULT_SENDER", "AdCritic <noreply@adcritic.com>"
+    )
+    msg = Message(subject=subject, recipients=[admin_user.email],
+                  html=html, sender=sender)
+    try:
+        mail.send(msg)
+        return True, None
+    except Exception as exc:
+        current_app.logger.error(
+            f"[email] Failed to send admin reassignment notice to {admin_user.email}: {exc}"
+        )
+        return False, str(exc)

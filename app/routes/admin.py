@@ -1,15 +1,17 @@
 from functools import wraps
 from flask import (
     Blueprint, render_template, request, redirect,
-    url_for, flash, session,
+    url_for, flash, session, current_app,
 )
 from flask_login import current_user, login_required
 from app import db
 from datetime import datetime
 from app.models import Ad, AdTranslation, Category, Post, PostTranslation, PostCategory, PostComment, AdComment, User, SiteSettings, MediaFile, RoleContentAccess, BannedWord
 from app.utils import save_upload_file
+from app.email import send_admin_reassignment_email
 from app.permissions import has_content_access, can_edit_content, can_approve_content, content_status_for_save
 from app.countries import COUNTRIES, countries_sorted
+from sqlalchemy.exc import SQLAlchemyError
 
 admin = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -821,9 +823,53 @@ def user_delete(user_id):
               else "You cannot delete your own account.", "error")
         return redirect(url_for("admin.users_list"))
 
-    db.session.delete(user)
-    db.session.commit()
-    flash(ui["ok_user_deleted"], "success")
+    owner = User.query.filter_by(email="admin@adcritic.com").first() or current_user
+    deleted_user_email = user.email
+    posts_count = Post.query.filter_by(author_id=user.id).count()
+    ads_count = Ad.query.filter_by(created_by_id=user.id).count()
+    try:
+        PostComment.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        AdComment.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        RoleContentAccess.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+
+        Post.query.filter_by(author_id=user.id).update(
+            {
+                "author_id": owner.id,
+                "status": "draft",
+                "published_at": None,
+                "rejection_note": "Reasignado a admin tras eliminar usuario.",
+            },
+            synchronize_session=False,
+        )
+        Ad.query.filter_by(created_by_id=user.id).update(
+            {
+                "created_by_id": owner.id,
+                "status": "draft",
+                "published_at": None,
+                "rejection_note": "Reasignado a admin tras eliminar usuario.",
+            },
+            synchronize_session=False,
+        )
+        MediaFile.query.filter_by(uploaded_by=user.id).update(
+            {"uploaded_by": owner.id},
+            synchronize_session=False,
+        )
+
+        db.session.delete(user)
+        db.session.commit()
+        if posts_count or ads_count:
+            send_admin_reassignment_email(
+                owner,
+                deleted_user_email,
+                posts_count=posts_count,
+                ads_count=ads_count,
+            )
+        flash(ui["ok_user_deleted"], "success")
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        current_app.logger.error("User delete failed for %s: %s", user.email, exc)
+        flash("No se pudo eliminar el usuario." if lang == "es"
+              else "Could not delete user.", "error")
     return redirect(url_for("admin.users_list"))
 
 
