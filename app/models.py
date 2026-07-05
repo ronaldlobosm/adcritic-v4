@@ -249,6 +249,52 @@ class AdComment(db.Model):
         return f"<AdComment ad={self.ad_id} user={self.user_id}>"
 
 
+class AdCommentLike(db.Model):
+    __tablename__ = "ad_comment_likes"
+    __table_args__ = (
+        db.UniqueConstraint("comment_id", "user_id", name="uq_ad_comment_like_user"),
+    )
+
+    id         = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey("ad_comments.id"), nullable=False, index=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    comment = db.relationship("AdComment", backref=db.backref("likes", lazy="dynamic", cascade="all, delete-orphan"))
+    user    = db.relationship("User")
+
+
+class AdCommentRating(db.Model):
+    __tablename__ = "ad_comment_ratings"
+    __table_args__ = (
+        db.UniqueConstraint("comment_id", "user_id", name="uq_ad_comment_rating_user"),
+    )
+
+    id         = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey("ad_comments.id"), nullable=False, index=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    rating     = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    comment = db.relationship("AdComment", backref=db.backref("community_ratings", lazy="dynamic", cascade="all, delete-orphan"))
+    user    = db.relationship("User")
+
+
+class SavedAd(db.Model):
+    __tablename__ = "saved_ads"
+    __table_args__ = (
+        db.UniqueConstraint("ad_id", "user_id", name="uq_saved_ad_user"),
+    )
+
+    id         = db.Column(db.Integer, primary_key=True)
+    ad_id      = db.Column(db.Integer, db.ForeignKey("ads.id"), nullable=False, index=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    ad   = db.relationship("Ad", backref=db.backref("saves", lazy="dynamic", cascade="all, delete-orphan"))
+    user = db.relationship("User")
+
+
 class BannedWord(db.Model):
     __tablename__ = "banned_words"
 

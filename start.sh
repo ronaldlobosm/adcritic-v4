@@ -16,7 +16,7 @@ from app import db
 # Explicit import of every model so SQLAlchemy knows all tables
 from app.models import (
     User, Category, PostCategory, MediaFile,
-    Ad, AdTranslation, AdComment,
+    Ad, AdTranslation, AdComment, AdCommentLike, AdCommentRating, SavedAd,
     Post, PostTranslation, PostComment,
     NewsletterSubscriber, SiteSettings, RoleContentAccess, BannedWord,
     Advertiser, AdCampaign, AdZone, BannerAd,

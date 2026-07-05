@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
 from app.utils import save_upload_file
-from app.models import AdComment
+from app.models import AdComment, AdCommentLike, AdCommentRating, SavedAd
 from app.routes.membership import _get_subscription_info, _plan_label, UI as MEMBERSHIP_UI
 
 account = Blueprint("account", __name__)
@@ -188,8 +188,34 @@ def _handle_account(lang):
             .order_by(AdComment.created_at.desc())
             .all()
         )
+    comment_like_counts = {}
+    comment_rating_stats = {}
+    saved_ads_count = SavedAd.query.filter_by(user_id=current_user.id).count()
+    if comments:
+        comment_ids = [comment.id for comment in comments]
+        like_rows = (
+            db.session.query(AdCommentLike.comment_id, db.func.count(AdCommentLike.id))
+            .filter(AdCommentLike.comment_id.in_(comment_ids))
+            .group_by(AdCommentLike.comment_id)
+            .all()
+        )
+        rating_rows = (
+            db.session.query(
+                AdCommentRating.comment_id,
+                db.func.avg(AdCommentRating.rating),
+                db.func.count(AdCommentRating.id),
+            )
+            .filter(AdCommentRating.comment_id.in_(comment_ids))
+            .group_by(AdCommentRating.comment_id)
+            .all()
+        )
+        comment_like_counts = {comment_id: count for comment_id, count in like_rows}
+        comment_rating_stats = {
+            comment_id: {"avg": round(float(avg or 0), 1), "count": count}
+            for comment_id, avg, count in rating_rows
+        }
 
-    features = MEMBERSHIP_UI[lang]["features"] if current_user.role == "free" else None
+    features = MEMBERSHIP_UI[lang]["features"]
 
     return render_template(
         f"{lang}/my_account.html",
@@ -201,6 +227,9 @@ def _handle_account(lang):
         plan_label=plan_label,
         comments=comments,
         features=features,
+        comment_like_counts=comment_like_counts,
+        comment_rating_stats=comment_rating_stats,
+        saved_ads_count=saved_ads_count,
     )
 
 

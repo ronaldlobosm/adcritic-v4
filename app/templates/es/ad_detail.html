@@ -40,7 +40,18 @@
   {{ video_player(ad.video_type, ad.video_value, ad.subtitle_es, ad.subtitle_en, t.title) }}
 
   <div class="detail-body">
-    <h2 class="detail-analysis-label">Análisis</h2>
+    <div class="detail-analysis-head">
+      <h2 class="detail-analysis-label">Análisis</h2>
+      {% if current_user.is_authenticated %}
+        <form method="post" class="save-analysis-form">
+          <input type="hidden" name="_action" value="toggle_save_ad" />
+          <button type="submit" class="save-analysis-btn{% if saved_analysis %} is-saved{% endif %}">
+            {{ 'Guardado' if saved_analysis else 'Guardar análisis' }}
+            <span>{{ saved_count }}</span>
+          </button>
+        </form>
+      {% endif %}
+    </div>
     {% if can_read %}
       <div class="detail-analysis">
         {{ t.analysis_text | safe }}
@@ -124,6 +135,32 @@
                   </p>
                 {% endif %}
                 <p class="comment-body">{{ comment.body }}</p>
+              {% endif %}
+            </div>
+            <div class="comment-community-bar">
+              {% set rating_stat = comment_rating_stats.get(comment.id) %}
+              <span class="comment-rating-average">
+                ★ {{ rating_stat.avg if rating_stat else '—' }}
+                <small>{{ rating_stat.count if rating_stat else 0 }}</small>
+              </span>
+              {% if current_user.is_authenticated %}
+                <form method="post" class="comment-like-form">
+                  <input type="hidden" name="_action" value="toggle_comment_like" />
+                  <input type="hidden" name="comment_id" value="{{ comment.id }}" />
+                  <button type="submit" class="{% if comment.id in liked_comment_ids %}is-liked{% endif %}">
+                    ♥ {{ comment_like_counts.get(comment.id, 0) }}
+                  </button>
+                </form>
+                <form method="post" class="comment-star-form" aria-label="Valorar esta crítica">
+                  <input type="hidden" name="_action" value="rate_comment" />
+                  <input type="hidden" name="comment_id" value="{{ comment.id }}" />
+                  {% set current_rating = rated_comment_values.get(comment.id, 0) %}
+                  {% for value in range(1, 6) %}
+                    <button type="submit" name="rating" value="{{ value }}" class="{% if value <= current_rating %}is-selected{% endif %}">★</button>
+                  {% endfor %}
+                </form>
+              {% else %}
+                <span class="comment-like-count">♥ {{ comment_like_counts.get(comment.id, 0) }}</span>
               {% endif %}
             </div>
           </div>

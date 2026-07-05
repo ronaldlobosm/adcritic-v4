@@ -1,223 +1,245 @@
 {% extends "base.html" %}
-{% block title %}{{ ui.gold_page_title if current_user.role == 'gold' else ui.page_title }} — AdCritic{% endblock %}
+{% block title %}{{ ui.gold_page_title if current_user.role == 'gold' else ui.page_title }} - AdCritic{% endblock %}
 
 {% block content %}
-<div class="container account-layout account-layout--{{ 'gold' if current_user.role == 'gold' else 'free' }}">
-
-  <h1 class="account-title">{{ ui.gold_page_title if current_user.role == 'gold' else ui.page_title }}</h1>
-
-  {# ── Public profile ──────────────────────────────────────────────── #}
-  <div class="account-section account-section--profile">
-    <h2 class="account-section-title">{{ ui.section_profile }}</h2>
-    <form method="post" enctype="multipart/form-data" class="account-form account-profile-form">
-      <input type="hidden" name="_action" value="profile" />
-
-      <div class="account-profile-head">
-        <div class="account-avatar-wrap account-avatar-wrap--{{ 'gold' if current_user.role == 'gold' else 'silver' }}" style="position:relative;display:inline-flex;align-items:center">
-          {% if current_user.avatar_url %}
-            <img src="{{ current_user.avatar_url }}" alt="" class="account-avatar-img" id="avatarPreview" />
-          {% else %}
-            <div class="account-avatar-placeholder" id="avatarPreview">
-              {{ current_user.public_name[0].upper() }}
-            </div>
-          {% endif %}
-          {% if current_user.role == 'gold' %}
-            <span class="account-avatar-tier" aria-label="Gold">Gold</span>
-          {% endif %}
-        </div>
-
-        <div class="account-profile-main">
-          <label class="form-label" for="display_name">
-            {{ ui.label_display_name }}
-            <span class="form-hint">— {{ ui.hint_display_name }}</span>
-          </label>
-          <input class="form-input" type="text" id="display_name" name="display_name"
-                 value="{{ current_user.display_name or '' }}" maxlength="100" />
-          <label class="btn-sm account-photo-btn">
-            Cambiar foto
-            <input type="file" name="avatar_file" id="avatarFileInput"
-                   accept=".jpg,.jpeg,.png" style="display:none"
-                   onchange="previewAvatar(this)" />
-          </label>
-          <p class="form-hint-type">Archivos permitidos: JPG, PNG</p>
-        </div>
-      </div>
-
-      {% if current_user.role == 'gold' %}
-      <div class="form-group">
-        <label class="form-label" for="professional_title">
-          {{ ui.label_professional_title }}
-          <span class="form-hint">— {{ ui.hint_professional_title }}</span>
-        </label>
-        <input class="form-input" type="text" id="professional_title" name="professional_title"
-               value="{{ current_user.professional_title or '' }}" maxlength="140"
-               placeholder="Director creativo, planner, artista, estratega..." />
-      </div>
+{% if current_user.role == 'gold' %}
+{% set member_since = current_user.gold_started_at or current_user.created_at %}
+{% set bio = current_user.bio_es or current_user.bio_en %}
+<div class="gold-profile-page">
+  <section class="gold-profile-hero">
+    <div class="gold-profile-hero__avatar">
+      {% if current_user.avatar_url %}
+        <img src="{{ current_user.avatar_url }}" alt="" id="avatarPreview" />
+      {% else %}
+        <span id="avatarPreview">{{ current_user.public_name[0].upper() }}</span>
       {% endif %}
+    </div>
 
-      <div class="form-group">
-        <label class="form-label" for="bio_es">{{ ui.label_bio_es }}
-          <span class="form-hint">— {{ ui.hint_bio }}</span>
+    <div class="gold-profile-hero__body">
+      <div class="gold-profile-hero__kicker">Perfil Gold AdCritic</div>
+      <h1>{{ current_user.public_name }}</h1>
+      <p class="gold-profile-hero__title">{{ current_user.professional_title or "Crítico publicitario" }}</p>
+      <div class="gold-profile-hero__meta">
+        <span class="gold-profile-badge">Founder Gold</span>
+        <span>Miembro desde {{ format_date(member_since, 'es') }}</span>
+      </div>
+      {% if bio %}
+        <p class="gold-profile-hero__bio">{{ bio }}</p>
+      {% endif %}
+    </div>
+
+    <details class="gold-profile-edit">
+      <summary>Editar perfil</summary>
+      <form method="post" enctype="multipart/form-data" class="gold-profile-edit__panel">
+        <input type="hidden" name="_action" value="profile" />
+        <label>
+          <span>Nombre</span>
+          <input class="form-input" type="text" name="display_name" value="{{ current_user.display_name or '' }}" maxlength="100" />
         </label>
-        <textarea class="form-textarea" id="bio_es" name="bio_es"
-                  rows="3">{{ current_user.bio_es or '' }}</textarea>
-      </div>
+        <label>
+          <span>Cargo profesional</span>
+          <input class="form-input" type="text" name="professional_title" value="{{ current_user.professional_title or '' }}" maxlength="140" />
+        </label>
+        <label>
+          <span>Foto de perfil</span>
+          <input type="file" name="avatar_file" id="avatarFileInput" accept=".jpg,.jpeg,.png" onchange="previewAvatar(this)" />
+        </label>
+        <label>
+          <span>Bio (ES)</span>
+          <textarea class="form-textarea" name="bio_es" rows="3">{{ current_user.bio_es or '' }}</textarea>
+        </label>
+        <label>
+          <span>Bio (EN)</span>
+          <textarea class="form-textarea" name="bio_en" rows="3">{{ current_user.bio_en or '' }}</textarea>
+        </label>
+        <button type="submit" class="gold-profile-button">Guardar perfil</button>
+      </form>
+    </details>
+  </section>
 
-      <div class="form-group">
-        <label class="form-label" for="bio_en">{{ ui.label_bio_en }}</label>
-        <textarea class="form-textarea" id="bio_en" name="bio_en"
-                  rows="3">{{ current_user.bio_en or '' }}</textarea>
-      </div>
+  <nav class="gold-profile-tabs" aria-label="Secciones del perfil Gold">
+    <a href="#overview">Overview</a>
+    <a href="#critiques">Críticas</a>
+    <a href="#activity">Actividad</a>
+    <a href="#membership">Membresía</a>
+    <a href="#settings">Settings</a>
+  </nav>
 
-      <div class="form-actions">
-        <button type="submit" class="auth-btn account-save-btn">
-          {{ ui.btn_save_profile }}
-        </button>
-      </div>
-    </form>
-  </div>
+  <div class="gold-profile-grid" id="overview">
+    <aside class="gold-profile-stack">
+      <section class="gold-profile-panel gold-profile-about">
+        <h2>About</h2>
+        <p>{{ bio or "Añade una biografía breve para presentar tu mirada crítica." }}</p>
+        <dl>
+          <div><dt>Profesión</dt><dd>{{ current_user.professional_title or "Crítico publicitario" }}</dd></div>
+          <div><dt>Idiomas</dt><dd>Español / Inglés</dd></div>
+          <div><dt>Website</dt><dd class="is-muted">Pronto podrás añadir enlaces al perfil.</dd></div>
+        </dl>
+      </section>
 
-  {# ── Info card ───────────────────────────────────────────────────── #}
-  <div class="account-card">
-    <div class="account-row">
-      <span class="account-label">{{ ui.label_email }}</span>
-      <span class="account-value">{{ current_user.email }}</span>
-    </div>
-    <div class="account-row">
-      <span class="account-label">{{ ui.label_role }}</span>
-      <span class="account-value">
-        <span class="role-badge role-badge--{{ current_user.role }}">{{ role_label }}</span>
-      </span>
-    </div>
-  </div>
-
-  {# ── Membership (Gold only) ──────────────────────────────────────── #}
-  {% if current_user.role == 'gold' %}
-  <div class="account-section">
-    <h2 class="account-section-title">{{ ui.section_membership }}</h2>
-    {% if sub_info %}
-      <div class="account-card account-card--gold" style="margin-bottom:0">
-        <div class="account-row">
-          <span class="account-label">{{ ui.label_plan }}</span>
-          <span class="account-value">{{ plan_label }}</span>
+      <section class="gold-profile-panel" id="activity">
+        <div class="gold-profile-section-head">
+          <h2>Actividad reciente</h2>
         </div>
-        <div class="account-row">
-          {% if sub_info.cancel_at_period_end %}
-            <span class="account-label">{{ ui.label_cancels }}</span>
-            <span class="account-value">{{ sub_info.renews_at.strftime('%d/%m/%Y') }}</span>
+        <ol class="gold-profile-timeline">
+          {% if comments %}
+            {% for comment in comments[:4] %}
+              {% set ad = comment.ad %}
+              {% set t = ad.translation('es') if ad else None %}
+              <li>
+                <span class="gold-profile-timeline__icon">C</span>
+                <div>
+                  <strong>Publicó una crítica</strong>
+                  <p>{{ t.title if t else "Anuncio eliminado" }}{% if ad %} - {{ ad.brand }}{% endif %}</p>
+                </div>
+                <time>{{ relative_date(comment.created_at, 'es') }}</time>
+              </li>
+            {% endfor %}
+            {% if saved_ads_count %}
+              <li>
+                <span class="gold-profile-timeline__icon">S</span>
+                <div>
+                  <strong>Análisis guardados</strong>
+                  <p>{{ saved_ads_count }} análisis en tu biblioteca.</p>
+                </div>
+                <time>Actualizado</time>
+              </li>
+            {% endif %}
           {% else %}
-            <span class="account-label">{{ ui.label_renews }}</span>
-            <span class="account-value">{{ sub_info.renews_at.strftime('%d/%m/%Y') }}</span>
+            <li>
+              <span class="gold-profile-timeline__icon">G</span>
+              <div>
+                <strong>Membresía Gold activada</strong>
+                <p>{{ saved_ads_count }} análisis guardados en tu biblioteca.</p>
+              </div>
+              <time>{{ relative_date(member_since, 'es') }}</time>
+            </li>
           {% endif %}
+        </ol>
+      </section>
+    </aside>
+
+    <main class="gold-profile-main">
+      <section class="gold-profile-panel gold-profile-membership" id="membership">
+        <div class="gold-profile-section-head">
+          <h2>Membresía Gold</h2>
+          <span class="gold-profile-label">Founder Member</span>
         </div>
-      </div>
-    {% endif %}
-    <div style="margin-top:1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-      <a href="{{ url_for('membership.membership_portal_es') }}" class="btn-secondary">
-        {{ ui.btn_portal }}
-      </a>
-      <span style="font-size:.85rem;color:var(--color-muted,#666)">{{ ui.portal_note }}</span>
-    </div>
+        <div class="gold-membership-card">
+          <div class="gold-membership-card__summary">
+            <span class="gold-profile-badge">Gold Founder</span>
+            <dl>
+              <div><dt>Plan</dt><dd>{{ plan_label or "Gold" }}</dd></div>
+              <div>
+                <dt>{{ ui.label_cancels if sub_info and sub_info.cancel_at_period_end else ui.label_renews }}</dt>
+                <dd>{{ format_date(sub_info.renews_at, 'es') if sub_info and sub_info.renews_at else "Activa" }}</dd>
+              </div>
+            </dl>
+            <a href="{{ url_for('membership.membership_portal_es') }}" class="gold-profile-button">Gestionar suscripción</a>
+          </div>
+          <div class="gold-membership-card__benefits">
+            <h3>Tus beneficios</h3>
+            <ul>
+              {% for feature in features %}
+                <li>{{ feature }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="gold-profile-panel" id="critiques">
+        <div class="gold-profile-section-head">
+          <h2>Mis críticas</h2>
+          <a href="{{ url_for('main.catalog_es') }}">Explorar catálogo</a>
+        </div>
+        {% if comments %}
+          <div class="gold-critique-list">
+            {% for comment in comments %}
+              {% set ad = comment.ad %}
+              {% set t = ad.translation('es') if ad else None %}
+              <article class="gold-critique-card">
+                <a class="gold-critique-card__thumb" href="{{ url_for('main.ad_detail_es', slug=ad.slug) if ad else '#' }}">
+                  {% if ad and ad.youtube_id %}
+                    <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/hqdefault.jpg" alt="" />
+                  {% else %}
+                    <span>{{ ad.brand[0] if ad else "A" }}</span>
+                  {% endif %}
+                </a>
+                <div>
+                  <p class="gold-profile-label">{{ ad.brand if ad else "AdCritic" }}</p>
+                  <h3>{{ t.title if t else "Anuncio eliminado" }}</h3>
+                  <p>{{ format_date(comment.created_at, 'es') }}</p>
+                </div>
+                <footer>
+                  {% set rating_stat = comment_rating_stats.get(comment.id) %}
+                  <span>{{ comment_like_counts.get(comment.id, 0) }} likes</span>
+                  <span>★ {{ rating_stat.avg if rating_stat else '—' }} / {{ rating_stat.count if rating_stat else 0 }}</span>
+                </footer>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="gold-empty-state">
+            <div class="gold-empty-state__mark">N</div>
+            <h3>Todavía no has publicado críticas.</h3>
+            <p>Comparte tu mirada y ayuda a elevar la conversación de la comunidad.</p>
+            <a href="{{ url_for('main.catalog_es') }}" class="gold-profile-button">Explorar el catálogo</a>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="gold-profile-panel">
+        <div class="gold-profile-section-head">
+          <h2>Reconocimiento</h2>
+        </div>
+        <div class="gold-recognition-grid">
+          <article class="is-earned"><span>F</span><h3>Founder Member</h3><p>Perfil especial para los primeros miembros Gold.</p></article>
+          <article class="{{ 'is-earned' if comments|length > 0 else '' }}"><span>P</span><h3>Professional Critic</h3><p>Publica tu primera crítica.</p></article>
+          <article class="{{ 'is-earned' if comments|length >= 10 else '' }}"><span>T</span><h3>Top Contributor</h3><p>10 críticas publicadas.</p></article>
+          <article><span>A</span><h3>Advertising Historian</h3><p>50 análisis explorados.</p></article>
+        </div>
+      </section>
+
+      <section class="gold-profile-panel gold-profile-settings" id="settings">
+        <div class="gold-profile-section-head">
+          <h2>Settings</h2>
+        </div>
+        <div class="gold-settings-list">
+          <details>
+            <summary>Contraseña</summary>
+            <form method="post" class="account-form account-security-form">
+              <input type="hidden" name="_action" value="password" />
+              <input class="form-input" type="password" name="current_password" placeholder="{{ ui.label_current_pw }}" required />
+              <input class="form-input" type="password" name="new_password" placeholder="{{ ui.label_new_pw }}" required minlength="8" />
+              <input class="form-input" type="password" name="confirm_password" placeholder="{{ ui.label_confirm_pw }}" required minlength="8" />
+              <button type="submit" class="gold-profile-button">{{ ui.btn_change_pw }}</button>
+            </form>
+          </details>
+          <a href="{{ alt_lang_url }}">Idioma <span>Español</span></a>
+          <a href="mailto:hello@adcritic.world">Email <span>{{ current_user.email }}</span></a>
+          <span class="is-danger">Eliminar cuenta</span>
+        </div>
+      </section>
+    </main>
   </div>
-  {% else %}
+</div>
+{% else %}
+<div class="container account-layout account-layout--free">
+  <h1 class="account-title">{{ ui.page_title }}</h1>
+  <div class="account-card">
+    <div class="account-row"><span class="account-label">{{ ui.label_email }}</span><span class="account-value">{{ current_user.email }}</span></div>
+    <div class="account-row"><span class="account-label">{{ ui.label_role }}</span><span class="account-value"><span class="role-badge role-badge--free">{{ role_label }}</span></span></div>
+  </div>
   <div class="account-section">
     <h2 class="account-section-title">{{ ui.section_membership }}</h2>
     <div class="account-card account-card--silver">
       <p style="margin:0 0 1rem;color:var(--color-muted,#666)">{{ ui.no_subscription }}</p>
-      <ul style="list-style:none;padding:0;margin:0 0 1.25rem;display:flex;flex-direction:column;gap:.5rem">
-        {% for feature in features %}
-        <li style="display:flex;align-items:flex-start;gap:.5rem;font-size:.92rem">
-          <span style="color:#9a9a9a;font-weight:700;flex-shrink:0">✓</span>
-          {{ feature }}
-        </li>
-        {% endfor %}
-      </ul>
-      <a href="{{ url_for('membership.membership_es') }}" class="btn-primary" style="display:inline-block">
-        {{ ui.upgrade_link }}
-      </a>
+      <a href="{{ url_for('membership.membership_es') }}" class="btn-primary">{{ ui.upgrade_link }}</a>
     </div>
   </div>
-  {% endif %}
-
-  {% if current_user.role == 'gold' %}
-  <div class="account-section" id="mis-criticas">
-    <h2 class="account-section-title">{{ ui.my_critiques_title }}</h2>
-    <div class="critique-locked critique-locked--intro" style="margin-bottom:1.25rem">
-      <strong>Acceso Gold</strong>
-      <p>
-        {% if current_user.gold_intro_critique_used %}
-          {{ ui.my_critiques_intro_used }}
-        {% else %}
-          {{ ui.my_critiques_intro_available }}
-        {% endif %}
-      </p>
-    </div>
-
-    {% if comments %}
-      <div class="my-critiques-list">
-        {% for comment in comments %}
-          {% set ad = comment.ad %}
-          {% set t = ad.translation('es') if ad else None %}
-          <article class="my-critique-card">
-            <span class="my-critique-card__number">No. {{ "%02d"|format(loop.index) }}</span>
-            <div>
-              <h3>{{ t.title if t else 'Anuncio eliminado' }}</h3>
-              {% if ad %}
-                <p>{{ ad.brand }} · {{ format_date(comment.created_at, 'es') }}</p>
-              {% endif %}
-            </div>
-            <div class="my-critique-card__ratings">
-              {% for value in [comment.rating_music, comment.rating_art_direction, comment.rating_copywriting, comment.rating_strategy] %}
-                {% if value %}<span>{{ value }}</span>{% endif %}
-              {% endfor %}
-            </div>
-            {% if ad %}
-              <a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}#comentarios" class="btn-secondary">
-                {{ ui.view_critique }}
-              </a>
-            {% endif %}
-          </article>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="comments-empty">{{ ui.my_critiques_empty }}</p>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  {# ── Security ────────────────────────────────────────────────────── #}
-  <div class="account-section account-section--soon">
-    <h2 class="account-section-title">{{ ui.section_security }}</h2>
-    <details class="account-security-details">
-      <summary>{{ ui.section_password }}</summary>
-      <form method="post" class="account-form account-security-form">
-        <input type="hidden" name="_action" value="password" />
-        <div class="form-group">
-          <label class="form-label" for="current_password">{{ ui.label_current_pw }}</label>
-          <input class="form-input" type="password" id="current_password"
-                 name="current_password" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="new_password">{{ ui.label_new_pw }}</label>
-          <input class="form-input" type="password" id="new_password"
-                 name="new_password" required minlength="8" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="confirm_password">{{ ui.label_confirm_pw }}</label>
-          <input class="form-input" type="password" id="confirm_password"
-                 name="confirm_password" required minlength="8" />
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="auth-btn account-save-btn">
-            {{ ui.btn_change_pw }}
-          </button>
-        </div>
-      </form>
-    </details>
-    <p class="text-muted account-security-note">{{ ui.security_soon }}</p>
-  </div>
-
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -228,13 +250,11 @@ function previewAvatar(input) {
   reader.onload = function(e) {
     var prev = document.getElementById('avatarPreview');
     if (!prev) return;
-    // Replace placeholder div with img, or update src
     if (prev.tagName === 'IMG') {
       prev.src = e.target.result;
     } else {
       var img = document.createElement('img');
       img.src = e.target.result;
-      img.className = 'account-avatar-img';
       img.id = 'avatarPreview';
       prev.parentNode.replaceChild(img, prev);
     }

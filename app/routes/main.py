@@ -4,7 +4,18 @@ import random
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import current_user
 from app import db
-from app.models import Ad, AdTranslation, AdComment, Category, NewsletterSubscriber, Post, PostTranslation
+from app.models import (
+    Ad,
+    AdComment,
+    AdCommentLike,
+    AdCommentRating,
+    AdTranslation,
+    Category,
+    NewsletterSubscriber,
+    Post,
+    PostTranslation,
+    SavedAd,
+)
 from app.countries import COUNTRIES, country_name, countries_sorted
 from app.utils import can_read_ad_analysis, can_comment_on_ad
 from app.translation import language_name, translate_text
@@ -274,6 +285,55 @@ def _handle_ad_detail(lang, slug):
     alt_route    = f"main.ad_detail_{alt_lang}"
 
     if request.method == "POST":
+        action = request.form.get("_action", "")
+        if action == "toggle_comment_like":
+            if not current_user.is_authenticated:
+                abort(403)
+            comment_id = request.form.get("comment_id", type=int)
+            comment = AdComment.query.filter_by(id=comment_id, ad_id=ad.id, status="approved").first_or_404()
+            existing_like = AdCommentLike.query.filter_by(
+                comment_id=comment.id, user_id=current_user.id
+            ).first()
+            if existing_like:
+                db.session.delete(existing_like)
+            else:
+                db.session.add(AdCommentLike(comment_id=comment.id, user_id=current_user.id))
+            db.session.commit()
+            return redirect(url_for(detail_route, slug=slug) + "#comentarios")
+
+        if action == "rate_comment":
+            if not current_user.is_authenticated:
+                abort(403)
+            comment_id = request.form.get("comment_id", type=int)
+            rating = request.form.get("rating", type=int)
+            if rating is None or rating < 1 or rating > 5:
+                abort(400)
+            comment = AdComment.query.filter_by(id=comment_id, ad_id=ad.id, status="approved").first_or_404()
+            existing_rating = AdCommentRating.query.filter_by(
+                comment_id=comment.id, user_id=current_user.id
+            ).first()
+            if existing_rating:
+                existing_rating.rating = rating
+            else:
+                db.session.add(AdCommentRating(
+                    comment_id=comment.id,
+                    user_id=current_user.id,
+                    rating=rating,
+                ))
+            db.session.commit()
+            return redirect(url_for(detail_route, slug=slug) + "#comentarios")
+
+        if action == "toggle_save_ad":
+            if not current_user.is_authenticated:
+                abort(403)
+            existing_save = SavedAd.query.filter_by(ad_id=ad.id, user_id=current_user.id).first()
+            if existing_save:
+                db.session.delete(existing_save)
+            else:
+                db.session.add(SavedAd(ad_id=ad.id, user_id=current_user.id))
+            db.session.commit()
+            return redirect(url_for(detail_route, slug=slug))
+
         if "body" in request.form:
             # Comment submission
             if not can_comment or not can_submit_critique:
@@ -318,6 +378,54 @@ def _handle_ad_detail(lang, slug):
             return redirect(url_for(detail_route, slug=slug))
 
     comments = ad.comments.filter_by(status="approved").all()
+    comment_like_counts = {}
+    comment_rating_stats = {}
+    liked_comment_ids = set()
+    rated_comment_values = {}
+    saved_analysis = False
+    saved_count = SavedAd.query.filter_by(ad_id=ad.id).count()
+    if comments:
+        comment_ids = [comment.id for comment in comments]
+        like_rows = (
+            db.session.query(AdCommentLike.comment_id, db.func.count(AdCommentLike.id))
+            .filter(AdCommentLike.comment_id.in_(comment_ids))
+            .group_by(AdCommentLike.comment_id)
+            .all()
+        )
+        rating_rows = (
+            db.session.query(
+                AdCommentRating.comment_id,
+                db.func.avg(AdCommentRating.rating),
+                db.func.count(AdCommentRating.id),
+            )
+            .filter(AdCommentRating.comment_id.in_(comment_ids))
+            .group_by(AdCommentRating.comment_id)
+            .all()
+        )
+        comment_like_counts = {comment_id: count for comment_id, count in like_rows}
+        comment_rating_stats = {
+            comment_id: {"avg": round(float(avg or 0), 1), "count": count}
+            for comment_id, avg, count in rating_rows
+        }
+        if current_user.is_authenticated:
+            liked_comment_ids = {
+                row.comment_id for row in AdCommentLike.query
+                .filter(
+                    AdCommentLike.user_id == current_user.id,
+                    AdCommentLike.comment_id.in_(comment_ids),
+                )
+                .all()
+            }
+            rated_comment_values = {
+                row.comment_id: row.rating for row in AdCommentRating.query
+                .filter(
+                    AdCommentRating.user_id == current_user.id,
+                    AdCommentRating.comment_id.in_(comment_ids),
+                )
+                .all()
+            }
+    if current_user.is_authenticated:
+        saved_analysis = SavedAd.query.filter_by(ad_id=ad.id, user_id=current_user.id).first() is not None
 
     return render_template(
         f"{lang}/ad_detail.html",
@@ -335,6 +443,12 @@ def _handle_ad_detail(lang, slug):
         can_submit_critique=can_submit_critique,
         uses_intro_critique=uses_intro_critique,
         critique_block_reason=critique_block_reason,
+        comment_like_counts=comment_like_counts,
+        comment_rating_stats=comment_rating_stats,
+        liked_comment_ids=liked_comment_ids,
+        rated_comment_values=rated_comment_values,
+        saved_analysis=saved_analysis,
+        saved_count=saved_count,
     )
 
 
