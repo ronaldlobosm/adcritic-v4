@@ -200,24 +200,25 @@
           </a>
         </nav>
         {% set is_membership_page = request.endpoint in ['membership.membership_es', 'membership.membership_en'] %}
-        {% set is_front_page = request.endpoint in ['main.gallery_es', 'main.gallery_en'] %}
         {% if is_membership_page %}
           <a class="footer-member-badge footer-member-badge--gold"
              href="{{ url_for('membership.membership_es') if lang == 'es' else url_for('membership.membership_en') }}">
             Gold Member
           </a>
-        {% elif current_user.is_authenticated and not is_front_page %}
-          {% if current_user.role == 'gold' %}
-            <a class="footer-member-badge footer-member-badge--gold"
-               href="{{ url_for('account.my_account_es') if lang == 'es' else url_for('account.my_account_en') }}">
-              Gold Member
-            </a>
-          {% else %}
-            <a class="footer-member-badge footer-member-badge--free"
-               href="{{ url_for('account.my_account_es') if lang == 'es' else url_for('account.my_account_en') }}">
-              Free Member
-            </a>
-          {% endif %}
+        {% elif current_user.is_authenticated %}
+          {% set footer_role_labels = {
+            'admin': 'Admin',
+            'editor': 'Editor',
+            'approver': 'Reviewer',
+            'advertiser': 'Advertiser',
+            'gold': 'Gold Member',
+            'free': 'Free Member'
+          } %}
+          {% set footer_role_class = 'gold' if current_user.role == 'gold' else current_user.role %}
+          <a class="footer-member-badge footer-member-badge--{{ footer_role_class }}"
+             href="{{ url_for('account.my_account_es') if lang == 'es' else url_for('account.my_account_en') }}">
+            {{ footer_role_labels.get(current_user.role, 'Free Member') }}
+          </a>
         {% endif %}
       </div>
 
