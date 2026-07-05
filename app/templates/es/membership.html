@@ -31,19 +31,11 @@
       {% set founder_total_display = founder_total|default(1000) %}
       {% set founder_claimed_display = founder_claimed|default(0) %}
       {% set founder_left_display = founder_total_display - founder_claimed_display %}
-      <div class="founder-callout">
-        <div class="founder-callout__logo">
-          <span class="founder-crest" aria-hidden="true">
-            <img class="founder-crest__image"
-                 src="{{ founder_shield_url }}"
-                 alt="">
-          </span>
-          <span>{{ ui.plan_founder_badge }}</span>
-        </div>
-        <div class="founder-callout__copy">
-          {{ ui.founder_note.replace('{n}', founder_total_display|string).replace('{left}', founder_left_display|string) }}
-        </div>
-      </div>
+      <span class="founder-callout-wrap">
+        <img class="founder-callout"
+             src="{{ founder_shield_url }}"
+             alt="{{ ui.plan_founder_badge }} — {{ ui.founder_note.replace('{n}', founder_total_display|string).replace('{left}', founder_left_display|string) }}">
+      </span>
     {% endif %}
   </div>
 </div>
@@ -78,7 +70,7 @@
       <div class="membership-card" style="border:2px solid var(--color-border,#e5e5e0);border-radius:1rem;padding:2rem;display:flex;flex-direction:column;background:#f5f0e8">
         <div class="membership-plan-kicker" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-muted,#666);margin-bottom:.75rem">
           {{ ui.plan_monthly }}
-          {% if founder %}<span class="founder-tag"><img class="founder-tag__icon" src="{{ founder_shield_url }}" alt="" aria-hidden="true">{{ ui.plan_founder_badge }}</span>{% endif %}
+          {% if founder %}<span class="founder-tag">{{ ui.plan_founder_badge }}</span>{% endif %}
         </div>
         <div class="membership-plan-price" style="font-size:3rem;font-weight:900;font-family:'Playfair Display',serif;line-height:1">
           ${{ monthly_amount }}
@@ -115,7 +107,7 @@
         </div>
         <div class="membership-plan-kicker" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-muted,#666);margin-bottom:.75rem">
           {{ ui.plan_yearly }}
-          {% if founder %}<span class="founder-tag"><img class="founder-tag__icon" src="{{ founder_shield_url }}" alt="" aria-hidden="true">{{ ui.plan_founder_badge }}</span>{% endif %}
+          {% if founder %}<span class="founder-tag">{{ ui.plan_founder_badge }}</span>{% endif %}
         </div>
         <div class="membership-plan-price" style="font-size:3rem;font-weight:900;font-family:'Playfair Display',serif;line-height:1">
           ${{ yearly_amount }}

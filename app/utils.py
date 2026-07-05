@@ -41,7 +41,7 @@ def can_comment_on_ad():
 # ---------------------------------------------------------------------------
 
 ALLOWED_EXTENSIONS = {
-    "image":    {".jpg", ".jpeg", ".png"},
+    "image":    {".jpg", ".jpeg", ".png", ".gif"},
     "video":    {".mp4", ".webm", ".mov", ".avi", ".mkv"},
     "subtitle": {".vtt", ".srt"},
 }
@@ -137,22 +137,21 @@ def delete_remote_media_file(media_file):
 def _optimize_image(save_path):
     """
     - Resize to max 1920px wide (keep aspect ratio)
-    - Convert to JPEG (composite alpha on white if needed)
+    - Keep transparent PNGs as PNG
+    - Convert other images to JPEG
     - Save at quality 82 (in-place, may change extension to .jpg)
-    - Generate 400px-wide thumbnail (_thumb.jpg)
+    - Generate 400px-wide thumbnail
     Returns (new_filename, thumb_filename) — new_filename may differ if ext changed.
     """
     from PIL import Image
 
     with Image.open(save_path) as img:
-        # Flatten transparency onto white
-        if img.mode in ("RGBA", "LA", "P"):
-            bg = Image.new("RGB", img.size, (255, 255, 255))
-            if img.mode == "P":
-                img = img.convert("RGBA")
-            mask = img.split()[-1] if img.mode in ("RGBA", "LA") else None
-            bg.paste(img, mask=mask)
-            img = bg
+        has_alpha = (
+            img.mode in ("RGBA", "LA")
+            or (img.mode == "P" and "transparency" in img.info)
+        )
+        if has_alpha:
+            img = img.convert("RGBA")
         elif img.mode != "RGB":
             img = img.convert("RGB")
 
@@ -162,10 +161,14 @@ def _optimize_image(save_path):
             img = img.resize((1920, new_h), Image.LANCZOS)
             w, h = img.size
 
-        # Always save as JPEG; rename if original ext was .png
-        jpg_path = os.path.splitext(save_path)[0] + ".jpg"
-        img.save(jpg_path, format="JPEG", quality=82, optimize=True)
-        if save_path != jpg_path:
+        if has_alpha:
+            optimized_path = os.path.splitext(save_path)[0] + ".png"
+            img.save(optimized_path, format="PNG", optimize=True)
+        else:
+            optimized_path = os.path.splitext(save_path)[0] + ".jpg"
+            img.save(optimized_path, format="JPEG", quality=82, optimize=True)
+
+        if save_path != optimized_path:
             try:
                 os.remove(save_path)
             except OSError:
@@ -176,12 +179,17 @@ def _optimize_image(save_path):
         thumb_h = int(h * thumb_w / w)
         img_thumb = img.resize((thumb_w, thumb_h), Image.LANCZOS)
 
-        base = os.path.splitext(os.path.basename(jpg_path))[0]
-        thumb_name = base + "_thumb.jpg"
-        thumb_path = os.path.join(os.path.dirname(jpg_path), thumb_name)
-        img_thumb.save(thumb_path, format="JPEG", quality=78, optimize=True)
+        base = os.path.splitext(os.path.basename(optimized_path))[0]
+        if has_alpha:
+            thumb_name = base + "_thumb.png"
+            thumb_path = os.path.join(os.path.dirname(optimized_path), thumb_name)
+            img_thumb.save(thumb_path, format="PNG", optimize=True)
+        else:
+            thumb_name = base + "_thumb.jpg"
+            thumb_path = os.path.join(os.path.dirname(optimized_path), thumb_name)
+            img_thumb.save(thumb_path, format="JPEG", quality=78, optimize=True)
 
-    return os.path.basename(jpg_path), thumb_name
+    return os.path.basename(optimized_path), thumb_name
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +299,7 @@ def save_upload_file(file_storage, allowed_types=None, uploader_id=None):
 
     thumbnail = None
 
-    if file_type == "image":
+    if file_type == "image" and ext != ".gif":
         try:
             unique_name, thumbnail = _optimize_image(save_path)
             save_path = os.path.join(save_dir, unique_name)
