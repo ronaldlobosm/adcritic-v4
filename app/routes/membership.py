@@ -30,7 +30,7 @@ DEFAULT_MEMBERSHIP_HERO_IMAGE_URL = (
 )
 DEFAULT_FOUNDER_SHIELD_IMAGE_URL = (
     "https://res.cloudinary.com/dslebikvo/image/upload/v1783213240/"
-    "adcritic/images/zxhegdagsgxjq4htat9o.jpg"
+    "adcritic/images/zxhegdagsgxjq4htat9o.png"
 )
 
 
