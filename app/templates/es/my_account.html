@@ -58,11 +58,11 @@
   </section>
 
   <nav class="gold-profile-tabs" aria-label="Secciones del perfil Gold">
-    <a href="#overview">Overview</a>
-    <a href="#critiques">Críticas</a>
-    <a href="#activity">Actividad</a>
-    <a href="#membership">Membresía</a>
-    <a href="#settings">Settings</a>
+    <a href="#overview" data-profile-tab="overview" class="is-active">Overview</a>
+    <a href="#critiques" data-profile-tab="critiques">Críticas</a>
+    <a href="#activity" data-profile-tab="activity">Actividad</a>
+    <a href="#membership" data-profile-tab="membership">Membresía</a>
+    <a href="#settings" data-profile-tab="settings">Settings</a>
   </nav>
 
   <div class="gold-profile-grid" id="overview">
@@ -120,7 +120,50 @@
     </aside>
 
     <main class="gold-profile-main">
-      <section class="gold-profile-panel gold-profile-membership" id="membership">
+      <section class="gold-profile-view is-active" data-profile-view="overview">
+        <section class="gold-profile-panel gold-profile-membership">
+          <div class="gold-profile-section-head">
+            <h2>Membresía Gold</h2>
+            <span class="gold-profile-label">Founder Member</span>
+          </div>
+          <div class="gold-membership-card">
+            <div class="gold-membership-card__summary">
+              <span class="gold-profile-badge">Gold Founder</span>
+              <dl>
+                <div><dt>Plan</dt><dd>{{ plan_label or "Gold" }}</dd></div>
+                <div>
+                  <dt>{{ ui.label_cancels if sub_info and sub_info.cancel_at_period_end else ui.label_renews }}</dt>
+                  <dd>{{ format_date(sub_info.renews_at, 'es') if sub_info and sub_info.renews_at else "Activa" }}</dd>
+                </div>
+              </dl>
+              <a href="{{ url_for('membership.membership_portal_es') }}" class="gold-profile-button">Gestionar suscripción</a>
+            </div>
+            <div class="gold-membership-card__benefits">
+              <h3>Tus beneficios</h3>
+              <ul>
+                {% for feature in features %}
+                  <li>{{ feature }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="gold-profile-panel">
+          <div class="gold-profile-section-head">
+            <h2>Reconocimiento</h2>
+          </div>
+          <div class="gold-recognition-grid">
+            <article class="is-earned"><span>F</span><h3>Founder Member</h3><p>Perfil especial para los primeros miembros Gold.</p></article>
+            <article class="{{ 'is-earned' if comments|length > 0 else '' }}"><span>P</span><h3>Professional Critic</h3><p>Publica tu primera crítica.</p></article>
+            <article class="{{ 'is-earned' if comments|length >= 10 else '' }}"><span>T</span><h3>Top Contributor</h3><p>10 críticas publicadas.</p></article>
+            <article><span>A</span><h3>Advertising Historian</h3><p>50 análisis explorados.</p></article>
+          </div>
+        </section>
+      </section>
+
+      <section class="gold-profile-view" data-profile-view="membership">
+      <section class="gold-profile-panel gold-profile-membership">
         <div class="gold-profile-section-head">
           <h2>Membresía Gold</h2>
           <span class="gold-profile-label">Founder Member</span>
@@ -147,8 +190,10 @@
           </div>
         </div>
       </section>
+      </section>
 
-      <section class="gold-profile-panel" id="critiques">
+      <section class="gold-profile-view" data-profile-view="critiques">
+      <section class="gold-profile-panel">
         <div class="gold-profile-section-head">
           <h2>Mis críticas</h2>
           <a href="{{ url_for('main.catalog_es') }}">Explorar catálogo</a>
@@ -188,20 +233,42 @@
           </div>
         {% endif %}
       </section>
-
-      <section class="gold-profile-panel">
-        <div class="gold-profile-section-head">
-          <h2>Reconocimiento</h2>
-        </div>
-        <div class="gold-recognition-grid">
-          <article class="is-earned"><span>F</span><h3>Founder Member</h3><p>Perfil especial para los primeros miembros Gold.</p></article>
-          <article class="{{ 'is-earned' if comments|length > 0 else '' }}"><span>P</span><h3>Professional Critic</h3><p>Publica tu primera crítica.</p></article>
-          <article class="{{ 'is-earned' if comments|length >= 10 else '' }}"><span>T</span><h3>Top Contributor</h3><p>10 críticas publicadas.</p></article>
-          <article><span>A</span><h3>Advertising Historian</h3><p>50 análisis explorados.</p></article>
-        </div>
       </section>
 
-      <section class="gold-profile-panel gold-profile-settings" id="settings">
+      <section class="gold-profile-view" data-profile-view="activity">
+      <section class="gold-profile-panel">
+        <div class="gold-profile-section-head">
+          <h2>Actividad</h2>
+        </div>
+        <ol class="gold-profile-timeline gold-profile-timeline--wide">
+          {% if comments %}
+            {% for comment in comments %}
+              {% set ad = comment.ad %}
+              {% set t = ad.translation('es') if ad else None %}
+              <li>
+                <span class="gold-profile-timeline__icon">C</span>
+                <div>
+                  <strong>Publicó una crítica</strong>
+                  <p>{{ t.title if t else "Anuncio eliminado" }}{% if ad %} - {{ ad.brand }}{% endif %}</p>
+                </div>
+                <time>{{ relative_date(comment.created_at, 'es') }}</time>
+              </li>
+            {% endfor %}
+          {% endif %}
+          <li>
+            <span class="gold-profile-timeline__icon">S</span>
+            <div>
+              <strong>Análisis guardados</strong>
+              <p>{{ saved_ads_count }} análisis en tu biblioteca.</p>
+            </div>
+            <time>Actualizado</time>
+          </li>
+        </ol>
+      </section>
+      </section>
+
+      <section class="gold-profile-view" data-profile-view="settings">
+      <section class="gold-profile-panel gold-profile-settings">
         <div class="gold-profile-section-head">
           <h2>Settings</h2>
         </div>
@@ -220,6 +287,16 @@
           <a href="mailto:hello@adcritic.world">Email <span>{{ current_user.email }}</span></a>
           <span class="is-danger">Eliminar cuenta</span>
         </div>
+        <div class="gold-connected-accounts">
+          <h3>Cuentas conectadas</h3>
+          <p>Prepara acceso con Apple, Google/Gmail y Facebook.</p>
+          <div class="gold-social-login-grid">
+            <button type="button" disabled>Apple</button>
+            <button type="button" disabled>Google / Gmail</button>
+            <button type="button" disabled>Facebook</button>
+          </div>
+        </div>
+      </section>
       </section>
     </main>
   </div>
@@ -261,5 +338,23 @@ function previewAvatar(input) {
   };
   reader.readAsDataURL(input.files[0]);
 }
+
+document.querySelectorAll('[data-profile-tab]').forEach(function(tab) {
+  tab.addEventListener('click', function(event) {
+    event.preventDefault();
+    var target = tab.getAttribute('data-profile-tab');
+    document.querySelectorAll('[data-profile-tab]').forEach(function(item) {
+      item.classList.toggle('is-active', item === tab);
+    });
+    document.querySelectorAll('[data-profile-view]').forEach(function(view) {
+      view.classList.toggle('is-active', view.getAttribute('data-profile-view') === target);
+    });
+    if (history.replaceState) history.replaceState(null, '', '#' + target);
+  });
+});
+
+var initialProfileTab = window.location.hash.replace('#', '');
+var initialProfileLink = initialProfileTab && document.querySelector('[data-profile-tab="' + initialProfileTab + '"]');
+if (initialProfileLink) initialProfileLink.click();
 </script>
 {% endblock %}
