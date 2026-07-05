@@ -189,6 +189,8 @@ def _handle_account(lang):
             .all()
         )
 
+    features = MEMBERSHIP_UI[lang]["features"] if current_user.role == "free" else None
+
     return render_template(
         f"{lang}/my_account.html",
         lang=lang,
@@ -198,6 +200,7 @@ def _handle_account(lang):
         sub_info=sub_info,
         plan_label=plan_label,
         comments=comments,
+        features=features,
     )
 
 

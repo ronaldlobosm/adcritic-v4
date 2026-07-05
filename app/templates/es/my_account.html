@@ -2,9 +2,80 @@
 {% block title %}{{ ui.gold_page_title if current_user.role == 'gold' else ui.page_title }} — AdCritic{% endblock %}
 
 {% block content %}
-<div class="container account-layout">
+<div class="container account-layout account-layout--{{ 'gold' if current_user.role == 'gold' else 'free' }}">
 
   <h1 class="account-title">{{ ui.gold_page_title if current_user.role == 'gold' else ui.page_title }}</h1>
+
+  {# ── Public profile ──────────────────────────────────────────────── #}
+  <div class="account-section account-section--profile">
+    <h2 class="account-section-title">{{ ui.section_profile }}</h2>
+    <form method="post" enctype="multipart/form-data" class="account-form account-profile-form">
+      <input type="hidden" name="_action" value="profile" />
+
+      <div class="account-profile-head">
+        <div class="account-avatar-wrap account-avatar-wrap--{{ 'gold' if current_user.role == 'gold' else 'silver' }}" style="position:relative;display:inline-flex;align-items:center">
+          {% if current_user.avatar_url %}
+            <img src="{{ current_user.avatar_url }}" alt="" class="account-avatar-img" id="avatarPreview" />
+          {% else %}
+            <div class="account-avatar-placeholder" id="avatarPreview">
+              {{ current_user.public_name[0].upper() }}
+            </div>
+          {% endif %}
+          {% if current_user.role == 'gold' %}
+            <span class="account-avatar-tier" aria-label="Gold">Gold</span>
+          {% endif %}
+        </div>
+
+        <div class="account-profile-main">
+          <label class="form-label" for="display_name">
+            {{ ui.label_display_name }}
+            <span class="form-hint">— {{ ui.hint_display_name }}</span>
+          </label>
+          <input class="form-input" type="text" id="display_name" name="display_name"
+                 value="{{ current_user.display_name or '' }}" maxlength="100" />
+          <label class="btn-sm account-photo-btn">
+            Cambiar foto
+            <input type="file" name="avatar_file" id="avatarFileInput"
+                   accept=".jpg,.jpeg,.png" style="display:none"
+                   onchange="previewAvatar(this)" />
+          </label>
+          <p class="form-hint-type">Archivos permitidos: JPG, PNG</p>
+        </div>
+      </div>
+
+      {% if current_user.role == 'gold' %}
+      <div class="form-group">
+        <label class="form-label" for="professional_title">
+          {{ ui.label_professional_title }}
+          <span class="form-hint">— {{ ui.hint_professional_title }}</span>
+        </label>
+        <input class="form-input" type="text" id="professional_title" name="professional_title"
+               value="{{ current_user.professional_title or '' }}" maxlength="140"
+               placeholder="Director creativo, planner, artista, estratega..." />
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label" for="bio_es">{{ ui.label_bio_es }}
+          <span class="form-hint">— {{ ui.hint_bio }}</span>
+        </label>
+        <textarea class="form-textarea" id="bio_es" name="bio_es"
+                  rows="3">{{ current_user.bio_es or '' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="bio_en">{{ ui.label_bio_en }}</label>
+        <textarea class="form-textarea" id="bio_en" name="bio_en"
+                  rows="3">{{ current_user.bio_en or '' }}</textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="auth-btn account-save-btn">
+          {{ ui.btn_save_profile }}
+        </button>
+      </div>
+    </form>
+  </div>
 
   {# ── Info card ───────────────────────────────────────────────────── #}
   <div class="account-card">
@@ -25,7 +96,7 @@
   <div class="account-section">
     <h2 class="account-section-title">{{ ui.section_membership }}</h2>
     {% if sub_info %}
-      <div class="account-card" style="margin-bottom:0">
+      <div class="account-card account-card--gold" style="margin-bottom:0">
         <div class="account-row">
           <span class="account-label">{{ ui.label_plan }}</span>
           <span class="account-value">{{ plan_label }}</span>
@@ -46,6 +117,24 @@
         {{ ui.btn_portal }}
       </a>
       <span style="font-size:.85rem;color:var(--color-muted,#666)">{{ ui.portal_note }}</span>
+    </div>
+  </div>
+  {% else %}
+  <div class="account-section">
+    <h2 class="account-section-title">{{ ui.section_membership }}</h2>
+    <div class="account-card account-card--silver">
+      <p style="margin:0 0 1rem;color:var(--color-muted,#666)">{{ ui.no_subscription }}</p>
+      <ul style="list-style:none;padding:0;margin:0 0 1.25rem;display:flex;flex-direction:column;gap:.5rem">
+        {% for feature in features %}
+        <li style="display:flex;align-items:flex-start;gap:.5rem;font-size:.92rem">
+          <span style="color:#9a9a9a;font-weight:700;flex-shrink:0">✓</span>
+          {{ feature }}
+        </li>
+        {% endfor %}
+      </ul>
+      <a href="{{ url_for('membership.membership_es') }}" class="btn-primary" style="display:inline-block">
+        {{ ui.upgrade_link }}
+      </a>
     </div>
   </div>
   {% endif %}
@@ -96,113 +185,36 @@
   </div>
   {% endif %}
 
-  {# ── Public profile ──────────────────────────────────────────────── #}
-  <div class="account-section">
-    <h2 class="account-section-title">{{ ui.section_profile }}</h2>
-    <form method="post" enctype="multipart/form-data" class="account-form">
-      <input type="hidden" name="_action" value="profile" />
-
-      {# Avatar #}
-      <div class="form-group" style="margin-bottom:1.25rem">
-        <label class="form-label">{{ ui.label_avatar }}</label>
-        <div class="account-avatar-wrap" style="position:relative;display:inline-flex;align-items:center">
-          {% if current_user.avatar_url %}
-            <img src="{{ current_user.avatar_url }}" alt="" class="account-avatar-img" id="avatarPreview" />
-          {% else %}
-            <div class="account-avatar-placeholder" id="avatarPreview">
-              {{ current_user.public_name[0].upper() }}
-            </div>
-          {% endif %}
-          {% if current_user.role == 'gold' %}
-            <span aria-label="Gold" style="position:absolute;bottom:-2px;right:1.25rem;font-size:.9rem;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))">👑</span>
-          {% endif %}
-          <label class="btn-sm" style="cursor:pointer;margin-left:1rem">
-            Cambiar foto
-            <input type="file" name="avatar_file" id="avatarFileInput"
-                   accept=".jpg,.jpeg,.png" style="display:none"
-                   onchange="previewAvatar(this)" />
-          </label>
-        </div>
-        <p class="form-hint-type">Archivos permitidos: JPG, PNG</p>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="display_name">
-          {{ ui.label_display_name }}
-          <span class="form-hint">— {{ ui.hint_display_name }}</span>
-        </label>
-        <input class="form-input" type="text" id="display_name" name="display_name"
-               value="{{ current_user.display_name or '' }}" maxlength="100"
-               style="max-width:320px" />
-      </div>
-
-      {% if current_user.role == 'gold' %}
-      <div class="form-group" style="margin-top:1rem">
-        <label class="form-label" for="professional_title">
-          {{ ui.label_professional_title }}
-          <span class="form-hint">— {{ ui.hint_professional_title }}</span>
-        </label>
-        <input class="form-input" type="text" id="professional_title" name="professional_title"
-               value="{{ current_user.professional_title or '' }}" maxlength="140"
-               placeholder="Director creativo, planner, artista, estratega..."
-               style="max-width:420px" />
-      </div>
-      {% endif %}
-
-      <div class="form-group" style="margin-top:1rem">
-        <label class="form-label" for="bio_es">{{ ui.label_bio_es }}
-          <span class="form-hint">— {{ ui.hint_bio }}</span>
-        </label>
-        <textarea class="form-textarea" id="bio_es" name="bio_es"
-                  rows="3">{{ current_user.bio_es or '' }}</textarea>
-      </div>
-
-      <div class="form-group" style="margin-top:1rem">
-        <label class="form-label" for="bio_en">{{ ui.label_bio_en }}</label>
-        <textarea class="form-textarea" id="bio_en" name="bio_en"
-                  rows="3">{{ current_user.bio_en or '' }}</textarea>
-      </div>
-
-      <div class="form-actions" style="margin-top:1.25rem">
-        <button type="submit" class="auth-btn" style="font-size:.95rem;padding:.6rem 1.25rem">
-          {{ ui.btn_save_profile }}
-        </button>
-      </div>
-    </form>
-  </div>
-
-  {# ── Change password ─────────────────────────────────────────────── #}
-  <div class="account-section">
-    <h2 class="account-section-title">{{ ui.section_password }}</h2>
-    <form method="post" class="account-form">
-      <input type="hidden" name="_action" value="password" />
-      <div class="form-group">
-        <label class="form-label" for="current_password">{{ ui.label_current_pw }}</label>
-        <input class="form-input" type="password" id="current_password"
-               name="current_password" required />
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="new_password">{{ ui.label_new_pw }}</label>
-        <input class="form-input" type="password" id="new_password"
-               name="new_password" required minlength="8" />
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="confirm_password">{{ ui.label_confirm_pw }}</label>
-        <input class="form-input" type="password" id="confirm_password"
-               name="confirm_password" required minlength="8" />
-      </div>
-      <div class="form-actions" style="margin-top:1.25rem">
-        <button type="submit" class="auth-btn" style="font-size:.95rem;padding:.6rem 1.25rem">
-          {{ ui.btn_change_pw }}
-        </button>
-      </div>
-    </form>
-  </div>
-
-  {# ── Security (placeholder) ──────────────────────────────────────── #}
+  {# ── Security ────────────────────────────────────────────────────── #}
   <div class="account-section account-section--soon">
     <h2 class="account-section-title">{{ ui.section_security }}</h2>
-    <p class="text-muted" style="font-size:.9rem">🔒 {{ ui.security_soon }}</p>
+    <details class="account-security-details">
+      <summary>{{ ui.section_password }}</summary>
+      <form method="post" class="account-form account-security-form">
+        <input type="hidden" name="_action" value="password" />
+        <div class="form-group">
+          <label class="form-label" for="current_password">{{ ui.label_current_pw }}</label>
+          <input class="form-input" type="password" id="current_password"
+                 name="current_password" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new_password">{{ ui.label_new_pw }}</label>
+          <input class="form-input" type="password" id="new_password"
+                 name="new_password" required minlength="8" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">{{ ui.label_confirm_pw }}</label>
+          <input class="form-input" type="password" id="confirm_password"
+                 name="confirm_password" required minlength="8" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="auth-btn account-save-btn">
+            {{ ui.btn_change_pw }}
+          </button>
+        </div>
+      </form>
+    </details>
+    <p class="text-muted account-security-note">{{ ui.security_soon }}</p>
   </div>
 
 </div>

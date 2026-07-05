@@ -15,6 +15,7 @@ from flask_login import login_required, current_user
 
 from app import db
 from app.models import AdComment, User
+from app.email import send_gold_welcome_email, send_refund_notice_email
 
 membership_bp = Blueprint("membership", __name__)
 
@@ -491,6 +492,10 @@ def stripe_webhook():
             f"Stripe invoice payment failed for customer {customer_id}"
         )
 
+    # ── charge.refunded → neutral notice email (does not change membership) ──
+    elif etype == "charge.refunded":
+        _handle_charge_refunded(data)
+
     return {"status": "ok"}, 200
 
 
@@ -606,6 +611,8 @@ def _handle_checkout_completed(session):
         except stripe.StripeError as e:
             current_app.logger.error(f"Could not retrieve subscription: {e}")
 
+    was_gold = user.role == "gold"
+
     _activate_gold_membership(user)
     user.stripe_customer_id     = customer_id or user.stripe_customer_id
     user.stripe_subscription_id = subscription_id or user.stripe_subscription_id
@@ -620,6 +627,11 @@ def _handle_checkout_completed(session):
         f"Gold activated: user {user.id} ({user.email}), "
         f"sub={subscription_id}, price={price_id}"
     )
+
+    if not was_gold:
+        metadata = _sg(session, "metadata") or {}
+        lang = _sg(metadata, "lang") or "es"
+        send_gold_welcome_email(user, lang)
 
 
 def _handle_invoice_paid(invoice):
@@ -669,6 +681,27 @@ def _handle_subscription_deleted(subscription):
     user.stripe_subscription_id = None
     user.stripe_price_id        = None
     db.session.commit()
+
+
+def _handle_charge_refunded(charge):
+    """
+    Send a neutral notice when a charge is refunded. Refunds don't change
+    membership by themselves — Stripe treats refund and subscription
+    cancellation as separate actions, so downgrade happens only via
+    customer.subscription.deleted.
+    """
+    customer_id = _sg(charge, "customer")
+    if not customer_id:
+        return
+
+    user = User.query.filter_by(stripe_customer_id=customer_id).first()
+    if not user:
+        current_app.logger.warning(
+            f"Webhook charge.refunded: no user found for customer {customer_id}"
+        )
+        return
+
+    send_refund_notice_email(user)
 
     current_app.logger.info(
         f"Gold cancelled → free: user {user.id} ({user.email})"

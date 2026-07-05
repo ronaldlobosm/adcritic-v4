@@ -12,6 +12,8 @@ from app.email import send_admin_reassignment_email
 from app.permissions import has_content_access, can_edit_content, can_approve_content, content_status_for_save
 from app.countries import COUNTRIES, countries_sorted
 from sqlalchemy.exc import SQLAlchemyError
+import stripe
+from app.routes.membership import _configure_stripe, _handle_subscription_deleted
 
 admin = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -144,6 +146,9 @@ ADMIN_UI = {
         "ok_user_updated":      "Usuario actualizado.",
         "ok_user_deleted":      "Usuario eliminado.",
         "confirm_delete_user":  "¿Eliminar este usuario permanentemente? No se puede deshacer.",
+        "btn_cancel_subscription": "Cancelar suscripción de Stripe",
+        "confirm_cancel_subscription": "¿Cancelar la suscripción de Stripe de este usuario? Pasará a plan Gratuito de inmediato. No se puede deshacer.",
+        "label_subscription": "Suscripción",
         # Categories
         "nav_categories":     "Categorías de crítica",
         "page_categories":    "Categorías",
@@ -422,6 +427,9 @@ ADMIN_UI = {
         "ok_user_updated":      "User updated.",
         "ok_user_deleted":      "User deleted.",
         "confirm_delete_user":  "Delete this user permanently? This cannot be undone.",
+        "btn_cancel_subscription": "Cancel Stripe subscription",
+        "confirm_cancel_subscription": "Cancel this user's Stripe subscription? They will move to the Free plan immediately. This cannot be undone.",
+        "label_subscription": "Subscription",
         # Categories
         "nav_categories":     "Critique categories",
         "page_categories":    "Categories",
@@ -871,6 +879,51 @@ def user_delete(user_id):
         flash("No se pudo eliminar el usuario." if lang == "es"
               else "Could not delete user.", "error")
     return redirect(url_for("admin.users_list"))
+
+
+# ---------------------------------------------------------------------------
+# User: cancel Stripe subscription
+# ---------------------------------------------------------------------------
+
+@admin.route("/usuarios/<int:user_id>/cancelar-suscripcion", methods=["POST"])
+@admin_required
+def user_cancel_subscription(user_id):
+    lang = get_admin_lang()
+    ui = ADMIN_UI[lang]
+    if current_user.role != "admin":
+        flash(ui["err_no_permission"], "error")
+        return redirect(url_for("admin.users_list"))
+
+    user = User.query.get_or_404(user_id)
+
+    if not user.stripe_subscription_id:
+        flash(
+            "Este usuario no tiene una suscripción de Stripe activa." if lang == "es"
+            else "This user has no active Stripe subscription.", "error",
+        )
+        return redirect(url_for("admin.user_edit", user_id=user.id))
+
+    _configure_stripe()
+    try:
+        subscription = stripe.Subscription.delete(user.stripe_subscription_id)
+    except stripe.StripeError as exc:
+        current_app.logger.error(
+            f"Admin subscription cancel failed for user {user.id}: {exc}"
+        )
+        flash(
+            "No se pudo cancelar la suscripción en Stripe." if lang == "es"
+            else "Could not cancel the Stripe subscription.", "error",
+        )
+        return redirect(url_for("admin.user_edit", user_id=user.id))
+
+    # Reuse the same downgrade logic the webhook uses, so both paths stay in sync.
+    _handle_subscription_deleted(subscription)
+
+    flash(
+        "Suscripción cancelada. El usuario ha pasado a plan Gratuito." if lang == "es"
+        else "Subscription cancelled. The user is now on the Free plan.", "success",
+    )
+    return redirect(url_for("admin.user_edit", user_id=user.id))
 
 
 # ---------------------------------------------------------------------------

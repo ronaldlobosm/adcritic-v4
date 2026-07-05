@@ -61,7 +61,7 @@
     {% if comments %}
       <div class="comments-list">
         {% for comment in comments %}
-          <div class="comment-item">
+          <div class="comment-item comment-item--{{ 'gold' if comment.user.role == 'gold' else 'silver' }}">
             <div class="comment-meta">
               {{ avatar(comment.user) }}
               <span class="comment-author-wrap">

@@ -70,10 +70,15 @@
     {% if comments %}
       <div class="comments-list">
         {% for comment in comments %}
-          <div class="comment-item">
+          <div class="comment-item comment-item--{{ 'gold' if comment.user.role == 'gold' else 'silver' }}">
             <div class="comment-meta">
               {{ avatar(comment.user) }}
-              <span class="comment-author">{{ comment.user.public_name }}</span>
+              <span class="comment-author-wrap">
+                <span class="comment-author">{{ comment.user.public_name }}</span>
+                {% if comment.user.role == 'gold' %}
+                  <span class="comment-title">Gold</span>
+                {% endif %}
+              </span>
               <span class="comment-date">{{ relative_date(comment.created_at, 'en') }}</span>
               {% if current_user.is_authenticated and (
                   current_user.id == comment.user_id

@@ -129,6 +129,57 @@ def send_password_reset_email(user, lang="es"):
         return False, str(exc)
 
 
+# ---------------------------------------------------------------------------
+# Gold membership
+# ---------------------------------------------------------------------------
+
+def send_gold_welcome_email(user, lang="es"):
+    """Notify a user that their Gold membership is now active."""
+    subject = "¡Bienvenido a Gold!" if lang == "es" else "Welcome to Gold!"
+    account_url = url_for(f"account.my_account_{lang}", _external=True)
+
+    html = render_template(
+        f"email/gold_welcome_{lang}.html",
+        user=user,
+        account_url=account_url,
+    )
+    sender = current_app.config.get(
+        "MAIL_DEFAULT_SENDER", "AdCritic <noreply@adcritic.com>"
+    )
+    msg = Message(subject=subject, recipients=[user.email], html=html, sender=sender)
+    try:
+        mail.send(msg)
+        return True, None
+    except Exception as exc:
+        current_app.logger.error(
+            f"[email] Failed to send Gold welcome to {user.email}: {exc}"
+        )
+        return False, str(exc)
+
+
+def send_refund_notice_email(user):
+    """
+    Neutral notice that a refund was issued and may take 5-10 business days.
+    Always bilingual (English first, Spanish second) — a refund webhook has
+    no reliable signal for the user's preferred language.
+    """
+    subject = "Your AdCritic refund has been processed / Reembolso procesado en AdCritic"
+
+    html = render_template("email/refund_notice.html", user=user)
+    sender = current_app.config.get(
+        "MAIL_DEFAULT_SENDER", "AdCritic <noreply@adcritic.com>"
+    )
+    msg = Message(subject=subject, recipients=[user.email], html=html, sender=sender)
+    try:
+        mail.send(msg)
+        return True, None
+    except Exception as exc:
+        current_app.logger.error(
+            f"[email] Failed to send refund notice to {user.email}: {exc}"
+        )
+        return False, str(exc)
+
+
 def send_admin_reassignment_email(admin_user, deleted_user_email, *, posts_count=0, ads_count=0):
     """Notify the admin that deleted-user content was reassigned and drafted."""
     if not admin_user or not admin_user.email:

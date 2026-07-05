@@ -77,6 +77,17 @@
   </div>
 
 </form>
+
+{% if user and user.stripe_subscription_id %}
+<div class="form-section" style="margin-top:1.5rem">
+  <label class="form-label">{{ ui.label_subscription }}</label>
+  <p class="form-hint" style="margin:0 0 .75rem">{{ user.stripe_subscription_id }}</p>
+  <form method="post" action="{{ url_for('admin.user_cancel_subscription', user_id=user.id) }}"
+        onsubmit="return confirm('{{ ui.confirm_cancel_subscription }}')">
+    <button type="submit" class="btn-secondary">{{ ui.btn_cancel_subscription }}</button>
+  </form>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

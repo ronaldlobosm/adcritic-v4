@@ -6,7 +6,7 @@
          {{ avatar(comment.user, 'comment-avatar', 'comment-avatar-placeholder') }}
 #}
 {% macro avatar(user, img_class='comment-avatar', placeholder_class='comment-avatar-placeholder') %}
-<span class="avatar-wrap" style="position:relative;display:inline-flex;flex-shrink:0">
+<span class="avatar-wrap avatar-wrap--{{ 'gold' if user.role == 'gold' else 'silver' }}" style="position:relative;display:inline-flex;flex-shrink:0">
   {% if user.avatar_url %}
     <img src="{{ user.avatar_url }}" alt="" class="{{ img_class }}" />
   {% else %}
