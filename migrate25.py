@@ -21,8 +21,10 @@ with app.app_context():
 
         if "gold_intro_critique_used" in cols:
             with db.engine.begin() as conn:
+                # Credit exactly the 1 they'd already used under the old
+                # single-use flag, not all 3 new slots.
                 conn.execute(text(
-                    "UPDATE users SET gold_intro_critiques_used = 3 WHERE gold_intro_critique_used = 1"
+                    "UPDATE users SET gold_intro_critiques_used = 1 WHERE gold_intro_critique_used = 1"
                 ))
             print("Backfilled gold_intro_critiques_used from legacy gold_intro_critique_used")
 

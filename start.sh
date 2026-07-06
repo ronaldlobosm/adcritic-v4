@@ -72,6 +72,20 @@ with app.app_context():
                     conn.commit()
                     print("[init] Backfilled gold_intro_critiques_used from legacy gold_intro_critique_used")
 
+        # One-time correction: the backfill above wrongly zeroed out all 3
+        # slots for anyone who'd used the old single-use flag, instead of
+        # crediting them for exactly the 1 they'd used. Only ever touches
+        # rows still at the old bug's exact signature (3 + legacy flag
+        # true), and flips the legacy flag off so it can't re-fire.
+        if "gold_intro_critique_used" in existing:
+            result = conn.execute(text(
+                "UPDATE users SET gold_intro_critiques_used = 1, gold_intro_critique_used = FALSE "
+                "WHERE gold_intro_critique_used = TRUE AND gold_intro_critiques_used = 3"
+            ))
+            conn.commit()
+            if result.rowcount:
+                print(f"[init] Corrected gold_intro_critiques_used for {result.rowcount} grandfathered user(s): 3 -> 1")
+
         ad_comments_existing = [r[0] for r in conn.execute(
             text("SELECT column_name FROM information_schema.columns WHERE table_name='ad_comments'")
         )]
