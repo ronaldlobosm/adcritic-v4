@@ -250,6 +250,27 @@ class AdComment(db.Model):
             return self.translated_body
         return self.body
 
+    def body_html_for(self, lang):
+        """Safe-to-render HTML for the critique body. Critiques written with
+        the rich-text editor are already sanitized HTML (starts with a tag);
+        older plain-text critiques get escaped and wrapped in <p> per line."""
+        from markupsafe import Markup, escape
+        text = self.body_for(lang) or ""
+        if text.strip().startswith("<"):
+            return Markup(text)
+        paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
+        return Markup("".join(f"<p>{escape(p)}</p>" for p in paragraphs))
+
+    @property
+    def average_rating(self):
+        values = [
+            v for v in (
+                self.rating_music, self.rating_art_direction,
+                self.rating_copywriting, self.rating_strategy,
+            ) if v is not None
+        ]
+        return round(sum(values) / len(values), 1) if values else None
+
     def is_translated_for(self, lang):
         return bool(
             self.translated_body

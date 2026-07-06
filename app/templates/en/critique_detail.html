@@ -46,9 +46,19 @@
     <main class="critique-main">
       <p class="critique-kicker">{{ ui.critique_label }} · {{ ui.published_label }} {{ format_date(critique.created_at, lang) }}</p>
       <h1 class="critique-title">{{ critique.title }}</h1>
-      <p class="critique-meta">
-        {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
-      </p>
+      <div class="critique-heading-row">
+        <p class="critique-meta">
+          {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
+        </p>
+        {% if critique.average_rating %}
+          <div class="critique-score" style="--pct: {{ (critique.average_rating / 5 * 100) | round(1) }}%;">
+            <span class="critique-score__ring">
+              <span class="critique-score__value">{{ critique.average_rating }}</span>
+            </span>
+            <span class="critique-score__star">★</span>
+          </div>
+        {% endif %}
+      </div>
 
       <div class="critique-actions">
         {% if current_user.is_authenticated %}
@@ -68,9 +78,7 @@
       </div>
 
       <div class="critique-body">
-        {% for para in critique.body_for(lang).split('\n') %}
-          {% if para.strip() %}<p>{{ para }}</p>{% endif %}
-        {% endfor %}
+        {{ critique.body_html_for(lang) }}
       </div>
 
       <div class="critique-original-widget">

@@ -14,13 +14,15 @@ def language_name(code, ui_lang="es"):
     return LANG_NAMES.get(code, {}).get(ui_lang, code or "")
 
 
-def translate_text(text, source_lang, target_lang):
+def translate_text(text, source_lang, target_lang, fmt="text"):
     """
     Translate text using an optional LibreTranslate-compatible endpoint.
     Configure with:
       ADCRITIC_TRANSLATE_URL=https://...
       ADCRITIC_TRANSLATE_API_KEY=...
       ADCRITIC_TRANSLATE_PROVIDER=LibreTranslate
+    Pass fmt="html" when translating rich-text bodies so tags survive the
+    round trip instead of being read as literal words.
     Returns (translated_text, provider_name) or (None, None).
     """
     text = (text or "").strip()
@@ -36,7 +38,7 @@ def translate_text(text, source_lang, target_lang):
         "q": text,
         "source": source_lang,
         "target": target_lang,
-        "format": "text",
+        "format": fmt,
     }
     api_key = os.environ.get("ADCRITIC_TRANSLATE_API_KEY", "").strip()
     if api_key:

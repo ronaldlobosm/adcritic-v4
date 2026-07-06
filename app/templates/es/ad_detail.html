@@ -86,8 +86,8 @@
               </span>
               {% if critique.user.role == 'gold' %}<span class="critique-card__gold-badge">Gold</span>{% endif %}
             </div>
-            <h3 class="critique-card__title">{{ critique.title or critique.body_for(lang)|truncate(60) }}</h3>
-            <p class="critique-card__excerpt">{{ critique.body_for(lang) | truncate(140) }}</p>
+            <h3 class="critique-card__title">{{ critique.title or (critique.body_for(lang) | striptags | truncate(60)) }}</h3>
+            <p class="critique-card__excerpt">{{ critique.body_for(lang) | striptags | truncate(140) }}</p>
             <div class="critique-card__meta">
               <span>{{ relative_date(critique.created_at, 'es') }}</span>
               <span>♥ {{ critique_like_counts.get(critique.id, 0) }}</span>

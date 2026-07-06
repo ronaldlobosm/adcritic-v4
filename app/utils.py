@@ -83,7 +83,9 @@ def ensure_critique_slug(critique):
         return critique.slug
 
     if not critique.title:
-        words = (critique.body or "").split()
+        import re
+        plain = re.sub(r"<[^>]+>", " ", critique.body or "")
+        words = plain.split()
         critique.title = " ".join(words[:8]) or f"Critique #{critique.id or ''}"
 
     base = slugify(critique.title)
@@ -94,6 +96,36 @@ def ensure_critique_slug(critique):
         i += 1
     critique.slug = candidate
     return candidate
+
+
+# ---------------------------------------------------------------------------
+# Content safety — critique body (rich text from TinyMCE)
+# ---------------------------------------------------------------------------
+
+CRITIQUE_HTML_TAGS = [
+    "p", "br", "strong", "b", "em", "i", "u", "s", "blockquote",
+    "ul", "ol", "li", "a", "img", "h2", "h3", "h4", "figure", "figcaption",
+]
+CRITIQUE_HTML_ATTRS = {
+    "a": ["href", "target", "rel"],
+    "img": ["src", "alt", "title", "width", "height"],
+}
+
+
+def sanitize_critique_html(html):
+    """Whitelist-clean HTML coming from the critique rich-text editor before
+    it's stored. The body is later rendered with |safe, so an unsanitized
+    editor payload would be stored XSS — this is the only thing standing
+    between a raw POST body and every reader's browser."""
+    import bleach
+
+    return bleach.clean(
+        html or "",
+        tags=CRITIQUE_HTML_TAGS,
+        attributes=CRITIQUE_HTML_ATTRS,
+        protocols=["http", "https", "mailto"],
+        strip=True,
+    )
 
 
 # ---------------------------------------------------------------------------

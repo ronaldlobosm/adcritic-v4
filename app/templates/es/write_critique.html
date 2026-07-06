@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "partials/avatar.html" import avatar %}
 
 {% block title %}{{ ui.write_critique_edit_title if existing_user_comment else ui.write_critique_title }} — AdCritic{% endblock %}
 
@@ -27,11 +26,16 @@
     </div>
   {% endif %}
 
-  <form class="comment-form write-critique-form" method="post">
-    <div class="critique-form-panel">
+  <form class="comment-form write-critique-form" method="post" id="critiqueForm">
+    <div class="critique-form-panel" id="ratingPanel">
       <div class="critique-form-head">
-        <span>{{ ui.comment_edit_title if existing_user_comment else 'Critical rating' }}</span>
-        <small>{{ ui.comment_edit_window if existing_user_comment else ui.rating_scale_hint }}</small>
+        <span>{{ ui.comment_edit_title if existing_user_comment else ui.rating_panel_title }}</span>
+        <div class="rating-average" id="ratingAverage">
+          <span class="rating-average__ring">
+            <span class="rating-average__value">–</span>
+          </span>
+          <span class="rating-average__star">★</span>
+        </div>
       </div>
       {% for field, label in [
         ('rating_music', ui.rating_music),
@@ -41,13 +45,11 @@
       ] %}
         <fieldset class="rating-field">
           <legend>{{ label }}</legend>
-          <div class="rating-options">
-            {% for value in range(1, 6) %}
-              <label>
-                <input type="radio" name="{{ field }}" value="{{ value }}" required
-                       {% if existing_user_comment and (existing_user_comment|attr(field)) == value %}checked{% endif %} />
-                <span>{{ value }}</span>
-              </label>
+          <div class="star-rating">
+            {% for value in range(5, 0, -1) %}
+              <input type="radio" id="{{ field }}-{{ value }}" name="{{ field }}" value="{{ value }}" required
+                     {% if existing_user_comment and (existing_user_comment|attr(field)) == value %}checked{% endif %} />
+              <label for="{{ field }}-{{ value }}" title="{{ value }}">★</label>
             {% endfor %}
           </div>
         </fieldset>
@@ -61,14 +63,10 @@
              value="{{ existing_user_comment.title if existing_user_comment else '' }}" />
     </div>
 
-    <div class="critique-composer">
-      <aside class="critique-composer__identity" aria-hidden="true">
-        {{ avatar(current_user, 'composer-avatar', 'composer-avatar-placeholder') }}
-      </aside>
-      <div class="critique-composer__field">
-        <textarea class="comment-input" name="body" rows="10"
-                  placeholder="{{ ui.comment_placeholder }}" required>{{ existing_user_comment.body if existing_user_comment else '' }}</textarea>
-      </div>
+    <div class="critique-editor-panel">
+      <div class="critique-editor-panel__label">{{ ui.critique_body_label }}</div>
+      <textarea id="critique-body" name="body" class="tinymce-critique-editor"
+                >{{ existing_user_comment.body_html_for(lang) if existing_user_comment else '' }}</textarea>
     </div>
 
     <button type="submit" class="comment-submit">
@@ -77,4 +75,81 @@
   </form>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/tinymce/tinymce.min.js') }}"></script>
+<script>
+(function () {
+  var UPLOAD_URL = "{{ url_for('main.upload_critique_image') }}";
+
+  tinymce.init({
+    selector: 'textarea.tinymce-critique-editor',
+    base_url: "{{ url_for('static', filename='js/tinymce') }}",
+    suffix: '.min',
+    height: 380,
+    menubar: false,
+    plugins: ['lists', 'link', 'image'],
+    toolbar: 'bold italic underline | bullist numlist | blockquote link image | removeformat | undo redo',
+    image_advtab: false,
+    image_uploadtab: true,
+    automatic_uploads: true,
+    images_upload_url: UPLOAD_URL,
+    images_upload_handler: function (blobInfo, progress) {
+      return new Promise(function (resolve, reject) {
+        var fd = new FormData();
+        fd.append('file', blobInfo.blob(), blobInfo.filename());
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', UPLOAD_URL);
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable) progress(e.loaded / e.total * 100);
+        };
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            try { resolve(JSON.parse(xhr.responseText).location); }
+            catch (e) { reject('Upload failed: invalid response'); }
+          } else {
+            reject('Upload failed: ' + xhr.status);
+          }
+        };
+        xhr.onerror = function () { reject('Upload failed: network error'); };
+        xhr.send(fd);
+      });
+    },
+    content_style: "body { font-family: 'Inter', sans-serif; font-size: 1.05rem; line-height: 1.7; color: #12100d; }",
+    skin: 'oxide',
+    toolbar_mode: 'wrap',
+    promotion: false,
+    branding: false,
+  });
+
+  document.getElementById('critiqueForm').addEventListener('submit', function () {
+    tinymce.triggerSave();
+  });
+
+  var panel = document.getElementById('ratingPanel');
+  var ring = document.querySelector('#ratingAverage .rating-average__ring');
+  var value = document.querySelector('#ratingAverage .rating-average__value');
+
+  function updateAverage() {
+    var fields = ['rating_music', 'rating_art_direction', 'rating_copywriting', 'rating_strategy'];
+    var total = 0, count = 0;
+    fields.forEach(function (name) {
+      var checked = panel.querySelector('input[name="' + name + '"]:checked');
+      if (checked) { total += parseInt(checked.value, 10); count += 1; }
+    });
+    if (count === 0) {
+      ring.style.setProperty('--pct', '0%');
+      value.textContent = '–';
+      return;
+    }
+    var avg = total / count;
+    ring.style.setProperty('--pct', (avg / 5 * 100) + '%');
+    value.textContent = avg.toFixed(1);
+  }
+
+  panel.addEventListener('change', updateAverage);
+  updateAverage();
+})();
+</script>
 {% endblock %}

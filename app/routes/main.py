@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import random
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, jsonify
 from flask_login import current_user
 from app import db
 from app.models import (
@@ -23,7 +23,8 @@ from app.models import (
 from app.countries import COUNTRIES, country_name, countries_sorted
 from app.utils import (
     can_read_ad_analysis, can_comment_on_ad, can_participate_in_debate,
-    ensure_username_slug, ensure_critique_slug,
+    ensure_username_slug, ensure_critique_slug, sanitize_critique_html,
+    save_upload_file,
 )
 from app.translation import language_name, translate_text
 
@@ -121,6 +122,8 @@ CATALOG_UI = {
         "title_label":            "Título",
         "title_placeholder":      "Un título para tu crítica...",
         "back_to_ad":             "← Volver al anuncio",
+        "rating_panel_title":     "Valoración crítica",
+        "critique_body_label":    "Tu crítica",
     },
     "en": {
         "comments_title":        "Critiques",
@@ -209,6 +212,8 @@ CATALOG_UI = {
         "title_label":            "Title",
         "title_placeholder":      "A title for your critique...",
         "back_to_ad":             "← Back to the ad",
+        "rating_panel_title":     "Critical rating",
+        "critique_body_label":    "Your critique",
     },
 }
 
@@ -328,9 +333,9 @@ def _comment_is_editable(comment):
 
 def _set_comment_translation(comment, body, source_lang):
     target_lang = "en" if source_lang == "es" else "es"
-    translated_body, provider = translate_text(body, source_lang, target_lang)
+    translated_body, provider = translate_text(body, source_lang, target_lang, fmt="html")
     comment.body_language = source_lang
-    comment.translated_body = translated_body
+    comment.translated_body = sanitize_critique_html(translated_body) if translated_body else None
     comment.translated_language = target_lang if translated_body else None
     comment.translation_provider = provider
 
@@ -575,9 +580,11 @@ def _handle_write_critique(lang, ad_slug):
         abort(403)
 
     if request.method == "POST":
+        import re
         title = request.form.get("title", "").strip()
-        body = request.form.get("body", "").strip()
-        if not title or not body:
+        body = sanitize_critique_html(request.form.get("body", "")).strip()
+        body_text = re.sub(r"<[^>]+>", " ", body).strip()
+        if not title or not body_text:
             flash(ui["comment_err"], "error")
         elif any(_rating_value(field) is None for field in (
             "rating_music", "rating_art_direction",
@@ -586,7 +593,7 @@ def _handle_write_critique(lang, ad_slug):
             flash(ui["rating_err"], "error")
         else:
             from app.moderation import comment_status_for_text
-            status = comment_status_for_text(body)
+            status = comment_status_for_text(body_text)
             critique = existing_user_comment or AdComment(ad_id=ad.id, user_id=current_user.id)
             critique.title = title
             critique.body = body
@@ -619,6 +626,19 @@ def _handle_write_critique(lang, ad_slug):
         existing_user_comment=existing_user_comment,
         uses_intro_critique=uses_intro_critique,
     )
+
+
+@main.route("/critica/subir-imagen", methods=["POST"])
+def upload_critique_image():
+    """Image upload target for the critique rich-text editor. Gold/staff
+    only — same gate as writing a critique at all."""
+    if not can_comment_on_ad():
+        abort(403)
+    mf, err = save_upload_file(request.files.get("file"), allowed_types={"image"})
+    if err:
+        return jsonify({"error": err}), 400
+    db.session.commit()
+    return jsonify({"location": mf.url})
 
 
 def _handle_ad_debate(lang, ad_slug):
