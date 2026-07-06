@@ -44,9 +44,9 @@
 
   {# ── Already Gold ──────────────────────────────────────────────────── #}
   {% if current_user.is_authenticated and current_user.role == 'gold' %}
-  <div style="text-align:center;padding:2.5rem;background:var(--color-surface,#f9f9f7);border-radius:1rem;border:2px solid #f59e0b">
+  <div style="text-align:center;padding:2.5rem;background:var(--color-surface,#f9f9f7);border-radius:1rem;border:2px solid #f59e0b;color:var(--color-ink,#12100d)">
     <div style="font-size:2rem;margin-bottom:.5rem">🌟</div>
-    <h2 style="font-size:1.4rem;font-weight:700;margin-bottom:.5rem">{{ ui.already_gold_title }}</h2>
+    <h2 style="font-size:1.4rem;font-weight:700;margin-bottom:.5rem;color:var(--color-ink,#12100d)">{{ ui.already_gold_title }}</h2>
     <p style="color:var(--color-muted,#666);margin-bottom:1.25rem">{{ ui.already_gold_body }}</p>
     <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
       <a href="{{ url_for('main.catalog_en') }}" class="btn-primary">{{ ui.already_gold_link }}</a>

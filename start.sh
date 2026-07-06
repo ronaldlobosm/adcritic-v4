@@ -59,11 +59,18 @@ with app.app_context():
             ("preferred_language", "ALTER TABLE users ADD COLUMN preferred_language VARCHAR(2)"),
             ("other_languages", "ALTER TABLE users ADD COLUMN other_languages VARCHAR(200)"),
             ("username_slug", "ALTER TABLE users ADD COLUMN username_slug VARCHAR(140) UNIQUE"),
+            ("gold_intro_critiques_used", "ALTER TABLE users ADD COLUMN gold_intro_critiques_used INTEGER NOT NULL DEFAULT 0"),
         ]:
             if col not in existing:
                 conn.execute(text(ddl))
                 conn.commit()
                 print(f"[init] Added column users.{col}")
+                if col == "gold_intro_critiques_used" and "gold_intro_critique_used" in existing:
+                    conn.execute(text(
+                        "UPDATE users SET gold_intro_critiques_used = 3 WHERE gold_intro_critique_used = TRUE"
+                    ))
+                    conn.commit()
+                    print("[init] Backfilled gold_intro_critiques_used from legacy gold_intro_critique_used")
 
         ad_comments_existing = [r[0] for r in conn.execute(
             text("SELECT column_name FROM information_schema.columns WHERE table_name='ad_comments'")

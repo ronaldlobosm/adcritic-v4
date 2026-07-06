@@ -51,11 +51,14 @@
           {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
         </p>
         {% if critique.average_rating %}
-          <div class="critique-score" style="--pct: {{ (critique.average_rating / 5 * 100) | round(1) }}%;">
-            <span class="critique-score__ring">
-              <span class="critique-score__value">{{ critique.average_rating }}</span>
-            </span>
-            <span class="critique-score__star">★</span>
+          {% set pct = (critique.average_rating / 5 * 100) | round(1) %}
+          <div class="critique-score-bar">
+            <span class="critique-score-bar__label">{{ ui.average_label }}</span>
+            <span class="critique-score-bar__value">{{ critique.average_rating }}</span>
+            <div class="critique-score-bar__track">
+              <div class="critique-score-bar__fill" style="width: {{ pct }}%;"></div>
+              <span class="critique-score-bar__star" style="left: {{ pct }}%;">★</span>
+            </div>
           </div>
         {% endif %}
       </div>

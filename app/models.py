@@ -430,7 +430,10 @@ class User(UserMixin, db.Model):
     stripe_subscription_id = db.Column(db.String(100), nullable=True, unique=True)
     stripe_price_id        = db.Column(db.String(100), nullable=True)
     gold_started_at        = db.Column(db.DateTime, nullable=True)
-    gold_intro_critique_used = db.Column(db.Boolean, nullable=False, default=False)
+    # How many of the 3 free "retroactive" critiques (for ads older than the
+    # member's Gold start date) this user has used.
+    gold_intro_critiques_used = db.Column(db.Integer, nullable=False, default=0)
+    GOLD_INTRO_CRITIQUE_LIMIT = 3
 
     # Valid roles: admin · approver · editor · advertiser · gold · free
     ROLES = ("admin", "approver", "editor", "advertiser", "gold", "free")

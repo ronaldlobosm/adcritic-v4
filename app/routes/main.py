@@ -53,8 +53,8 @@ CATALOG_UI = {
         "comment_edit_window":   "Puedes editarla durante 5 minutos desde su publicación.",
         "comment_gold_since_title": "Tu membresía Gold marca el corte",
         "comment_gold_since_body":  "Puedes publicar críticas en anuncios agregados desde que eres Gold.",
-        "comment_intro_title":      "Primera crítica de cortesía",
-        "comment_intro_body":       "Este anuncio es anterior a tu membresía. Puedes usar aquí tu única crítica retroactiva.",
+        "comment_intro_title":      "Crítica de cortesía disponible",
+        "comment_intro_body":       "Este anuncio es anterior a tu membresía. Te quedan {remaining} de {limit} críticas retroactivas.",
         "rating_err":            "Completa todas las valoraciones.",
         "rating_music":          "Música / sonido",
         "rating_art_direction":  "Dirección de arte",
@@ -124,6 +124,7 @@ CATALOG_UI = {
         "back_to_ad":             "← Volver al anuncio",
         "rating_panel_title":     "Valoración crítica",
         "critique_body_label":    "Tu crítica",
+        "average_label":          "Promedio",
     },
     "en": {
         "comments_title":        "Critiques",
@@ -143,8 +144,8 @@ CATALOG_UI = {
         "comment_edit_window":   "You can edit it for 5 minutes after posting.",
         "comment_gold_since_title": "Your Gold membership sets the line",
         "comment_gold_since_body":  "You can publish critiques on ads added since you became Gold.",
-        "comment_intro_title":      "First courtesy critique",
-        "comment_intro_body":       "This ad predates your membership. You can use your single retroactive critique here.",
+        "comment_intro_title":      "Courtesy critique available",
+        "comment_intro_body":       "This ad predates your membership. You have {remaining} of {limit} retroactive critiques left.",
         "rating_err":            "Complete every rating.",
         "rating_music":          "Music / sound",
         "rating_art_direction":  "Art direction",
@@ -214,6 +215,7 @@ CATALOG_UI = {
         "back_to_ad":             "← Back to the ad",
         "rating_panel_title":     "Critical rating",
         "critique_body_label":    "Your critique",
+        "average_label":          "Average",
     },
 }
 
@@ -353,7 +355,7 @@ def _critique_access_for_ad(user, ad, existing_comment=None):
         return True, False, None
     if ad.created_at >= user.gold_started_at:
         return True, False, None
-    if not user.gold_intro_critique_used:
+    if (user.gold_intro_critiques_used or 0) < User.GOLD_INTRO_CRITIQUE_LIMIT:
         return True, True, "intro"
     return False, False, "locked_by_date"
 
@@ -607,7 +609,7 @@ def _handle_write_critique(lang, ad_slug):
             if is_new:
                 db.session.add(critique)
                 if uses_intro_critique and current_user.role == "gold":
-                    current_user.gold_intro_critique_used = True
+                    current_user.gold_intro_critiques_used = (current_user.gold_intro_critiques_used or 0) + 1
             ensure_username_slug(current_user)
             db.session.flush()
             ensure_critique_slug(critique)
@@ -620,11 +622,14 @@ def _handle_write_critique(lang, ad_slug):
                 username=current_user.username_slug, slug=critique.slug,
             ))
 
+    intro_remaining = User.GOLD_INTRO_CRITIQUE_LIMIT - (current_user.gold_intro_critiques_used or 0)
     return render_template(
         f"{lang}/write_critique.html",
         lang=lang, ui=ui, ad=ad, t=ad.translation(lang),
         existing_user_comment=existing_user_comment,
         uses_intro_critique=uses_intro_critique,
+        intro_remaining=intro_remaining,
+        intro_limit=User.GOLD_INTRO_CRITIQUE_LIMIT,
     )
 
 

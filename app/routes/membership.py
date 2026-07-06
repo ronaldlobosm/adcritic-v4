@@ -171,11 +171,11 @@ def _activate_gold_membership(user):
     user.role = "gold"
     if not was_gold:
         user.gold_started_at = datetime.utcnow()
-        user.gold_intro_critique_used = had_prior_critiques
+        user.gold_intro_critiques_used = User.GOLD_INTRO_CRITIQUE_LIMIT if had_prior_critiques else 0
     elif user.gold_started_at is None:
         user.gold_started_at = datetime.utcnow()
         if had_prior_critiques:
-            user.gold_intro_critique_used = True
+            user.gold_intro_critiques_used = User.GOLD_INTRO_CRITIQUE_LIMIT
 
 
 # ---------------------------------------------------------------------------

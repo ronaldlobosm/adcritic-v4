@@ -379,8 +379,10 @@
             {% for comment in comments %}
               {% set ad = comment.ad %}
               {% set t = ad.translation('es') if ad else None %}
+              {% set critique_live = comment.status == 'approved' and comment.slug and comment.user.username_slug %}
+              {% set card_href = url_for('main.critique_detail_es', username=comment.user.username_slug, slug=comment.slug) if critique_live else (url_for('main.ad_detail_es', slug=ad.slug) if ad else '#') %}
               <article class="gold-critique-card">
-                <a class="gold-critique-card__thumb" href="{{ url_for('main.ad_detail_es', slug=ad.slug) if ad else '#' }}">
+                <a class="gold-critique-card__thumb" href="{{ card_href }}">
                   {% if ad and ad.youtube_id %}
                     <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/hqdefault.jpg" alt="" />
                   {% else %}
@@ -389,13 +391,19 @@
                 </a>
                 <div>
                   <p class="gold-profile-label">{{ ad.brand if ad else "AdCritic" }}</p>
-                  <h3>{{ t.title if t else "Anuncio eliminado" }}</h3>
+                  <h3><a href="{{ card_href }}">{{ t.title if t else "Anuncio eliminado" }}</a></h3>
                   <p>{{ format_date(comment.created_at, 'es') }}</p>
                 </div>
                 <footer>
                   {% set rating_stat = comment_rating_stats.get(comment.id) %}
                   <span>{{ comment_like_counts.get(comment.id, 0) }} likes</span>
                   <span>★ {{ rating_stat.avg if rating_stat else '—' }} / {{ rating_stat.count if rating_stat else 0 }}</span>
+                  {% if critique_live %}
+                    <button type="button" class="gold-critique-card__share"
+                            data-copy-url="{{ url_for('main.critique_detail_es', username=comment.user.username_slug, slug=comment.slug, _external=True) }}">
+                      Copiar enlace
+                    </button>
+                  {% endif %}
                 </footer>
               </article>
             {% endfor %}
@@ -557,5 +565,17 @@ document.querySelectorAll('[data-profile-tab-link]').forEach(function(link) {
 var initialProfileTab = window.location.hash.replace('#', '');
 var initialProfileLink = initialProfileTab && document.querySelector('[data-profile-tab="' + initialProfileTab + '"]');
 if (initialProfileLink) initialProfileLink.click();
+
+document.querySelectorAll('.gold-critique-card__share').forEach(function (btn) {
+  btn.addEventListener('click', function (event) {
+    event.preventDefault();
+    var url = btn.getAttribute('data-copy-url');
+    var original = btn.textContent;
+    navigator.clipboard.writeText(url).then(function () {
+      btn.textContent = '¡Copiado!';
+      setTimeout(function () { btn.textContent = original; }, 1800);
+    });
+  });
+});
 </script>
 {% endblock %}

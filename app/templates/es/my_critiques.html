@@ -6,13 +6,15 @@
   <h1 class="account-title">{{ ui.my_critiques_title }}</h1>
 
   {% if current_user.role == 'gold' %}
+    {% set intro_limit = current_user.GOLD_INTRO_CRITIQUE_LIMIT %}
+    {% set intro_remaining = intro_limit - (current_user.gold_intro_critiques_used or 0) %}
     <div class="critique-locked critique-locked--intro" style="margin-bottom:1.25rem">
       <strong>Acceso Gold</strong>
       <p>
-        {% if current_user.gold_intro_critique_used %}
-          {{ ui.my_critiques_intro_used }}
+        {% if intro_remaining <= 0 %}
+          {{ ui.my_critiques_intro_used.format(limit=intro_limit) }}
         {% else %}
-          {{ ui.my_critiques_intro_available }}
+          {{ ui.my_critiques_intro_available.format(remaining=intro_remaining, limit=intro_limit) }}
         {% endif %}
       </p>
     </div>
