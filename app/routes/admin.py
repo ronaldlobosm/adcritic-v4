@@ -190,6 +190,8 @@ ADMIN_UI = {
         "label_is_featured":      "¿Destacada?",
         "hint_featured":          "Puede aparecer aleatoriamente en la portada.",
         "ok_featured_updated":    "Estado destacado actualizado.",
+        "label_critique_cover":   "Imagen de portada para las críticas Gold",
+        "hint_critique_cover":    "Si se define, reemplaza el video del anuncio como cabecera en TODAS las críticas Gold de este anuncio. Solo se cambia desde aquí. Tamaño recomendado: 1920×800px.",
         "label_published_at":     "Fecha de publicación",
         "hint_published_at":      "Dejar vacío para guardar como borrador",
         "label_post_categories":  "Categorías de la noticia",
@@ -471,6 +473,8 @@ ADMIN_UI = {
         "label_is_featured":      "Featured?",
         "hint_featured":          "May appear randomly on the homepage.",
         "ok_featured_updated":    "Featured status updated.",
+        "label_critique_cover":   "Cover image for Gold critiques",
+        "hint_critique_cover":    "If set, replaces the ad's video as the header on EVERY Gold critique for this ad. Only changed here. Recommended size: 1920×800px.",
         "label_published_at":     "Publication date",
         "hint_published_at":      "Leave empty to save as draft",
         "label_post_categories":  "Post categories",
@@ -948,6 +952,7 @@ def _save_ad(existing_ad, ui):
     meta_desc_en       = f.get("meta_description_en", "").strip() or None
     is_premium         = f.get("is_premium") == "1"
     is_featured        = f.get("is_featured") == "1"
+    critique_cover_image_url = f.get("critique_cover_image_url", "").strip() or None
     published_at_raw   = f.get("published_at", "").strip()
     form_action        = f.get("form_action", "").strip()  # 'publish' | 'draft' | 'review'
     raw_cat_ids        = f.getlist("category_ids")
@@ -979,6 +984,13 @@ def _save_ad(existing_ad, ui):
             mf, err = save_upload_file(vid_file, allowed_types={"video"})
             if mf:
                 video_source_value = mf.url
+
+    # Critique cover image (quick-upload from form)
+    cover_file = request.files.get("critique_cover_image_file")
+    if cover_file and cover_file.filename:
+        mf, err = save_upload_file(cover_file, allowed_types={"image"})
+        if mf:
+            critique_cover_image_url = mf.url
 
     # For backward compat: keep youtube_id in sync
     legacy_youtube = video_source_value if video_source_type == "youtube" else (
@@ -1017,6 +1029,7 @@ def _save_ad(existing_ad, ui):
                 subtitle_es=sub_es, subtitle_en=sub_en,
                 is_premium=is_premium,
                 is_featured=is_featured,
+                critique_cover_image_url=critique_cover_image_url,
                 published_at=published_at,
                 status=new_status,
                 created_by_id=current_user.id)
@@ -1033,6 +1046,7 @@ def _save_ad(existing_ad, ui):
         ad.subtitle_en = sub_en
         ad.is_premium = is_premium
         ad.is_featured = is_featured
+        ad.critique_cover_image_url = critique_cover_image_url
         ad.published_at = published_at
         ad.status = new_status
 

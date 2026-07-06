@@ -92,6 +92,36 @@
         <p class="form-hint">{{ ui.hint_featured }}</p>
       </div>
 
+      <!-- Critique cover image picker -->
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="form-label">
+          {{ ui.label_critique_cover }}
+          <span class="form-hint">— {{ ui.hint_critique_cover }}</span>
+        </label>
+        <div class="image-picker-wrap">
+          <input class="form-input image-picker-url" type="text" id="critique_cover_image_url" name="critique_cover_image_url"
+                 value="{{ request.form.critique_cover_image_url or (ad.critique_cover_image_url if ad else '') }}"
+                 placeholder="https://…" readonly />
+          <div class="image-picker-actions">
+            <button type="button" class="btn-sm js-open-picker" data-target="critique_cover_image_url"
+                    data-preview="critique-cover-preview">{{ ui.btn_select_library }}</button>
+            <label class="btn-sm" style="cursor:pointer">
+              {{ ui.btn_upload_new }}
+              <input type="file" class="js-quick-image-upload" data-target="critique_cover_image_url"
+                     data-preview="critique-cover-preview" accept=".jpg,.jpeg,.png" style="display:none" />
+            </label>
+            <button type="button" class="btn-sm btn-delete js-clear-image"
+                    data-target="critique_cover_image_url" data-preview="critique-cover-preview"
+                    style="display:none">✕</button>
+          </div>
+          <div class="image-picker-preview" id="critique-cover-preview">
+            {% if ad and ad.critique_cover_image_url %}
+              <img src="{{ ad.critique_cover_image_url }}" alt="" />
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
       <!-- Video source selector -->
       <div class="form-group" style="grid-column: 1 / -1">
         <label class="form-label">{{ ui.label_video_source }} <span class="req">*</span></label>

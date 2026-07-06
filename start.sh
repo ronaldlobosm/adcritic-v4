@@ -117,6 +117,17 @@ with app.app_context():
                 conn.execute(text(ddl))
                 conn.commit()
                 print(f"[init] Added column media_files.{col}")
+
+        ads_existing = [r[0] for r in conn.execute(
+            text("SELECT column_name FROM information_schema.columns WHERE table_name='ads'")
+        )]
+        for col, ddl in [
+            ("critique_cover_image_url", "ALTER TABLE ads ADD COLUMN critique_cover_image_url VARCHAR(500)"),
+        ]:
+            if col not in ads_existing:
+                conn.execute(text(ddl))
+                conn.commit()
+                print(f"[init] Added column ads.{col}")
 PYEOF
 
 echo ">>> Seeding news posts..."

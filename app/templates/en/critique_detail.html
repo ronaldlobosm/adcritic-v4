@@ -6,7 +6,11 @@
 {% block content %}
 <div class="critique-page">
   <div class="critique-featured-media">
-    {{ video_player(ad.video_type, ad.video_value, ad.subtitle_es, ad.subtitle_en, t.title if t else ad.brand) }}
+    {% if ad.critique_cover_image_url %}
+      <img src="{{ ad.critique_cover_image_url }}" alt="{{ t.title if t else ad.brand }}" class="critique-featured-media__image" />
+    {% else %}
+      {{ video_player(ad.video_type, ad.video_value, ad.subtitle_es, ad.subtitle_en, t.title if t else ad.brand) }}
+    {% endif %}
   </div>
   <div class="container critique-layout">
 
@@ -48,14 +52,16 @@
     </aside>
 
     <main class="critique-main">
-      <p class="critique-kicker">
-        {{ ui.critique_label }} · {{ ui.published_label }}: {{ format_date(critique.created_at, lang) }}
-        {% if critique.was_edited %} · {{ ui.edited_label }}: {{ format_date(critique.updated_at, lang) }}{% endif %}
-      </p>
-      <h1 class="critique-title">{{ critique.title }}</h1>
-      <p class="critique-meta">
-        {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
-      </p>
+      <div class="critique-title-card">
+        <p class="critique-kicker">
+          {{ ui.critique_label }} · {{ ui.published_label }}: {{ format_date(critique.created_at, lang) }}
+          {% if critique.was_edited %} · {{ ui.edited_label }}: {{ format_date(critique.updated_at, lang) }}{% endif %}
+        </p>
+        <h1 class="critique-title">{{ critique.title }}</h1>
+        <p class="critique-meta">
+          {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
+        </p>
+      </div>
 
       <div class="critique-actions">
         {% if current_user.is_authenticated %}

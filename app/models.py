@@ -44,6 +44,10 @@ class Ad(db.Model):
     subtitle_en        = db.Column(db.String(300), nullable=True)
     is_premium         = db.Column(db.Boolean, nullable=False, default=False)
     is_featured        = db.Column(db.Boolean, nullable=False, default=False)
+    # Admin-set cover for every Gold critique's featured header on this ad.
+    # When present it replaces the ad's own video as the critique cover —
+    # set once here, not editable from the critique-writing flow.
+    critique_cover_image_url = db.Column(db.String(500), nullable=True)
     # Workflow
     status             = db.Column(db.String(20), nullable=False, default="published")
     # valid: 'draft' | 'pending' | 'published' | 'rejected'
