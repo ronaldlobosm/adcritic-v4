@@ -105,7 +105,7 @@ CATALOG_UI = {
         "critiques_published_label": "Críticas publicadas",
         "readers_label":         "Lectores",
         "likes_received_label":  "Likes recibidos",
-        "following_label":       "Siguiendo",
+        "followers_label":       "Seguidores",
         "about_label":           "Sobre",
         "publish_perspective_title": "¿Cuál es tu perspectiva?",
         "publish_perspective_body":  "Publica tu propia crítica y únete a la conversación profesional.",
@@ -199,7 +199,7 @@ CATALOG_UI = {
         "critiques_published_label": "Critiques published",
         "readers_label":         "Readers",
         "likes_received_label":  "Likes received",
-        "following_label":       "Following",
+        "followers_label":       "Followers",
         "about_label":           "About",
         "publish_perspective_title": "What's your perspective?",
         "publish_perspective_body":  "Publish your own critique and join the professional conversation.",
@@ -468,7 +468,9 @@ def _author_stats(user):
         "critiques_published": len(critique_ids),
         "likes_received": likes_received,
         "readers": readers or 0,
-        "following": Follow.query.filter_by(follower_id=user.id).count(),
+        # People following this critic — not who this critic follows, which
+        # isn't a meaningful "reach" stat to show on their public profile.
+        "followers": Follow.query.filter_by(followed_id=user.id).count(),
     }
 
 

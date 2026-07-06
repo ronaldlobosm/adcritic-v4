@@ -169,7 +169,9 @@
       {% endif %}
     {% endwith %}
     {%- from "partials/ad_zone.html" import render as ad_zone -%}
-    {% block header_ad %}{{ ad_zone("header_banner") }}{% endblock %}
+    {% if not minimal_header %}
+      {% block header_ad %}{{ ad_zone("header_banner") }}{% endblock %}
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 

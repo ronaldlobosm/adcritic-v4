@@ -4021,7 +4021,8 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   transition: background .15s, color .15s, border-color .15s;
 }
-.rating-options input:checked + span {
+.rating-options input:checked + span,
+.rating-options span.is-lit {
   background: #e8c982;
   border-color: #e8c982;
   color: #12100d;
@@ -4092,8 +4093,8 @@ a:hover { text-decoration: underline; }
   position: absolute;
   top: 50%;
   left: 0%;
-  transform: translate(-50%, -50%);
-  font-size: 1.5rem;
+  transform: translate(-50%, -50%) rotate(-18deg);
+  font-size: 2.1rem;
   transition: left .15s, opacity .15s;
 }
 .rating-average-bar__star { opacity: 0; }
@@ -5204,7 +5205,16 @@ a:hover { text-decoration: underline; }
 /* ============================================================
    CRITIQUE DETAIL — independent article page
    ============================================================ */
-.critique-page { padding-top: 2.5rem; padding-bottom: 4rem; }
+.critique-page { padding-bottom: 4rem; }
+
+.critique-featured-media {
+  width: 100%;
+  background: #000;
+  margin-bottom: 2.5rem;
+}
+.critique-featured-media .detail-video-wrap { margin-bottom: 0; }
+.critique-featured-media .plyr,
+.critique-featured-media .video-embed { border-radius: 0; }
 
 .critique-layout {
   display: grid;

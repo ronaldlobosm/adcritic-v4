@@ -1,9 +1,13 @@
 {% extends "base.html" %}
 {% from "partials/avatar.html" import avatar %}
+{% from "partials/video_player.html" import render as video_player %}
 {% block title %}{{ critique.title }} - AdCritic{% endblock %}
 
 {% block content %}
 <div class="critique-page">
+  <div class="critique-featured-media">
+    {{ video_player(ad.video_type, ad.video_value, ad.subtitle_es, ad.subtitle_en, t.title if t else ad.brand) }}
+  </div>
   <div class="container critique-layout">
 
     <aside class="critique-sidebar">
@@ -31,7 +35,7 @@
         <div><dt>{{ ui.critiques_published_label }}</dt><dd>{{ author_stats.critiques_published }}</dd></div>
         <div><dt>{{ ui.readers_label }}</dt><dd>{{ '{:,}'.format(author_stats.readers) }}</dd></div>
         <div><dt>{{ ui.likes_received_label }}</dt><dd>{{ '{:,}'.format(author_stats.likes_received) }}</dd></div>
-        <div><dt>{{ ui.following_label }}</dt><dd>{{ author_stats.following }}</dd></div>
+        <div><dt>{{ ui.followers_label }}</dt><dd>{{ author_stats.followers }}</dd></div>
       </dl>
 
       {% set bio = author.bio_en or author.bio_es %}
@@ -49,22 +53,9 @@
         {% if critique.was_edited %} · {{ ui.edited_label }}: {{ format_date(critique.updated_at, lang) }}{% endif %}
       </p>
       <h1 class="critique-title">{{ critique.title }}</h1>
-      <div class="critique-heading-row">
-        <p class="critique-meta">
-          {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
-        </p>
-        {% if critique.average_rating %}
-          {% set pct = (critique.average_rating / 5 * 100) | round(1) %}
-          <div class="critique-score-bar">
-            <span class="critique-score-bar__label">{{ ui.average_label }}</span>
-            <span class="critique-score-bar__value">{{ critique.average_rating }}</span>
-            <div class="critique-score-bar__track">
-              <div class="critique-score-bar__fill" style="width: {{ pct }}%;"></div>
-              <span class="critique-score-bar__star" style="left: {{ pct }}%;">★</span>
-            </div>
-          </div>
-        {% endif %}
-      </div>
+      <p class="critique-meta">
+        {{ ui.campaign_label }}: {{ ad.brand }} · {{ ui.brand_label }}: {{ ad.brand }} · {{ ui.year_label }}: {{ ad.year }} · {{ country_name(ad.country, lang) }}
+      </p>
 
       <div class="critique-actions">
         {% if current_user.is_authenticated %}
@@ -102,6 +93,17 @@
             <h4>{{ t.title if t else ad.brand }}</h4>
             <p class="critique-original-widget__byline">{{ ui.editorial_team }} · {{ format_date(ad.published_at or ad.created_at, lang) }}</p>
             <p class="critique-original-widget__meta">{{ ad.brand }} · {{ ad.year }} · {{ country_name(ad.country, lang) }}</p>
+            {% if critique.average_rating %}
+              {% set pct = (critique.average_rating / 5 * 100) | round(1) %}
+              <div class="critique-score-bar">
+                <span class="critique-score-bar__label">{{ ui.average_label }}</span>
+                <span class="critique-score-bar__value">{{ critique.average_rating }}</span>
+                <div class="critique-score-bar__track">
+                  <div class="critique-score-bar__fill" style="width: {{ pct }}%;"></div>
+                  <span class="critique-score-bar__star" style="left: {{ pct }}%;">★</span>
+                </div>
+              </div>
+            {% endif %}
             <a href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}" class="critique-original-widget__cta">{{ ui.view_original_analysis }} →</a>
           </div>
         </div>
@@ -145,5 +147,9 @@ document.querySelectorAll('[data-share-url]').forEach(function(btn) {
     }
   });
 });
+(function () {
+  var el = document.querySelector('.js-plyr-player');
+  if (el) new Plyr(el, { captions: { active: true, update: true } });
+})();
 </script>
 {% endblock %}

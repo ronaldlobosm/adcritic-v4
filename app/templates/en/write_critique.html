@@ -167,8 +167,24 @@
     valueEl.textContent = avg.toFixed(1);
   }
 
-  panel.addEventListener('change', updateAverage);
+  function updateFills() {
+    panel.querySelectorAll('.rating-options').forEach(function (group) {
+      var checked = group.querySelector('input:checked');
+      var selected = checked ? parseInt(checked.value, 10) : 0;
+      group.querySelectorAll('input').forEach(function (input) {
+        var span = input.nextElementSibling;
+        if (!span) return;
+        span.classList.toggle('is-lit', parseInt(input.value, 10) <= selected);
+      });
+    });
+  }
+
+  panel.addEventListener('change', function () {
+    updateAverage();
+    updateFills();
+  });
   updateAverage();
+  updateFills();
 })();
 </script>
 {% endblock %}
