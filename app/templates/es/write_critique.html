@@ -95,8 +95,11 @@
     suffix: '.min',
     height: 380,
     menubar: false,
-    plugins: ['lists', 'link', 'image'],
-    toolbar: 'bold italic underline | bullist numlist | blockquote link image | removeformat | undo redo',
+    plugins: ['lists', 'link', 'image', 'fullscreen', 'wordcount', 'emoticons'],
+    toolbar: 'blocks | bold italic underline strikethrough | ' +
+      'alignleft aligncenter alignright alignjustify | ' +
+      'bullist numlist | blockquote link image emoticons | removeformat | fullscreen | undo redo',
+    block_formats: 'Párrafo=p; Encabezado 2=h2; Encabezado 3=h3; Encabezado 4=h4',
     image_advtab: false,
     image_uploadtab: true,
     automatic_uploads: true,
@@ -122,7 +125,11 @@
         xhr.send(fd);
       });
     },
-    content_style: "body { font-family: 'Inter', sans-serif; font-size: 1.05rem; line-height: 1.7; color: #12100d; }",
+    content_style:
+      "body { font-family: 'Inter', sans-serif; font-size: 1.05rem; line-height: 1.7; color: #12100d; } " +
+      "h2, h3, h4 { font-family: 'Playfair Display', serif; font-weight: 700; } " +
+      "blockquote { margin: 1rem 0; padding: .25rem 1.1rem; border-left: 3px solid #a9341d; color: #564b3f; font-style: italic; } " +
+      "img { max-width: 100%; height: auto; }",
     skin: 'oxide',
     toolbar_mode: 'wrap',
     promotion: false,

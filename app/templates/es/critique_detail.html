@@ -108,11 +108,17 @@
       </div>
 
       <div class="critique-cta">
-        <h3>{{ ui.publish_perspective_title }}</h3>
-        <p>{{ ui.publish_perspective_body }}</p>
-        {% if can_submit_critique %}
+        {% if viewer_existing_comment %}
+          <h3>{{ ui.own_critique_title }}</h3>
+          <p>{{ ui.own_critique_body }}</p>
+          <a href="{{ url_for('main.write_critique_es', ad_slug=ad.slug) }}" class="btn-primary">{{ ui.edit_critique_cta }}</a>
+        {% elif can_submit_critique %}
+          <h3>{{ ui.publish_perspective_title }}</h3>
+          <p>{{ ui.publish_perspective_body }}</p>
           <a href="{{ url_for('main.write_critique_es', ad_slug=ad.slug) }}" class="btn-primary">{{ ui.publish_critique_cta }}</a>
         {% else %}
+          <h3>{{ ui.publish_perspective_title }}</h3>
+          <p>{{ ui.publish_perspective_body }}</p>
           <a href="{{ ui.gold_only_url }}" class="btn-primary">{{ ui.become_gold_cta }}</a>
         {% endif %}
       </div>

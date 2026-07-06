@@ -109,6 +109,8 @@ CATALOG_UI = {
         "about_label":           "Sobre",
         "publish_perspective_title": "¿Cuál es tu perspectiva?",
         "publish_perspective_body":  "Publica tu propia crítica y únete a la conversación profesional.",
+        "own_critique_title":    "Ya publicaste tu crítica para este anuncio",
+        "own_critique_body":     "Solo puedes publicar una crítica por anuncio, pero puedes editar la tuya cuando quieras.",
         "editorial_team":        "Equipo Editorial AdCritic",
         # Professional Debate
         "debate_title":          "Debate profesional",
@@ -201,6 +203,8 @@ CATALOG_UI = {
         "about_label":           "About",
         "publish_perspective_title": "What's your perspective?",
         "publish_perspective_body":  "Publish your own critique and join the professional conversation.",
+        "own_critique_title":    "You already published your critique for this ad",
+        "own_critique_body":     "You can only publish one critique per ad, but you can edit yours anytime.",
         "editorial_team":        "AdCritic Editorial Team",
         # Professional Debate
         "debate_title":          "Professional Debate",
@@ -548,7 +552,17 @@ def _handle_critique_detail(lang, username, slug):
         current_user.is_authenticated
         and Follow.query.filter_by(follower_id=current_user.id, followed_id=author.id).first() is not None
     )
-    can_submit_critique, _, _ = _critique_access_for_ad(current_user, ad)
+    # The viewer's own critique for this same ad, if any — may be this very
+    # critique (viewing your own page) or a different one (you critiqued
+    # this ad too and are now reading someone else's take on it). Either
+    # way, the CTA must offer to edit it, not pretend a new one can be
+    # published (only one critique per ad per member).
+    viewer_existing_comment = None
+    if current_user.is_authenticated:
+        viewer_existing_comment = AdComment.query.filter_by(
+            ad_id=ad.id, user_id=current_user.id
+        ).order_by(AdComment.created_at.asc()).first()
+    can_submit_critique, _, _ = _critique_access_for_ad(current_user, ad, viewer_existing_comment)
 
     return render_template(
         f"{lang}/critique_detail.html",
@@ -559,6 +573,7 @@ def _handle_critique_detail(lang, username, slug):
         like_count=like_count, liked=liked, saved=saved,
         following_author=following_author,
         can_submit_critique=can_submit_critique,
+        viewer_existing_comment=viewer_existing_comment,
     )
 
 

@@ -109,6 +109,11 @@ CRITIQUE_HTML_TAGS = [
 CRITIQUE_HTML_ATTRS = {
     "a": ["href", "target", "rel"],
     "img": ["src", "alt", "title", "width", "height"],
+    # TinyMCE's alignment buttons apply `style="text-align: ..."` — allowing
+    # the bare attribute isn't enough with bleach 6+, it also strips style
+    # *values* unless a CSSSanitizer is given (below), which is what
+    # actually restricts this to the text-align property.
+    "*": ["style"],
 }
 
 
@@ -118,9 +123,12 @@ def sanitize_critique_html(html):
     editor payload would be stored XSS — this is the only thing standing
     between a raw POST body and every reader's browser."""
     import bleach
+    from bleach.css_sanitizer import CSSSanitizer
 
+    css_sanitizer = CSSSanitizer(allowed_css_properties=["text-align"])
     return bleach.clean(
         html or "",
+        css_sanitizer=css_sanitizer,
         tags=CRITIQUE_HTML_TAGS,
         attributes=CRITIQUE_HTML_ATTRS,
         protocols=["http", "https", "mailto"],

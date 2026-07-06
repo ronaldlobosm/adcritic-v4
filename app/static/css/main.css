@@ -5362,6 +5362,44 @@ a:hover { text-decoration: underline; }
   color: var(--color-ink);
 }
 .critique-body p { margin-bottom: 1.15rem; }
+.critique-body h2,
+.critique-body h3,
+.critique-body h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1.75rem 0 .85rem;
+}
+.critique-body h2 { font-size: 1.55rem; }
+.critique-body h3 { font-size: 1.3rem; }
+.critique-body h4 { font-size: 1.12rem; }
+.critique-body ul,
+.critique-body ol {
+  margin: 0 0 1.15rem 1.4rem;
+}
+.critique-body li { margin-bottom: .4rem; }
+.critique-body blockquote {
+  margin: 1.5rem 0;
+  padding: .25rem 1.25rem;
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-ink-2);
+  font-style: italic;
+}
+.critique-body figure {
+  margin: 1.75rem 0;
+}
+.critique-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+.critique-body figcaption {
+  margin-top: .5rem;
+  font-size: .85rem;
+  color: var(--color-ink-3);
+  text-align: center;
+}
 
 .critique-original-widget {
   margin: 2.5rem 0;
