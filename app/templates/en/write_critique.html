@@ -30,7 +30,7 @@
     <div class="critique-form-panel" id="ratingPanel">
       <div class="critique-form-head">
         <span>{{ ui.comment_edit_title if existing_user_comment else ui.rating_panel_title }}</span>
-        <small>{{ ui.comment_edit_window if existing_user_comment else ui.rating_scale_hint }}</small>
+        <small>{{ ui.rating_scale_hint }}</small>
       </div>
       {% for field, label in [
         ('rating_music', ui.rating_music),

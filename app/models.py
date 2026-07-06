@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
@@ -237,8 +237,18 @@ class AdComment(db.Model):
     status     = db.Column(db.String(20), nullable=False, default="approved")
     # valid: 'approved' | 'pending' | 'spam'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Set only when the author actually edits title/body/ratings — NOT via
+    # onupdate, since incidental writes (e.g. the reads_count bump on every
+    # view) would otherwise make every critique look "edited" on first view.
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("User")
+
+    @property
+    def was_edited(self):
+        if not self.updated_at or not self.created_at:
+            return False
+        return (self.updated_at - self.created_at) > timedelta(minutes=1)
 
     @property
     def reading_time_minutes(self):

@@ -44,7 +44,10 @@
     </aside>
 
     <main class="critique-main">
-      <p class="critique-kicker">{{ ui.critique_label }} · {{ ui.published_label }} {{ format_date(critique.created_at, lang) }}</p>
+      <p class="critique-kicker">
+        {{ ui.critique_label }} · {{ ui.published_label }}: {{ format_date(critique.created_at, lang) }}
+        {% if critique.was_edited %} · {{ ui.edited_label }}: {{ format_date(critique.updated_at, lang) }}{% endif %}
+      </p>
       <h1 class="critique-title">{{ critique.title }}</h1>
       <div class="critique-heading-row">
         <p class="critique-meta">

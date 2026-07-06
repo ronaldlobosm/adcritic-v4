@@ -90,6 +90,7 @@ CATALOG_UI = {
         # Individual critique page
         "critique_label":        "Crítica",
         "published_label":       "Publicado",
+        "edited_label":          "Editado",
         "campaign_label":        "Campaña",
         "brand_label":           "Marca",
         "year_label":            "Año",
@@ -181,6 +182,7 @@ CATALOG_UI = {
         # Individual critique page
         "critique_label":        "Critique",
         "published_label":       "Published",
+        "edited_label":          "Edited",
         "campaign_label":        "Campaign",
         "brand_label":           "Brand",
         "year_label":            "Year",
@@ -376,12 +378,10 @@ def _handle_ad_detail(lang, slug):
     can_read    = can_read_ad_analysis(ad)
     can_comment = can_comment_on_ad()
     existing_user_comment = None
-    user_comment_editable = False
     if current_user.is_authenticated:
         existing_user_comment = AdComment.query.filter_by(
             ad_id=ad.id, user_id=current_user.id
         ).order_by(AdComment.created_at.asc()).first()
-        user_comment_editable = _comment_is_editable(existing_user_comment)
     can_submit_critique, uses_intro_critique, critique_block_reason = _critique_access_for_ad(
         current_user, ad, existing_user_comment
     )
@@ -436,7 +436,6 @@ def _handle_ad_detail(lang, slug):
         critiques=critiques,
         critique_like_counts=critique_like_counts,
         existing_user_comment=existing_user_comment,
-        user_comment_editable=user_comment_editable,
         can_submit_critique=can_submit_critique,
         uses_intro_critique=uses_intro_critique,
         critique_block_reason=critique_block_reason,
@@ -572,13 +571,12 @@ def _handle_write_critique(lang, ad_slug):
     existing_user_comment = AdComment.query.filter_by(
         ad_id=ad.id, user_id=current_user.id
     ).order_by(AdComment.created_at.asc()).first()
-    user_comment_editable = _comment_is_editable(existing_user_comment)
+    # Critiques are full editorial articles, not throwaway comments — the
+    # author can revise theirs at any time, not just in the first 5 minutes.
     can_submit_critique, uses_intro_critique, critique_block_reason = _critique_access_for_ad(
         current_user, ad, existing_user_comment
     )
     if not can_submit_critique:
-        abort(403)
-    if existing_user_comment and not user_comment_editable:
         abort(403)
 
     if request.method == "POST":
@@ -610,6 +608,8 @@ def _handle_write_critique(lang, ad_slug):
                 db.session.add(critique)
                 if uses_intro_critique and current_user.role == "gold":
                     current_user.gold_intro_critiques_used = (current_user.gold_intro_critiques_used or 0) + 1
+            else:
+                critique.updated_at = datetime.utcnow()
             ensure_username_slug(current_user)
             db.session.flush()
             ensure_critique_slug(critique)

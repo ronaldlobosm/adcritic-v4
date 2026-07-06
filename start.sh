@@ -79,11 +79,16 @@ with app.app_context():
             ("title", "ALTER TABLE ad_comments ADD COLUMN title VARCHAR(200)"),
             ("slug", "ALTER TABLE ad_comments ADD COLUMN slug VARCHAR(220) UNIQUE"),
             ("reads_count", "ALTER TABLE ad_comments ADD COLUMN reads_count INTEGER NOT NULL DEFAULT 0"),
+            ("updated_at", "ALTER TABLE ad_comments ADD COLUMN updated_at TIMESTAMP"),
         ]:
             if col not in ad_comments_existing:
                 conn.execute(text(ddl))
                 conn.commit()
                 print(f"[init] Added column ad_comments.{col}")
+                if col == "updated_at":
+                    conn.execute(text("UPDATE ad_comments SET updated_at = created_at"))
+                    conn.commit()
+                    print("[init] Backfilled ad_comments.updated_at from created_at")
 
         media_existing = [r[0] for r in conn.execute(
             text("SELECT column_name FROM information_schema.columns WHERE table_name='media_files'")
