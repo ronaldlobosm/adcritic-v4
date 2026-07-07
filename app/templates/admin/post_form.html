@@ -42,9 +42,10 @@
           {{ ui.label_cover_url }}
           <span class="form-hint">— {{ ui.hint_cover_url }}</span>
         </label>
+        {% set cover_image_value = request.form.cover_image_url or (post.cover_image_url if post else None) or '' %}
         <div class="image-picker-wrap">
           <input class="form-input image-picker-url" type="text" id="cover_image_url" name="cover_image_url"
-                 value="{{ request.form.cover_image_url or (post.cover_image_url if post else '') }}"
+                 value="{{ cover_image_value }}"
                  placeholder="https://…" readonly />
           <div class="image-picker-actions">
             <button type="button" class="btn-sm js-open-picker" data-target="cover_image_url"

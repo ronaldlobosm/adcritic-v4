@@ -14,11 +14,13 @@
   </div>
   <div class="container critique-layout">
 
+    {% set location_parts = author.location.split(',') if author.location else [] %}
+    {% set location_display = (location_parts[1:] | map('trim') | join(', ')) if location_parts|length > 1 else author.location %}
     <aside class="critique-sidebar">
       <div class="critique-sidebar__avatar">{{ avatar(author, 'critique-avatar-img', 'critique-avatar-placeholder') }}</div>
       <h2 class="critique-sidebar__name">{{ author.public_name }}</h2>
       {% if author.professional_title %}<p class="critique-sidebar__title">{{ author.professional_title }}</p>{% endif %}
-      {% if author.location %}<p class="critique-sidebar__location">{{ author.location }}</p>{% endif %}
+      {% if location_display %}<p class="critique-sidebar__location">{{ location_display }}</p>{% endif %}
       {% if author.role == 'gold' %}<p class="critique-sidebar__badge">★ Gold Founder</p>{% endif %}
 
       {% if current_user.is_authenticated and current_user.id != author.id %}
@@ -49,6 +51,70 @@
           <p>{{ bio }}</p>
         </div>
       {% endif %}
+
+      {% if author.location and google_maps_embed_key %}
+        <div class="account-location-map account-location-map--dark critique-sidebar__map">
+          <div id="critiqueAuthorMap" style="width:100%;height:160px"></div>
+          <p class="gold-profile-location__text">{{ location_display }}</p>
+        </div>
+        <script>
+        (function () {
+          var LOCATION_QUERY = {{ author.location | tojson }};
+          window.initCritiqueAuthorMap = function () {
+            var mapEl = document.getElementById('critiqueAuthorMap');
+            if (!mapEl || typeof google === 'undefined') return;
+            var darkStyle = [
+              {elementType: 'geometry', stylers: [{color: '#212121'}]},
+              {elementType: 'labels.icon', stylers: [{visibility: 'off'}]},
+              {elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {elementType: 'labels.text.stroke', stylers: [{color: '#212121'}]},
+              {featureType: 'administrative', elementType: 'geometry', stylers: [{color: '#757575'}]},
+              {featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{color: '#9e9e9e'}]},
+              {featureType: 'administrative.land_parcel', stylers: [{visibility: 'off'}]},
+              {featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{color: '#bdbdbd'}]},
+              {featureType: 'poi', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {featureType: 'poi.park', elementType: 'geometry', stylers: [{color: '#181818'}]},
+              {featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
+              {featureType: 'poi.park', elementType: 'labels.text.stroke', stylers: [{color: '#1b1b1b'}]},
+              {featureType: 'road', elementType: 'geometry.fill', stylers: [{color: '#2c2c2c'}]},
+              {featureType: 'road', elementType: 'labels.text.fill', stylers: [{color: '#8a8a8a'}]},
+              {featureType: 'road.arterial', elementType: 'geometry', stylers: [{color: '#373737'}]},
+              {featureType: 'road.highway', elementType: 'geometry', stylers: [{color: '#3c3c3c'}]},
+              {featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{color: '#4e4e4e'}]},
+              {featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{color: '#616161'}]},
+              {featureType: 'transit', elementType: 'labels.text.fill', stylers: [{color: '#757575'}]},
+              {featureType: 'water', elementType: 'geometry', stylers: [{color: '#000000'}]},
+              {featureType: 'water', elementType: 'labels.text.fill', stylers: [{color: '#3d3d3d'}]}
+            ];
+            var geocoder = new google.maps.Geocoder();
+            geocoder.geocode({address: LOCATION_QUERY}, function (results, status) {
+              if (status !== 'OK' || !results[0]) return;
+              var map = new google.maps.Map(mapEl, {
+                center: results[0].geometry.location,
+                zoom: 11,
+                styles: darkStyle,
+                disableDefaultUI: true,
+                fullscreenControl: true
+              });
+              new google.maps.Marker({
+                position: results[0].geometry.location,
+                map: map,
+                icon: {
+                  path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z',
+                  fillColor: '#d4af57',
+                  fillOpacity: 1,
+                  strokeColor: '#0d0d0c',
+                  strokeWeight: 1,
+                  scale: 1.7,
+                  anchor: new google.maps.Point(12, 22)
+                }
+              });
+            });
+          };
+        })();
+        </script>
+        <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_embed_key }}&callback=initCritiqueAuthorMap" async></script>
+      {% endif %}
     </aside>
 
     <main class="critique-main">
@@ -77,6 +143,9 @@
           <span class="critique-like-btn">♥ {{ like_count }}</span>
         {% endif %}
         <button type="button" class="critique-share-btn" data-share-url="{{ request.url }}">{{ ui.share_btn }}</button>
+        <a href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}" class="critique-ad-mention">
+          {{ ui.ad_mention_label }}: {{ ad.brand }} →
+        </a>
         <span class="critique-read-time">{{ critique.reading_time_minutes }} {{ ui.min_read }}</span>
       </div>
 
@@ -116,10 +185,20 @@
       </div>
 
       <div class="critique-cta">
-        {% if viewer_existing_comment %}
+        {% if viewer_existing_comment and viewer_comment_editable %}
           <h3>{{ ui.own_critique_title }}</h3>
           <p>{{ ui.own_critique_body }}</p>
-          <a href="{{ url_for('main.write_critique_en', ad_slug=ad.slug) }}" class="btn-primary">{{ ui.edit_critique_cta }}</a>
+          <div class="critique-cta__actions">
+            <a href="{{ url_for('main.write_critique_en', ad_slug=ad.slug) }}" class="btn-primary">{{ ui.edit_critique_cta }}</a>
+            <form method="post" action="{{ url_for('main.delete_ad_comment', comment_id=viewer_existing_comment.id) }}"
+                  onsubmit="return confirm('{{ ui.comment_delete_confirm }}')">
+              <input type="hidden" name="lang" value="en" />
+              <button type="submit" class="btn-secondary">{{ ui.delete_critique_cta }}</button>
+            </form>
+          </div>
+        {% elif viewer_existing_comment %}
+          <h3>{{ ui.comment_locked_title }}</h3>
+          <p>{{ ui.comment_locked_body }}</p>
         {% elif can_submit_critique %}
           <h3>{{ ui.publish_perspective_title }}</h3>
           <p>{{ ui.publish_perspective_body }}</p>

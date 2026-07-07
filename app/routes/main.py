@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import os
 import random
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, jsonify
@@ -45,12 +46,13 @@ CATALOG_UI = {
         "comment_pending":       "Tu crítica está pendiente de revisión.",
         "comment_err":           "La crítica no puede estar vacía.",
         "comment_one_only":      "Ya publicaste tu crítica para este anuncio.",
-        "comment_locked":        "Tu crítica ya quedó cerrada. Solo se puede editar durante los primeros 5 minutos.",
+        "comment_locked":        "Tu crítica ya quedó cerrada. Solo se puede editar durante las primeras 24 horas.",
         "comment_edit_title":    "Editar tu crítica",
-        "comment_locked_title":  "Crítica publicada",
-        "comment_locked_body":   "Cada miembro Gold puede publicar una sola crítica por anuncio. La edición queda abierta por 5 minutos después de publicarla.",
+        "comment_locked_title":  "Crítica cerrada",
+        "comment_locked_body":   "Cada miembro Gold puede publicar una sola crítica por anuncio. La edición queda abierta por 24 horas después de publicarla.",
         "comment_update_btn":    "Actualizar crítica",
-        "comment_edit_window":   "Puedes editarla durante 5 minutos desde su publicación.",
+        "comment_edit_window":   "Puedes editarla durante las 24 horas siguientes a su publicación.",
+        "translation_notice":    "Se traducirá automáticamente al inglés una vez que publiques tu crítica.",
         "comment_gold_since_title": "Tu membresía Gold marca el corte",
         "comment_gold_since_body":  "Puedes publicar críticas en anuncios agregados desde que eres Gold.",
         "comment_intro_title":      "Crítica de cortesía disponible",
@@ -84,6 +86,7 @@ CATALOG_UI = {
         "read_critique":         "Leer crítica",
         "publish_critique_cta":  "Publica tu crítica",
         "edit_critique_cta":     "Editar tu crítica",
+        "delete_critique_cta":   "Eliminar crítica",
         "become_gold_cta":       "Hazte Gold para publicar tu crítica",
         "debate_link":           "Debate profesional",
         "min_read":              "min de lectura",
@@ -97,9 +100,10 @@ CATALOG_UI = {
         "like_btn":              "Me gusta",
         "save_btn":              "Guardar",
         "share_btn":             "Compartir",
+        "ad_mention_label":      "Sobre el anuncio",
         "follow_btn":            "Seguir crítico",
         "unfollow_btn":          "Siguiendo",
-        "original_analysis_title": "Original AdCritic Analysis",
+        "original_analysis_title": "Análisis original de AdCritic",
         "official_analysis_label": "Análisis oficial",
         "view_original_analysis":  "Ver análisis original",
         "critiques_published_label": "Críticas publicadas",
@@ -139,12 +143,13 @@ CATALOG_UI = {
         "comment_pending":       "Your critique is pending review.",
         "comment_err":           "Critique cannot be empty.",
         "comment_one_only":      "You've already posted your critique for this ad.",
-        "comment_locked":        "Your critique is locked. It can only be edited during the first 5 minutes.",
+        "comment_locked":        "Your critique is locked. It can only be edited during the first 24 hours.",
         "comment_edit_title":    "Edit your critique",
-        "comment_locked_title":  "Critique published",
-        "comment_locked_body":   "Each Gold member can publish one critique per ad. Editing stays open for 5 minutes after posting.",
+        "comment_locked_title":  "Critique closed",
+        "comment_locked_body":   "Each Gold member can publish one critique per ad. Editing stays open for 24 hours after posting.",
         "comment_update_btn":    "Update critique",
-        "comment_edit_window":   "You can edit it for 5 minutes after posting.",
+        "comment_edit_window":   "You can edit it for the 24 hours after posting.",
+        "translation_notice":    "This will be automatically translated to Spanish once you publish your critique.",
         "comment_gold_since_title": "Your Gold membership sets the line",
         "comment_gold_since_body":  "You can publish critiques on ads added since you became Gold.",
         "comment_intro_title":      "Courtesy critique available",
@@ -178,6 +183,7 @@ CATALOG_UI = {
         "read_critique":         "Read critique",
         "publish_critique_cta":  "Publish your critique",
         "edit_critique_cta":     "Edit your critique",
+        "delete_critique_cta":   "Delete critique",
         "become_gold_cta":       "Become Gold to publish your own critique",
         "debate_link":           "Professional Debate",
         "min_read":              "min read",
@@ -191,6 +197,7 @@ CATALOG_UI = {
         "like_btn":              "Like",
         "save_btn":              "Save",
         "share_btn":             "Share",
+        "ad_mention_label":      "About the ad",
         "follow_btn":            "Follow critic",
         "unfollow_btn":          "Following",
         "original_analysis_title": "Original AdCritic Analysis",
@@ -333,10 +340,10 @@ def _rating_value(name):
     return value if 1 <= value <= 5 else None
 
 
-def _comment_is_editable(comment):
-    if comment is None or comment.created_at is None:
+def _critique_is_editable(critique):
+    if critique is None or critique.created_at is None:
         return False
-    return datetime.utcnow() - comment.created_at <= timedelta(minutes=5)
+    return datetime.utcnow() - critique.created_at <= timedelta(hours=24)
 
 
 def _set_comment_translation(comment, body, source_lang):
@@ -386,6 +393,7 @@ def _handle_ad_detail(lang, slug):
         existing_user_comment = AdComment.query.filter_by(
             ad_id=ad.id, user_id=current_user.id
         ).order_by(AdComment.created_at.asc()).first()
+    existing_comment_editable = _critique_is_editable(existing_user_comment)
     can_submit_critique, uses_intro_critique, critique_block_reason = _critique_access_for_ad(
         current_user, ad, existing_user_comment
     )
@@ -440,6 +448,7 @@ def _handle_ad_detail(lang, slug):
         critiques=critiques,
         critique_like_counts=critique_like_counts,
         existing_user_comment=existing_user_comment,
+        existing_comment_editable=existing_comment_editable,
         can_submit_critique=can_submit_critique,
         uses_intro_critique=uses_intro_critique,
         critique_block_reason=critique_block_reason,
@@ -483,6 +492,9 @@ def _handle_critique_detail(lang, username, slug):
     canonical_route = f"main.critique_detail_{lang}"
     if author.username_slug != username:
         return redirect(url_for(canonical_route, username=author.username_slug, slug=slug), code=301)
+
+    alt_lang = "en" if lang == "es" else "es"
+    alt_lang_url = url_for(f"main.critique_detail_{alt_lang}", username=author.username_slug, slug=slug)
 
     if request.method == "POST":
         action = request.form.get("_action", "")
@@ -564,6 +576,7 @@ def _handle_critique_detail(lang, username, slug):
         viewer_existing_comment = AdComment.query.filter_by(
             ad_id=ad.id, user_id=current_user.id
         ).order_by(AdComment.created_at.asc()).first()
+    viewer_comment_editable = _critique_is_editable(viewer_existing_comment)
     can_submit_critique, _, _ = _critique_access_for_ad(current_user, ad, viewer_existing_comment)
 
     return render_template(
@@ -576,6 +589,9 @@ def _handle_critique_detail(lang, username, slug):
         following_author=following_author,
         can_submit_critique=can_submit_critique,
         viewer_existing_comment=viewer_existing_comment,
+        viewer_comment_editable=viewer_comment_editable,
+        google_maps_embed_key=os.environ.get("GOOGLE_MAPS_EMBED_KEY", ""),
+        alt_lang_url=alt_lang_url,
     )
 
 
@@ -588,12 +604,13 @@ def _handle_write_critique(lang, ad_slug):
     existing_user_comment = AdComment.query.filter_by(
         ad_id=ad.id, user_id=current_user.id
     ).order_by(AdComment.created_at.asc()).first()
-    # Critiques are full editorial articles, not throwaway comments — the
-    # author can revise theirs at any time, not just in the first 5 minutes.
+    critique_editable = _critique_is_editable(existing_user_comment)
     can_submit_critique, uses_intro_critique, critique_block_reason = _critique_access_for_ad(
         current_user, ad, existing_user_comment
     )
     if not can_submit_critique:
+        abort(403)
+    if existing_user_comment and not critique_editable:
         abort(403)
 
     if request.method == "POST":
@@ -838,13 +855,21 @@ def delete_ad_comment(comment_id):
         abort(403)
     comment = AdComment.query.get_or_404(comment_id)
     ad = comment.ad
-    is_own          = comment.user_id == current_user.id and _comment_is_editable(comment)
+    author = comment.user
+    is_own          = comment.user_id == current_user.id and _critique_is_editable(comment)
     is_admin        = current_user.role == "admin"
     is_editor_owner = current_user.role == "editor" and ad and ad.created_by_id == current_user.id
     if not (is_own or is_admin or is_editor_owner):
         abort(403)
     lang = request.form.get("lang", "es")
     slug = ad.slug if ad else None
+    # If this critique had used one of the author's 3 retroactive/intro
+    # slots (an ad older than their Gold start date), refund it — deleting
+    # within the window should give them a genuine do-over, not a
+    # permanently spent slot for a critique that no longer exists.
+    if (author and author.role == "gold" and ad and ad.created_at and author.gold_started_at
+            and ad.created_at < author.gold_started_at):
+        author.gold_intro_critiques_used = max(0, (author.gold_intro_critiques_used or 0) - 1)
     db.session.delete(comment)
     db.session.commit()
     if slug:

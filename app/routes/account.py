@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
@@ -215,6 +216,10 @@ def _handle_account(lang):
             .order_by(AdComment.created_at.desc())
             .all()
         )
+    editable_comment_ids = {
+        c.id for c in comments
+        if c.created_at and datetime.utcnow() - c.created_at <= timedelta(hours=24)
+    }
     comment_like_counts = {}
     comment_rating_stats = {}
     saved_ads = (
@@ -265,6 +270,7 @@ def _handle_account(lang):
         sub_info=sub_info,
         plan_label=plan_label,
         comments=comments,
+        editable_comment_ids=editable_comment_ids,
         features=features,
         comment_like_counts=comment_like_counts,
         comment_rating_stats=comment_rating_stats,

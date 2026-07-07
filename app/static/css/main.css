@@ -521,7 +521,13 @@ a:hover { text-decoration: underline; }
   text-decoration: none;
 }
 .logo:hover { color: #e8c982; text-decoration: none; }
-.site-header--minimal .header-inner { justify-content: center; }
+.site-header--minimal .header-inner { justify-content: center; position: relative; }
+.lang-toggle--minimal {
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
 /* ============================================================
    MAIN NAV + DROPDOWN
@@ -2858,6 +2864,10 @@ a:hover { text-decoration: underline; }
   border-color: var(--color-ink-3);
   color: var(--color-ink);
 }
+.gold-critique-card__delete:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
 .gold-profile-timeline {
   display: grid;
   gap: .9rem;
@@ -4123,8 +4133,14 @@ a:hover { text-decoration: underline; }
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
-  margin-bottom: .85rem;
+  margin-bottom: .25rem;
   color: var(--color-ink);
+}
+.critique-editor-panel__translation-notice {
+  font-size: .8rem;
+  color: var(--color-ink-3);
+  font-style: italic;
+  margin-bottom: .85rem;
 }
 
 /* ============================================================
@@ -5241,7 +5257,7 @@ a:hover { text-decoration: underline; }
 
 .critique-sidebar {
   position: sticky;
-  top: 1.5rem;
+  top: calc(60px + 1.5rem); /* clears the sticky site header (60px tall) */
   display: flex;
   flex-direction: column;
   gap: .5rem;
@@ -5336,6 +5352,7 @@ a:hover { text-decoration: underline; }
 }
 .critique-sidebar__about h3 { font-size: .85rem; font-weight: 700; margin-bottom: .4rem; }
 .critique-sidebar__about p { font-size: .85rem; color: var(--color-ink-2); line-height: 1.55; }
+.critique-sidebar__map { margin-top: 1rem; }
 
 .critique-main { min-width: 0; }
 .critique-kicker {
@@ -5368,7 +5385,8 @@ a:hover { text-decoration: underline; }
 .critique-action-form { display: inline-flex; }
 .critique-like-btn,
 .critique-save-btn,
-.critique-share-btn {
+.critique-share-btn,
+.critique-ad-mention {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
@@ -5384,7 +5402,8 @@ a:hover { text-decoration: underline; }
 }
 .critique-like-btn:hover,
 .critique-save-btn:hover,
-.critique-share-btn:hover { border-color: var(--color-ink-3); }
+.critique-share-btn:hover,
+.critique-ad-mention:hover { border-color: var(--color-accent); color: var(--color-accent); text-decoration: none; }
 .critique-like-btn.is-liked { color: var(--color-accent); border-color: var(--color-accent); }
 .critique-save-btn.is-saved { color: var(--metal-gold-deep); border-color: var(--color-gold); }
 .critique-read-time { margin-left: auto; font-size: .8rem; color: var(--color-ink-3); }
@@ -5489,6 +5508,13 @@ a:hover { text-decoration: underline; }
 }
 .critique-cta h3 { font-family: var(--font-display); font-size: 1.4rem; margin-bottom: .5rem; }
 .critique-cta p { color: var(--color-ink-2); margin-bottom: 1.25rem; }
+.critique-cta__actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
 
 .critique-footer {
   text-align: center;

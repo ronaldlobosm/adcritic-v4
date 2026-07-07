@@ -98,9 +98,10 @@
           {{ ui.label_critique_cover }}
           <span class="form-hint">— {{ ui.hint_critique_cover }}</span>
         </label>
+        {% set critique_cover_value = request.form.critique_cover_image_url or (ad.critique_cover_image_url if ad else None) or '' %}
         <div class="image-picker-wrap">
           <input class="form-input image-picker-url" type="text" id="critique_cover_image_url" name="critique_cover_image_url"
-                 value="{{ request.form.critique_cover_image_url or (ad.critique_cover_image_url if ad else '') }}"
+                 value="{{ critique_cover_value }}"
                  placeholder="https://…" readonly />
           <div class="image-picker-actions">
             <button type="button" class="btn-sm js-open-picker" data-target="critique_cover_image_url"
@@ -360,6 +361,8 @@
 {% endblock %}
 
 {% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" />
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <script src="{{ url_for('static', filename='js/admin-media.js') }}"></script>
 <script>
 (function () {

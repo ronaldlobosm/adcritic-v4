@@ -404,6 +404,13 @@
                       Copiar enlace
                     </button>
                   {% endif %}
+                  {% if comment.id in editable_comment_ids %}
+                    <form method="post" action="{{ url_for('main.delete_ad_comment', comment_id=comment.id) }}"
+                          onsubmit="return confirm('¿Eliminar tu crítica? No se puede deshacer.')">
+                      <input type="hidden" name="lang" value="es" />
+                      <button type="submit" class="gold-critique-card__share gold-critique-card__delete">Eliminar</button>
+                    </form>
+                  {% endif %}
                 </footer>
               </article>
             {% endfor %}

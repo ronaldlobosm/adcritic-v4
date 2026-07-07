@@ -102,7 +102,9 @@
     {% endif %}
 
     <div class="community-critiques__cta">
-      {% if can_comment and can_submit_critique %}
+      {% if existing_user_comment and not existing_comment_editable %}
+        <p class="comment-login-prompt">{{ ui.comment_locked }}</p>
+      {% elif can_comment and can_submit_critique %}
         <a href="{{ url_for('main.write_critique_en', ad_slug=ad.slug) }}" class="btn-primary">
           {{ ui.edit_critique_cta if existing_user_comment else ui.publish_critique_cta }}
         </a>
