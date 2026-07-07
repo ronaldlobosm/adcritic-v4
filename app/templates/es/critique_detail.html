@@ -5,9 +5,6 @@
 
 {% block content %}
 <div class="critique-page">
-  <nav class="breadcrumb critique-page__breadcrumb container">
-    <a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}">{{ ui.back_to_ad }}</a>
-  </nav>
   <div class="critique-featured-media">
     {% if ad.critique_cover_image_url %}
       <img src="{{ ad.critique_cover_image_url }}" alt="{{ t.title if t else ad.brand }}" class="critique-featured-media__image" />
@@ -48,6 +45,8 @@
       </dl>
 
       {% set bio = author.bio_es or author.bio_en %}
+      {% if bio or (author.location and google_maps_embed_key) %}
+      <div class="critique-sidebar__dark-zone">
       {% if bio %}
         <div class="critique-sidebar__about">
           <h3>{{ ui.about_label }} {{ author.display_name or author.public_name }}</h3>
@@ -118,6 +117,8 @@
         </script>
         <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_embed_key }}&callback=initCritiqueAuthorMap" async></script>
       {% endif %}
+      </div>
+      {% endif %}
     </aside>
 
     <main class="critique-main">
@@ -147,7 +148,7 @@
         {% endif %}
         <button type="button" class="critique-share-btn" data-share-url="{{ request.url }}">{{ ui.share_btn }}</button>
         <a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}" class="critique-ad-mention">
-          {{ ui.ad_mention_label }}: {{ ad.brand }} →
+          {{ ui.ad_mention_label }} →
         </a>
         <span class="critique-read-time">{{ critique.reading_time_minutes }} {{ ui.min_read }}</span>
       </div>

@@ -100,7 +100,7 @@ CATALOG_UI = {
         "like_btn":              "Me gusta",
         "save_btn":              "Guardar",
         "share_btn":             "Compartir",
-        "ad_mention_label":      "Sobre el anuncio",
+        "ad_mention_label":      "Sobre esta campaña",
         "follow_btn":            "Seguir crítico",
         "unfollow_btn":          "Siguiendo",
         "original_analysis_title": "Análisis original de AdCritic",
@@ -197,7 +197,7 @@ CATALOG_UI = {
         "like_btn":              "Like",
         "save_btn":              "Save",
         "share_btn":             "Share",
-        "ad_mention_label":      "About the ad",
+        "ad_mention_label":      "About this campaign",
         "follow_btn":            "Follow critic",
         "unfollow_btn":          "Following",
         "original_analysis_title": "Original AdCritic Analysis",
@@ -592,6 +592,8 @@ def _handle_critique_detail(lang, username, slug):
         viewer_comment_editable=viewer_comment_editable,
         google_maps_embed_key=os.environ.get("GOOGLE_MAPS_EMBED_KEY", ""),
         alt_lang_url=alt_lang_url,
+        minimal_back_url=url_for(f"main.ad_detail_{lang}", slug=ad.slug),
+        minimal_back_label=ui["back_to_ad"],
     )
 
 

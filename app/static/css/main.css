@@ -531,6 +531,25 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: .6rem;
 }
+.header-back-minimal {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .82rem;
+  font-weight: 600;
+  color: rgba(255,250,242,.75);
+  white-space: nowrap;
+}
+.header-back-minimal:hover { color: #e8c982; text-decoration: none; }
+@media (max-width: 640px) {
+  .header-back-minimal {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 
 /* ============================================================
    MAIN NAV + DROPDOWN
@@ -5225,7 +5244,6 @@ a:hover { text-decoration: underline; }
    CRITIQUE DETAIL — independent article page
    ============================================================ */
 .critique-page { padding-bottom: 4rem; }
-.critique-page__breadcrumb { padding-top: 1.25rem; margin-bottom: 1rem; max-width: 980px; }
 
 .critique-featured-media {
   width: 100%;
@@ -5349,7 +5367,7 @@ a:hover { text-decoration: underline; }
 .critique-sidebar__stats dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--color-ink-3); }
 .critique-sidebar__stats dd { font-family: var(--font-display); font-size: 1.15rem; margin-top: .1rem; }
 
-.critique-sidebar__about {
+.critique-sidebar__dark-zone {
   margin-top: 1rem;
   padding: 1rem 1.1rem;
   border-radius: 8px;
@@ -5359,6 +5377,7 @@ a:hover { text-decoration: underline; }
 .critique-sidebar__about h3 { font-size: .8rem; font-weight: 700; margin-bottom: .4rem; color: #e8c982; }
 .critique-sidebar__about p { font-size: .85rem; color: rgba(255,250,242,.82); line-height: 1.55; }
 .critique-sidebar__map { margin-top: 1rem; }
+.critique-sidebar__dark-zone .critique-sidebar__map:first-child { margin-top: 0; }
 
 .critique-main { min-width: 0; }
 .critique-kicker {
@@ -5391,8 +5410,7 @@ a:hover { text-decoration: underline; }
 .critique-action-form { display: inline-flex; }
 .critique-like-btn,
 .critique-save-btn,
-.critique-share-btn,
-.critique-ad-mention {
+.critique-share-btn {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
@@ -5408,10 +5426,29 @@ a:hover { text-decoration: underline; }
 }
 .critique-like-btn:hover,
 .critique-save-btn:hover,
-.critique-share-btn:hover,
-.critique-ad-mention:hover { border-color: var(--color-accent); color: var(--color-accent); text-decoration: none; }
+.critique-share-btn:hover { border-color: var(--color-accent); color: var(--color-accent); text-decoration: none; }
 .critique-like-btn.is-liked { color: var(--color-accent); border-color: var(--color-accent); }
 .critique-save-btn.is-saved { color: var(--metal-gold-deep); border-color: var(--color-gold); }
+.critique-ad-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .45rem .95rem;
+  background: linear-gradient(135deg, #12100d, #1f1a15);
+  border: 1px solid rgba(181,138,59,.55);
+  border-radius: 20px;
+  font-size: .85rem;
+  font-weight: 700;
+  color: #e8c982;
+  cursor: pointer;
+  transition: border-color .15s, opacity .15s;
+}
+.critique-ad-mention:hover {
+  border-color: #e8c982;
+  opacity: .88;
+  color: #e8c982;
+  text-decoration: none;
+}
 .critique-read-time { margin-left: auto; font-size: .8rem; color: var(--color-ink-3); }
 
 .critique-translated-note {

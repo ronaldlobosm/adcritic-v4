@@ -22,6 +22,10 @@
         AdCritic
       </a>
 
+      {% if minimal_header and minimal_back_url %}
+        <a href="{{ minimal_back_url }}" class="header-back-minimal">{{ minimal_back_label }}</a>
+      {% endif %}
+
       {% if not minimal_header %}
       <button class="nav-hamburger" id="navToggle" aria-label="Menú" aria-expanded="false">
         <span></span><span></span><span></span>
