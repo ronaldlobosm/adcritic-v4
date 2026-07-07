@@ -19,6 +19,26 @@
     <p class="write-critique-subtitle">{{ t.title if t else ad.brand }}</p>
   </header>
 
+  <div class="critique-original-widget critique-original-widget--compact">
+    <h3>{{ ui.original_analysis_title }}</h3>
+    <div class="critique-original-widget__inner">
+      <a class="critique-original-widget__thumb" href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}" target="_blank" rel="noopener">
+        {% if ad.youtube_id %}
+          <img src="https://img.youtube.com/vi/{{ ad.youtube_id }}/hqdefault.jpg" alt="" />
+        {% else %}
+          <span>{{ ad.brand[0] }}</span>
+        {% endif %}
+      </a>
+      <div class="critique-original-widget__body">
+        <span class="critique-original-widget__label">{{ ui.official_analysis_label }}</span>
+        <h4>{{ t.title if t else ad.brand }}</h4>
+        <p class="critique-original-widget__byline">{{ ui.editorial_team }} · {{ format_date(ad.published_at or ad.created_at, lang) }}</p>
+        <p class="critique-original-widget__meta">{{ ad.brand }} · {{ ad.year }} · {{ country_name(ad.country, lang) }}</p>
+        <a href="{{ url_for('main.ad_detail_es', slug=ad.slug) }}" class="critique-original-widget__cta" target="_blank" rel="noopener">{{ ui.view_original_analysis }} →</a>
+      </div>
+    </div>
+  </div>
+
   {% if uses_intro_critique %}
     <div class="critique-locked critique-locked--intro">
       <strong>{{ ui.comment_intro_title }}</strong>

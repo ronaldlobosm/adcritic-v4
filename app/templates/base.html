@@ -133,22 +133,30 @@
           </a>
         </div>
       </div>
-      {% elif alt_lang_url %}
-        <a href="{{ alt_lang_url }}" class="lang-toggle lang-toggle--minimal">
-          {% if lang == 'es' %}
-            <span class="lang-toggle__flag">
-              <span class="fi fi-us lang-toggle__flag-primary"></span>
-              <span class="fi fi-es lang-toggle__flag-peek"></span>
-            </span>
-            <span>EN</span>
-          {% else %}
-            <span class="lang-toggle__flag">
-              <span class="fi fi-es lang-toggle__flag-primary"></span>
-              <span class="fi fi-us lang-toggle__flag-peek"></span>
-            </span>
-            <span>ES</span>
+      {% else %}
+        <div class="header-actions header-actions--minimal">
+          <div class="font-size-toggle">
+            <button type="button" class="font-size-btn" id="fzDown" aria-label="Texto más pequeño" title="A−">A−</button>
+            <button type="button" class="font-size-btn" id="fzUp"   aria-label="Texto más grande"  title="A+">A+</button>
+          </div>
+          {% if alt_lang_url %}
+            <a href="{{ alt_lang_url }}" class="lang-toggle">
+              {% if lang == 'es' %}
+                <span class="lang-toggle__flag">
+                  <span class="fi fi-us lang-toggle__flag-primary"></span>
+                  <span class="fi fi-es lang-toggle__flag-peek"></span>
+                </span>
+                <span>EN</span>
+              {% else %}
+                <span class="lang-toggle__flag">
+                  <span class="fi fi-es lang-toggle__flag-primary"></span>
+                  <span class="fi fi-us lang-toggle__flag-peek"></span>
+                </span>
+                <span>ES</span>
+              {% endif %}
+            </a>
           {% endif %}
-        </a>
+        </div>
       {% endif %}
 
     </div>

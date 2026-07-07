@@ -27,7 +27,7 @@ from app.utils import (
     ensure_username_slug, ensure_critique_slug, sanitize_critique_html,
     save_upload_file,
 )
-from app.translation import language_name, translate_text
+from app.translate import translate_text
 
 main = Blueprint("main", __name__)
 
@@ -114,7 +114,7 @@ CATALOG_UI = {
         "publish_perspective_title": "¿Cuál es tu perspectiva?",
         "publish_perspective_body":  "Publica tu propia crítica y únete a la conversación profesional.",
         "own_critique_title":    "Ya publicaste tu crítica para este anuncio",
-        "own_critique_body":     "Solo puedes publicar una crítica por anuncio, pero puedes editar la tuya cuando quieras.",
+        "own_critique_body":     "Solo puedes publicar una crítica por anuncio. Puedes editar la tuya durante las 24 horas siguientes a su publicación.",
         "editorial_team":        "Equipo Editorial AdCritic",
         # Professional Debate
         "debate_title":          "Debate profesional",
@@ -211,7 +211,7 @@ CATALOG_UI = {
         "publish_perspective_title": "What's your perspective?",
         "publish_perspective_body":  "Publish your own critique and join the professional conversation.",
         "own_critique_title":    "You already published your critique for this ad",
-        "own_critique_body":     "You can only publish one critique per ad, but you can edit yours anytime.",
+        "own_critique_body":     "You can only publish one critique per ad. You can edit yours for the 24 hours after posting.",
         "editorial_team":        "AdCritic Editorial Team",
         # Professional Debate
         "debate_title":          "Professional Debate",
@@ -348,11 +348,11 @@ def _critique_is_editable(critique):
 
 def _set_comment_translation(comment, body, source_lang):
     target_lang = "en" if source_lang == "es" else "es"
-    translated_body, provider = translate_text(body, source_lang, target_lang, fmt="html")
+    translated_body = translate_text(body, source_lang, target_lang, fmt="html")
     comment.body_language = source_lang
     comment.translated_body = sanitize_critique_html(translated_body) if translated_body else None
     comment.translated_language = target_lang if translated_body else None
-    comment.translation_provider = provider
+    comment.translation_provider = "Google" if translated_body else None
 
 
 def _critique_access_for_ad(user, ad, existing_comment=None):
@@ -660,6 +660,7 @@ def _handle_write_critique(lang, ad_slug):
     return render_template(
         f"{lang}/write_critique.html",
         lang=lang, ui=ui, ad=ad, t=ad.translation(lang),
+        country_name=country_name,
         existing_user_comment=existing_user_comment,
         uses_intro_critique=uses_intro_critique,
         intro_remaining=intro_remaining,

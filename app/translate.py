@@ -12,9 +12,12 @@ TRANSLATE_URL = "https://translation.googleapis.com/language/translate/v2"
 logger = logging.getLogger(__name__)
 
 
-def translate_text(text, source, target):
+def translate_text(text, source, target, fmt="text"):
     """
     Translate `text` from `source` to `target` ('es'/'en').
+    Pass fmt="html" for rich-text bodies so Google translates the text
+    nodes and leaves the surrounding tags intact instead of treating the
+    markup as literal words to translate.
     Returns the translated string, or None if translation is unavailable
     or fails — callers should treat that as "leave the field blank" rather
     than a hard error, since a bio translation is a nice-to-have, not
@@ -32,7 +35,7 @@ def translate_text(text, source, target):
         resp = requests.post(
             TRANSLATE_URL,
             params={"key": api_key},
-            json={"q": text, "source": source, "target": target, "format": "text"},
+            json={"q": text, "source": source, "target": target, "format": fmt},
             timeout=8,
         )
         resp.raise_for_status()

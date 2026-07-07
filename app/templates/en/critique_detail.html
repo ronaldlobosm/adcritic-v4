@@ -5,6 +5,9 @@
 
 {% block content %}
 <div class="critique-page">
+  <nav class="breadcrumb critique-page__breadcrumb container">
+    <a href="{{ url_for('main.ad_detail_en', slug=ad.slug) }}">{{ ui.back_to_ad }}</a>
+  </nav>
   <div class="critique-featured-media">
     {% if ad.critique_cover_image_url %}
       <img src="{{ ad.critique_cover_image_url }}" alt="{{ t.title if t else ad.brand }}" class="critique-featured-media__image" />
@@ -148,6 +151,10 @@
         </a>
         <span class="critique-read-time">{{ critique.reading_time_minutes }} {{ ui.min_read }}</span>
       </div>
+
+      {% if critique.is_translated_for(lang) %}
+        <p class="critique-translated-note">{{ ui.translated_by.format(provider=critique.translation_provider or 'Google') }}</p>
+      {% endif %}
 
       <div class="critique-body">
         {{ critique.body_html_for(lang) }}
